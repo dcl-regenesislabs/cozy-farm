@@ -114,6 +114,7 @@ type NpcInstance = {
   currentTarget: Vector3 | null
   spawnPos:      Vector3
   doorPos:       Vector3
+  onDespawned?:  () => void
 }
 
 const activeNpcs: NpcInstance[] = []
@@ -239,7 +240,15 @@ function stopMovement(npc: NpcInstance) {
 // Spawn
 // ---------------------------------------------------------------------------
 
-export function initNpcSystem(def: NpcDefinition) {
+/** Force the current active NPC to begin departing (walk off scene). */
+export function requestNpcDeparture() {
+  const npc = activeNpcs[0]
+  if (npc && npc.state !== 'leavingToDoor' && npc.state !== 'leavingToSpawn') {
+    startDeparture(npc)
+  }
+}
+
+export function initNpcSystem(def: NpcDefinition, onDespawned?: () => void) {
   const spawnPositions = discoverSpawnPoints(def.spawnPrefix)
 
   const spawnPos = spawnPositions.get('Spawn01')
@@ -331,6 +340,7 @@ export function initNpcSystem(def: NpcDefinition) {
     currentTarget: Vector3.create(doorPos.x, doorPos.y, doorPos.z),
     spawnPos:      Vector3.create(spawnPos.x, spawnPos.y, spawnPos.z),
     doorPos:       Vector3.create(doorPos.x, doorPos.y, doorPos.z),
+    onDespawned,
   }
 
   blends.set(entity, { fromClip: 'Idle', toClip: 'Idle', t: 1.0 })
@@ -499,7 +509,8 @@ function npcUpdateSystem(dt: number) {
     npcQuestIcons.delete(npc.entity)
     const idx = activeNpcs.indexOf(npc)
     if (idx !== -1) activeNpcs.splice(idx, 1)
-    console.log(`CozyFarm NPC: ${npc.def.name} departed after quest completion`)
+    console.log(`CozyFarm NPC: ${npc.def.name} departed`)
+    if (npc.onDespawned) npc.onDespawned()
   }
 
   // Update quest icon material for each active NPC
