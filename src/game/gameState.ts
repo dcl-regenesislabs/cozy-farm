@@ -19,6 +19,8 @@ export const playerState = {
   // Player identity (populated async from getUserData)
   avatarUrl: '',
   displayName: '',
+  // Dog companion
+  dogOwned: false,
   // Lifetime counters (for quests + profile stats)
   totalCropsHarvested: 0,
   totalWaterCount: 0,

@@ -11,6 +11,7 @@ import { playSeedVfx } from '../systems/seedVfxSystem'
 import { playWateringVfx } from '../systems/wateringVfxSystem'
 import { addXp, XP_PLANT, XP_WATER, XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3 } from '../systems/levelingSystem'
 import { onHarvestCrop, onWater, onPlant, onSell } from './questState'
+import { spawnDog } from '../systems/dogSystem'
 
 /** Create or update the crop child entity on a soil plot */
 function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -381,3 +382,13 @@ export function sellCrop(cropType: CropType, quantity: number): boolean {
 
 /** Exported for growth system to swap models */
 export { setCropModel }
+
+/** Purchase the dog companion for 500 coins. No-op if already owned or insufficient coins. */
+export function buyDog() {
+  if (playerState.dogOwned) return
+  if (playerState.coins < 500) return
+  playerState.coins   -= 500
+  playerState.dogOwned = true
+  spawnDog()
+  console.log('CozyFarm Dog: purchased and spawned')
+}

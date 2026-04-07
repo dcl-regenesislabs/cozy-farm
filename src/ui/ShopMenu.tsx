@@ -1,6 +1,6 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
-import { buySeed } from '../game/actions'
+import { buySeed, buyDog } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
@@ -119,6 +119,50 @@ export const ShopMenu = () => {
           color={C.gold}
           textAlign="middle-left"
         />
+      </UiEntity>
+
+      {/* Pets section */}
+      <Label
+        value="🐾 Pets"
+        fontSize={15}
+        color={C.textMain}
+        textAlign="middle-left"
+        uiTransform={{ width: '100%', margin: { bottom: 8 } }}
+      />
+      <UiEntity
+        uiTransform={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          width: '100%',
+          margin: { bottom: 16 },
+          padding: { top: 10, bottom: 10, left: 12, right: 12 },
+        }}
+        uiBackground={{ color: C.rowBg }}
+      >
+        <Label
+          value="🐕 Dog"
+          fontSize={14}
+          color={C.textMain}
+          textAlign="middle-left"
+          uiTransform={{ flexGrow: 1 }}
+        />
+        {playerState.dogOwned ? (
+          <Label
+            value="🐾 Owned"
+            fontSize={13}
+            color={{ r: 0.5, g: 0.8, b: 0.5, a: 1 }}
+            textAlign="middle-right"
+          />
+        ) : (
+          <Button
+            value="500 🪙"
+            variant={playerState.coins >= 500 ? 'primary' : 'secondary'}
+            disabled={playerState.coins < 500}
+            fontSize={13}
+            uiTransform={{ width: 90, height: 30 }}
+            onMouseDown={() => buyDog()}
+          />
+        )}
       </UiEntity>
 
       {/* Seed grid */}

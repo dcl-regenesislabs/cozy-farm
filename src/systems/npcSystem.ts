@@ -240,6 +240,16 @@ function stopMovement(npc: NpcInstance) {
 // Spawn
 // ---------------------------------------------------------------------------
 
+/** Returns world positions of NPCs currently visible in the wander area. */
+export function getActiveNpcPositions(): Vector3[] {
+  return activeNpcs
+    .filter(n => n.state === 'wandering' || n.state === 'pauseWander' || n.state === 'talkAtDoor')
+    .map(n => {
+      const p = Transform.get(n.entity).position
+      return Vector3.create(p.x, p.y, p.z)
+    })
+}
+
 /** Force the current active NPC to begin departing (walk off scene). */
 export function requestNpcDeparture() {
   const npc = activeNpcs[0]
