@@ -3135,6 +3135,27 @@
             "parent": 0
           }
         },
+        "670": {
+          "json": {
+            "position": {
+              "x": 53.641143798828125,
+              "y": -5.550992811568199e-14,
+              "z": 40.391151428222656
+            },
+            "rotation": {
+              "x": 0,
+              "y": 1,
+              "z": 0,
+              "w": 6.123234262925839e-17
+            },
+            "scale": {
+              "x": 1.100000023841858,
+              "y": 1.100000023841858,
+              "z": 1.100000023841858
+            },
+            "parent": 0
+          }
+        },
         "1939": {
           "json": {
             "position": {
@@ -9594,6 +9615,13 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
+        "670": {
+          "json": {
+            "src": "assets/asset-packs/residential_mailbox/MailPost_02/MailPost_02.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
         "1940": {
           "json": {
             "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
@@ -12147,6 +12175,11 @@
             "value": "Floor - Black Small"
           }
         },
+        "670": {
+          "json": {
+            "value": "Mailbox"
+          }
+        },
         "1939": {
           "json": {
             "value": "Ground"
@@ -13571,9 +13604,9 @@
         "serializationType": "map"
       },
       "data": {
-        "0": {
+        "518": {
           "json": {
-            "gizmo": 3
+            "gizmo": 1
           }
         }
       }
@@ -13766,7 +13799,8 @@
                   665,
                   666,
                   1939,
-                  2196
+                  2196,
+                  670
                 ]
               },
               {
@@ -15651,6 +15685,10 @@
               {
                 "entity": 2196,
                 "children": []
+              },
+              {
+                "entity": 670,
+                "children": []
               }
             ]
           }
@@ -16099,6 +16137,9 @@
           "json": {}
         },
         "666": {
+          "json": {}
+        },
+        "670": {
           "json": {}
         },
         "2196": {

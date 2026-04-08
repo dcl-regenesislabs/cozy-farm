@@ -20,6 +20,21 @@ export const questProgressMap: Map<string, QuestProgress> = new Map(
 )
 
 // ---------------------------------------------------------------------------
+// Tutorial hooks — fire once when a quest is accepted / claimed
+// ---------------------------------------------------------------------------
+
+let onQuestAcceptedCb: (() => void) | null = null
+let onQuestClaimedCb:  (() => void) | null = null
+
+export function setOnQuestAccepted(cb: () => void): void {
+  onQuestAcceptedCb = cb
+}
+
+export function setOnQuestClaimed(cb: () => void): void {
+  onQuestClaimedCb = cb
+}
+
+// ---------------------------------------------------------------------------
 // Player actions
 // ---------------------------------------------------------------------------
 
@@ -27,6 +42,9 @@ export function acceptQuest(questId: string): void {
   const qp = questProgressMap.get(questId)
   if (!qp || qp.status !== 'available') return
   qp.status = 'active'
+  const cb = onQuestAcceptedCb
+  onQuestAcceptedCb = null
+  cb?.()
   console.log(`CozyFarm Quest: Accepted "${questId}"`)
 }
 
@@ -39,6 +57,9 @@ export function claimQuestReward(questId: string): void {
   addXp(def.rewardXp)
   qp.status = 'completed'
   console.log(`CozyFarm Quest: Completed "${def.title}" — +${def.rewardCoins} coins, +${def.rewardXp} XP`)
+  const cb = onQuestClaimedCb
+  onQuestClaimedCb = null
+  cb?.()
 }
 
 // ---------------------------------------------------------------------------

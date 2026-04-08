@@ -1,7 +1,7 @@
-import { executeTask } from '@dcl/sdk/ecs'
+import { executeTask, engine } from '@dcl/sdk/ecs'
 import { getUserData } from '~system/UserIdentity'
 import { setupUi } from './ui'
-import { setupEntities } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6 } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -10,17 +10,24 @@ import './systems/farmerSystem'
 import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
-import { engine } from '@dcl/sdk/ecs'
 import { initNpcSystem } from './systems/npcSystem'
-import { NPC_ROSTER } from './data/npcData'
+import { MAYOR_DEF, REGULAR_NPC_ROSTER } from './data/npcData'
 import { playerState } from './game/gameState'
+import { initTutorialSystem } from './systems/tutorialSystem'
+import { tutorialCallbacks } from './game/tutorialState'
 
-// Seconds between each NPC arrival. All 6 will be in the scene after 5 × 30s = 2.5 min.
+// Seconds between each regular NPC arrival once the tutorial is complete
 const NPC_SPAWN_INTERVAL = 30
 
 export function main() {
   setupUi()
   setupEntities()
+
+  // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
+  // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.
+  tutorialCallbacks.unlockSoilsPhase1 = unlockSoilsPhase1
+  tutorialCallbacks.unlockSoilsPhase2 = unlockSoilsPhase2
+  tutorialCallbacks.unlockSoilsAll6   = unlockSoilsAll6
 
   // Fetch player avatar and display name for the TopHud
   executeTask(async () => {
@@ -36,17 +43,24 @@ export function main() {
     }
   })
 
-  // Spawn NPCs one at a time, NPC_SPAWN_INTERVAL seconds apart.
-  // They stay and wander until the player claims their quest.
-  let nextIndex = 0
-  let timer     = 0  // spawn first NPC immediately
+  // Spawn Mayor IMMEDIATELY as the tutorial guide.
+  // When he departs (after tutorial completes), start the regular NPC rotation.
+  initNpcSystem(MAYOR_DEF, () => {
+    let nextIndex = 0
+    let timer     = 0  // first regular NPC spawns immediately after Mayor leaves
 
-  engine.addSystem((dt: number) => {
-    if (nextIndex >= NPC_ROSTER.length) return
-    timer -= dt
-    if (timer > 0) return
-    initNpcSystem(NPC_ROSTER[nextIndex])
-    nextIndex++
-    timer = NPC_SPAWN_INTERVAL
+    engine.addSystem((dt: number) => {
+      if (nextIndex >= REGULAR_NPC_ROSTER.length) return
+      timer -= dt
+      if (timer > 0) return
+      initNpcSystem(REGULAR_NPC_ROSTER[nextIndex])
+      nextIndex++
+      timer = NPC_SPAWN_INTERVAL
+    })
+
+    console.log('CozyFarm: Mayor departed — regular NPC rotation started')
   })
+
+  // Start the tutorial (shows welcome dialog; Mayor is already walking in)
+  initTutorialSystem()
 }

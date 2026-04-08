@@ -4,6 +4,7 @@ import { PlotState } from '../components/farmComponents'
 import { handlePlotClick } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
+import { skipTutorial } from './tutorialSystem'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -112,22 +113,36 @@ export function setupEntities() {
       growthStage: 0,
       plantedAt: 0,
       waterCount: 0,
-      isUnlocked: index < 6,
+      isUnlocked: index < 1,   // tutorial: only plot 0 unlocked at start
       plotIndex: index,
     })
 
-    // Plots 0-5: leave the scene-editor GltfContainer untouched — the GLB already
-    //            has the right _collider meshes and collision masks baked in.
-    // Plots 6+:  swap to the transparent model (no mask overrides — let the GLB
-    //            handle its own collision layers, same as the original code).
-    if (index >= 6) {
+    // Plot 0:  leave the scene-editor GltfContainer untouched — the GLB already
+    //          has the right _collider meshes and collision masks baked in.
+    // Plots 1+: swap to the transparent model until unlocked by the tutorial.
+    // Plots 6+: also transparent (unlocked by the farmer upgrade later).
+    if (index >= 1) {
       GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
     }
 
     registerPlotPointerEvent(entity)
   })
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}`)
+  // ── Bed (tutorial skip — 3 clicks = skip tutorial + 2000 coins) ──────────
+  let bedClickCount = 0
+  const bed = engine.getEntityOrNullByName('Bed.glb')
+  if (bed) {
+    enablePointerOnGltf(bed)
+    pointerEventsSystem.onPointerDown(
+      { entity: bed, opts: { button: InputAction.IA_POINTER, hoverText: 'Sleep', maxDistance: 8 } },
+      () => {
+        bedClickCount++
+        if (bedClickCount >= 3) skipTutorial()
+      },
+    )
+  }
+
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, bed=${!!bed}`)
 }
 
 export function removeForSaleSign() {
@@ -147,6 +162,45 @@ export function unlockFarmerPlots() {
       GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
     }
   })
+}
+
+/** Tutorial Phase 1: unlock plots 1-2 (total 3 available) */
+export function unlockSoilsPhase1(): void {
+  soilEntities.forEach((entity) => {
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex >= 1 && plot.plotIndex < 3) {
+      PlotState.getMutable(entity).isUnlocked = true
+      updatePlotHoverText(entity)
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+  console.log('CozyFarm Tutorial: unlocked soil plots 1-2')
+}
+
+/** Tutorial Phase 2: unlock plots 3-5 (total 6 available) */
+export function unlockSoilsPhase2(): void {
+  soilEntities.forEach((entity) => {
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex >= 3 && plot.plotIndex < 6) {
+      PlotState.getMutable(entity).isUnlocked = true
+      updatePlotHoverText(entity)
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+  console.log('CozyFarm Tutorial: unlocked soil plots 3-5')
+}
+
+/** Skip path: unlock all 6 tutorial plots immediately */
+export function unlockSoilsAll6(): void {
+  soilEntities.forEach((entity) => {
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex < 6) {
+      PlotState.getMutable(entity).isUnlocked = true
+      updatePlotHoverText(entity)
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+  console.log('CozyFarm Tutorial: unlocked all 6 soil plots (skip)')
 }
 
 export function registerPlotPointerEvent(entity: Entity) {

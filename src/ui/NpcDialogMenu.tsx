@@ -8,11 +8,12 @@ const DIALOG_W      = 580
 const DIALOG_H      = 230
 
 function closeDialog() {
-  npcDialogState.onClose?.()
+  const cb = npcDialogState.onClose
   npcDialogState.onClose  = null
   npcDialogState.onAccept = null
   npcDialogState.onClaim  = null
   playerState.activeMenu  = 'none'
+  cb?.()  // run last so the callback can re-open a new dialog if needed
 }
 
 export const NpcDialogMenu = () => (
@@ -108,8 +109,9 @@ export const NpcDialogMenu = () => (
                 fontSize={15}
                 uiTransform={{ width: 120, height: 38, margin: { right: 10 } }}
                 onMouseDown={() => {
-                  npcDialogState.onAccept?.()
+                  const accept = npcDialogState.onAccept
                   closeDialog()
+                  accept?.()  // run after close so any new dialog it opens isn't overwritten
                 }}
               />
               <Button
@@ -139,8 +141,9 @@ export const NpcDialogMenu = () => (
               fontSize={15}
               uiTransform={{ width: 170, height: 38 }}
               onMouseDown={() => {
-                npcDialogState.onClaim?.()
-                closeDialog()
+                const claim = npcDialogState.onClaim
+                closeDialog()   // triggers npcSystem onClose → departure begins
+                claim?.()       // run after close so any new dialog it opens persists
               }}
             />
           )}
@@ -151,6 +154,16 @@ export const NpcDialogMenu = () => (
               variant="secondary"
               fontSize={15}
               uiTransform={{ width: 120, height: 38 }}
+              onMouseDown={closeDialog}
+            />
+          )}
+
+          {npcDialogState.mode === 'tutorial' && (
+            <Button
+              value={npcDialogState.tutorialButtonLabel}
+              variant="primary"
+              fontSize={15}
+              uiTransform={{ width: 180, height: 38 }}
               onMouseDown={closeDialog}
             />
           )}

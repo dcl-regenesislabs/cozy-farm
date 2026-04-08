@@ -23,6 +23,7 @@ import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from '../game/questState'
 import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
+import { tutorialState } from '../game/tutorialState'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -101,7 +102,7 @@ function randomWanderTarget(
 // NPC state machine
 // ---------------------------------------------------------------------------
 
-type NpcState = 'walkingToDoor' | 'talkAtDoor' | 'wandering' | 'pauseWander' | 'talking' | 'leavingToDoor' | 'leavingToSpawn'
+type NpcState = 'walkingToDoor' | 'talkAtDoor' | 'wandering' | 'pauseWander' | 'talking' | 'leavingToDoor' | 'leavingToSpawn' | 'walkingToTarget'
 
 type NpcInstance = {
   entity:        Entity
@@ -256,6 +257,17 @@ export function requestNpcDeparture() {
   if (npc && npc.state !== 'leavingToDoor' && npc.state !== 'leavingToSpawn') {
     startDeparture(npc)
   }
+}
+
+/**
+ * Walk a named NPC to an arbitrary world position (used by the tutorial to
+ * move Mayor Chen next to a soil plot).  Once arrived, holds Idle for 120 s.
+ */
+export function walkNpcToPosition(npcId: string, pos: Vector3): void {
+  const npc = activeNpcs.find((n) => n.def.id === npcId)
+  if (!npc || npc.state === 'talking' || npc.state === 'leavingToDoor' || npc.state === 'leavingToSpawn') return
+  startWalkTo(npc, pos)
+  npc.state = 'walkingToTarget'
 }
 
 export function initNpcSystem(def: NpcDefinition, onDespawned?: () => void) {
@@ -486,6 +498,17 @@ function npcUpdateSystem(dt: number) {
         break
       }
 
+      case 'walkingToTarget': {
+        if (npc.currentTarget) updateFacing(npc, npc.currentTarget, dt)
+        if (isTweenComplete(npc)) {
+          // Arrived at target — hold Idle for 2 minutes (tutorial will advance the flow)
+          npc.state      = 'pauseWander'
+          npc.pauseTimer = 120.0
+          playAnim(npc, 'Idle')
+        }
+        break
+      }
+
       case 'talking': {
         // Hold Talk animation until the player closes the dialog panel.
         // The transition back to wandering is triggered by npcDialogState.onClose.
@@ -531,11 +554,20 @@ function npcUpdateSystem(dt: number) {
     const questDef = getQuestForNpc(npc.def.id)
     const qp       = questDef ? getQuestProgress(questDef.id) : undefined
 
+    // Suppress the Mayor's quest icon during tutorial steps before he offers the quest
+    const hideDuringTutorial =
+      npc.def.id === 'mayorchen' &&
+      tutorialState.active &&
+      tutorialState.step !== 'talk_mayor' &&
+      tutorialState.step !== 'sell_quest'
+
     let iconSrc: string | null = null
-    if (qp && (qp.status === 'available' || qp.status === 'claimable')) {
-      iconSrc = EXCLAMATION_ICON
-    } else if (qp && qp.status === 'active') {
-      iconSrc = QUESTION_ICON
+    if (!hideDuringTutorial) {
+      if (qp && (qp.status === 'available' || qp.status === 'claimable')) {
+        iconSrc = EXCLAMATION_ICON
+      } else if (qp && qp.status === 'active') {
+        iconSrc = QUESTION_ICON
+      }
     }
 
     const t = Transform.getMutable(iconEntity)

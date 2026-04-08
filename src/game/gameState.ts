@@ -4,8 +4,8 @@ import { CropType } from '../data/cropData'
 export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm'
 
 export const playerState = {
-  coins: 2000,
-  seeds: new Map<CropType, number>([[CropType.Onion, 5]]),
+  coins: 0,
+  seeds: new Map<CropType, number>(),
   harvested: new Map<CropType, number>(),
   activeMenu: 'none' as MenuType,
   activePlotEntity: null as Entity | null,

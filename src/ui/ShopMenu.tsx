@@ -4,6 +4,7 @@ import { buySeed, buyDog } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
+import { tutorialState } from '../game/tutorialState'
 
 const TIER_COLOR: Record<1 | 2 | 3, { r: number; g: number; b: number; a: number }> = {
   1: { r: 0.4,  g: 1,    b: 0.4,  a: 1 },
@@ -159,11 +160,15 @@ const DogCard = () => {
 }
 
 export const ShopMenu = () => {
+  const tutorialActive = tutorialState.active
+
+  // During tutorial, only Onion seeds are available for purchase
   const visibleCrops = ALL_CROP_TYPES.filter((ct) => {
+    if (tutorialActive) return ct === CropType.Onion
     const def = CROP_DATA.get(ct)!
     return def.tier === 1 || playerState.cropsUnlocked
   })
-  const lockedCrops = ALL_CROP_TYPES.filter((ct) => {
+  const lockedCrops = tutorialActive ? [] : ALL_CROP_TYPES.filter((ct) => {
     const def = CROP_DATA.get(ct)!
     return def.tier > 1 && !playerState.cropsUnlocked
   })
@@ -225,7 +230,7 @@ export const ShopMenu = () => {
             ))}
           </UiEntity>
 
-          {!playerState.cropsUnlocked && (
+          {!playerState.cropsUnlocked && !tutorialActive && (
             <UiEntity
               uiTransform={{ padding: { top: 8, bottom: 8, left: 14, right: 14 }, margin: { top: 4 } }}
               uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}

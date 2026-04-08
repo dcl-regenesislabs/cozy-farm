@@ -12,6 +12,7 @@ import { playWateringVfx } from '../systems/wateringVfxSystem'
 import { addXp, XP_PLANT, XP_WATER, XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3 } from '../systems/levelingSystem'
 import { onHarvestCrop, onWater, onPlant, onSell } from './questState'
 import { spawnDog } from '../systems/dogSystem'
+import { onTutorialAction } from '../systems/tutorialSystem'
 
 /** Create or update the crop child entity on a soil plot */
 function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -226,6 +227,7 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
   addXp(XP_PLANT)
   playerState.totalSeedPlanted += 1
   onPlant()
+  onTutorialAction('plant')
 
   updatePlotHoverText(entity)
   playerState.activeMenu = 'none'
@@ -301,6 +303,7 @@ export function waterCrop(entity: Entity): boolean {
   addXp(XP_WATER)
   playerState.totalWaterCount += 1
   onWater()
+  onTutorialAction('water')
   return true
 }
 
@@ -328,6 +331,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   addXp(harvestXp)
   playerState.totalCropsHarvested += finalYield
   onHarvestCrop(cropType, finalYield)
+  onTutorialAction('harvest')
 
   // Reset plot — enter "just harvested" interstitial state
   plot.cropType = -1
@@ -363,6 +367,7 @@ export function buySeed(cropType: CropType, quantity: number): boolean {
   playerState.coins -= totalCost
   const current = playerState.seeds.get(cropType) ?? 0
   playerState.seeds.set(cropType, current + quantity)
+  onTutorialAction('buy_seeds')
   return true
 }
 
@@ -377,6 +382,7 @@ export function sellCrop(cropType: CropType, quantity: number): boolean {
   playerState.totalSellCount += toSell
   playerState.totalCoinsEarned += def.sellPrice * toSell
   onSell(toSell)
+  onTutorialAction('sell')
   return true
 }
 

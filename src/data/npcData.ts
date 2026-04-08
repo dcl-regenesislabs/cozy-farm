@@ -47,3 +47,9 @@ export const NPC_ROSTER: NpcDefinition[] = [
     greeting: "Ah, good day. The town council has been keeping an eye on your progress.\nWe have a proposal that may interest you.",
   },
 ]
+
+/** Mayor Chen — spawned immediately as tutorial guide, separate from the regular NPC rotation. */
+export const MAYOR_DEF = NPC_ROSTER.find((n) => n.id === 'mayorchen')!
+
+/** The five regular visiting NPCs — spawned on a timer after the tutorial is complete. */
+export const REGULAR_NPC_ROSTER = NPC_ROSTER.filter((n) => n.id !== 'mayorchen')
