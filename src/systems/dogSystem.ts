@@ -398,13 +398,10 @@ function dogUpdateSystem(dt: number) {
     case 'dancing': {
       dog.danceTimer -= dt
       if (dog.danceTimer <= 0) {
-        // Transition to post-dance state
         if (dog.prevState === 'followingPlayer') {
           dog.state = 'followingPlayer'
-          playAnim('idle')
-        } else if (dog.prevState === 'pausing') {
-          dog.state      = 'pausing'
-          dog.pauseTimer = 1.5
+          // Remove any active tween so direct position steps work cleanly
+          try { Tween.deleteFrom(dog.entity) } catch (_) {}
           playAnim('idle')
         } else {
           dog.state      = 'pausing'
@@ -449,17 +446,27 @@ function dogUpdateSystem(dt: number) {
     case 'followingPlayer': {
       const playerPos = Transform.get(engine.PlayerEntity).position
       const target    = Vector3.create(playerPos.x, 0, playerPos.z)
-      const curPos    = Transform.get(dog.entity).position
+      // Use getMutable once so rotation + position are written in the same tick
+      const transform = Transform.getMutable(dog.entity)
+      const curPos    = transform.position
       const d         = dist2D(curPos, target)
+
       if (d > PLAYER_FOLLOW_DIST) {
-        updateFacing(target, dt)
-        // Re-issue tween each frame so dog continuously tracks moving player
-        startWalkTo(target, true)
+        // Smooth rotation
+        const angle     = Math.atan2(target.x - curPos.x, target.z - curPos.z) * (180 / Math.PI)
+        const targetRot = Quaternion.fromAngleAxis(angle, Vector3.Up())
+        transform.rotation = Quaternion.slerp(transform.rotation, targetRot, Math.min(1.0, TURN_SPEED * dt))
+
+        // Direct position step — no Tween, so no per-frame interpolation conflict
+        const step = Math.min(RUN_SPEED * dt, d - PLAYER_FOLLOW_DIST)
+        transform.position = Vector3.create(
+          curPos.x + (target.x - curPos.x) / d * step,
+          curPos.y,
+          curPos.z + (target.z - curPos.z) / d * step,
+        )
+        if (dogBlend.toClip !== 'run') playAnim('run')
       } else {
-        if (dogBlend.toClip !== 'idle') {
-          stopMovement()
-          playAnim('idle')
-        }
+        if (dogBlend.toClip !== 'idle') playAnim('idle')
       }
       break
     }

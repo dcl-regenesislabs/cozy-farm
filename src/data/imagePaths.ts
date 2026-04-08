@@ -25,6 +25,7 @@ export const CROP_HARVEST_IMAGES: Record<CropType, string> = {
 }
 
 export const COINS_IMAGE    = 'assets/scene/Images/Coins.png'
+export const DOG01_ICON     = 'assets/scene/Images/Dog01Icon.png'
 export const BTN_INVENTORY  = 'assets/scene/Images/InventoryButton.png'
 export const BTN_FARM       = 'assets/scene/Images/FarmButton.png'
 export const BTN_QUESTS     = 'assets/scene/Images/QuestButton.png'
