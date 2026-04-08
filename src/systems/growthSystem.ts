@@ -1,9 +1,16 @@
-import { engine } from '@dcl/sdk/ecs'
+import { engine, Entity } from '@dcl/sdk/ecs'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { CROP_MODELS } from '../data/modelPaths'
-import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText, setSoilTimerText, getWateringStatus } from '../game/actions'
+import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText, setSoilTimerText, getWateringStatus, removeSoilIcons } from '../game/actions'
 import { updatePlotHoverText } from './interactionSetup'
+import { tutorialState } from '../game/tutorialState'
+
+/** Onion grow time during the tutorial — 30 seconds so it doesn't feel like a wait */
+const TUTORIAL_ONION_GROW_MS = 30_000
+
+/** Tracks when justHarvested plots should auto-clear (timestamp in ms) */
+const harvestClearTimers = new Map<Entity, number>()
 
 function formatTime(ms: number): string {
   if (ms <= 0) return 'Ready!'
@@ -23,7 +30,24 @@ function growthSystem(_dt: number) {
   for (const [entity] of engine.getEntitiesWith(PlotState)) {
     const plot = PlotState.get(entity)
 
-    // Skip empty/harvested plots
+    // Auto-clear the "just harvested" interstitial after 2 seconds
+    if (plot.justHarvested) {
+      let clearAt = harvestClearTimers.get(entity)
+      if (!clearAt) {
+        clearAt = now + 2000
+        harvestClearTimers.set(entity, clearAt)
+      }
+      if (now >= clearAt) {
+        harvestClearTimers.delete(entity)
+        PlotState.getMutable(entity).justHarvested = false
+        removeSoilIcons(entity)
+        updatePlotHoverText(entity)
+      }
+      continue
+    }
+    harvestClearTimers.delete(entity)  // clean up if plot was cleared by manual click first
+
+    // Skip empty plots
     if (plot.cropType === -1) continue
 
     // Skip plots waiting for first watering
@@ -33,8 +57,13 @@ function growthSystem(_dt: number) {
     if (plot.isReady) continue
 
     const def = CROP_DATA.get(plot.cropType as CropType)!
+    // During the tutorial, onion seeds grow in 30 s instead of the normal time
+    const effectiveGrowTimeMs =
+      tutorialState.active && plot.cropType === CropType.Onion
+        ? TUTORIAL_ONION_GROW_MS
+        : def.growTimeMs
     const elapsed = now - plot.plantedAt
-    const progress = elapsed / def.growTimeMs
+    const progress = elapsed / effectiveGrowTimeMs
 
     // Stages: 0=no model (0-25%), 1=sprout01 (25-50%), 2=sprout02 (50-75%), 3=sprout03 (75-100%+)
     let targetStage: number
@@ -83,7 +112,7 @@ function growthSystem(_dt: number) {
     })
 
     // Update timer text every frame (cheap — just updates TextShape content)
-    setSoilTimerText(entity, formatTime(def.growTimeMs - elapsed))
+    setSoilTimerText(entity, formatTime(effectiveGrowTimeMs - elapsed))
   }
 }
 

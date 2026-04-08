@@ -45,7 +45,7 @@ const WATER_DOT_SPACING = 0.24  // horizontal spacing between dots (centre to ce
 const ACTION_ICON_Y     = 0.85  // y for the watering-can / hand icon
 const ACTION_ICON_SIZE  = 0.75  // size of the action icon (tune here to make it bigger/smaller)
 const HARVEST_ICON_Y    = 1.5   // y used for hand icon after harvest
-const TIMER_TEXT_Y      = 2.45  // y for the countdown text — sits just above the crop image (tune here)
+const TIMER_TEXT_Y      = 3.5   // y for the countdown text — raised above VFX models (watering can, seed anim)
 
 /** Create a single billboard sprite plane parented to soilEntity */
 function makeIconSprite(parent: Entity, x: number, y: number, src: string, size: number): Entity {

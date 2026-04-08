@@ -1,7 +1,7 @@
 import { executeTask, engine } from '@dcl/sdk/ecs'
 import { getUserData } from '~system/UserIdentity'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6 } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -25,9 +25,10 @@ export function main() {
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.
-  tutorialCallbacks.unlockSoilsPhase1 = unlockSoilsPhase1
-  tutorialCallbacks.unlockSoilsPhase2 = unlockSoilsPhase2
-  tutorialCallbacks.unlockSoilsAll6   = unlockSoilsAll6
+  tutorialCallbacks.unlockSoilsPhase1  = unlockSoilsPhase1
+  tutorialCallbacks.unlockSoilsPhase2  = unlockSoilsPhase2
+  tutorialCallbacks.unlockSoilsAll6    = unlockSoilsAll6
+  tutorialCallbacks.getFirstSoilEntity = () => getSoilEntities()[0] ?? null
 
   // Fetch player avatar and display name for the TopHud
   executeTask(async () => {
@@ -47,7 +48,7 @@ export function main() {
   // When he departs (after tutorial completes), start the regular NPC rotation.
   initNpcSystem(MAYOR_DEF, () => {
     let nextIndex = 0
-    let timer     = 0  // first regular NPC spawns immediately after Mayor leaves
+    let timer     = 3  // 3-second grace period after Mayor departs before first regular NPC arrives
 
     engine.addSystem((dt: number) => {
       if (nextIndex >= REGULAR_NPC_ROSTER.length) return

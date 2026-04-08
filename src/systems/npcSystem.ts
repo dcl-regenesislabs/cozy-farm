@@ -23,7 +23,33 @@ import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from '../game/questState'
 import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
-import { tutorialState } from '../game/tutorialState'
+import { tutorialState, TutorialStep } from '../game/tutorialState'
+
+// ---------------------------------------------------------------------------
+// Mayor tutorial chit-chat — shown when player clicks Mayor during tutorial
+// steps where he should not offer his quest yet
+// ---------------------------------------------------------------------------
+const MAYOR_TUTORIAL_CHITCHATS = [
+  "Oh, what a nice day! The sun makes the soil feel just right for growing.",
+  "I think you'll like this place — CozyFarm has a way of growing on you!",
+  "You know, I used to play guitar in a rock band. We called ourselves The Fertilizers. We were ahead of our time.",
+  "Between you and me, Marco's farm isn't as big as he claims. Don't tell him I said that.",
+  "The smell of fresh soil in the morning… nothing quite like it, is there?",
+]
+
+let lastChitchatIndex = -1
+function getRandomChitchat(): string {
+  let idx = Math.floor(Math.random() * MAYOR_TUTORIAL_CHITCHATS.length)
+  if (idx === lastChitchatIndex) idx = (idx + 1) % MAYOR_TUTORIAL_CHITCHATS.length
+  lastChitchatIndex = idx
+  return MAYOR_TUTORIAL_CHITCHATS[idx]
+}
+
+/** Tutorial steps where the Mayor should NOT offer his quest (shows chit-chat instead) */
+const MAYOR_CHITCHAT_STEPS = new Set<TutorialStep>([
+  'welcome', 'buy_seeds', 'plant_first', 'plant_vfx', 'water_first', 'water_vfx',
+  'wait_grow', 'harvest_first', 'harvest_more', 'open_quests', 'close_quests',
+])
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -119,6 +145,9 @@ type NpcInstance = {
 }
 
 const activeNpcs: NpcInstance[] = []
+
+/** Guards against registering npcUpdateSystem more than once across NPC respawns */
+let npcSystemRegistered = false
 
 // Quest icon constants — tune here
 const NPC_ICON_Y    = 2.4   // height above NPC entity origin
@@ -371,8 +400,12 @@ export function initNpcSystem(def: NpcDefinition, onDespawned?: () => void) {
   // Start walking to the door immediately
   startWalkTo(npc, doorPos)
 
-  // Register the per-frame update system (only once)
-  if (activeNpcs.length === 1) {
+  // Register the per-frame update system exactly once across all NPC lifetimes.
+  // The old check (activeNpcs.length === 1) re-registered the system every time
+  // a new NPC spawned after a previous one departed, resulting in the system
+  // running multiple times per frame and NPCs being processed twice.
+  if (!npcSystemRegistered) {
+    npcSystemRegistered = true
     engine.addSystem(npcUpdateSystem)
   }
 
@@ -411,7 +444,16 @@ function onNpcClick(entity: Entity) {
   npcDialogState.onAccept     = null
   npcDialogState.onClaim      = null
 
-  if (!questDef || !qp || qp.status === 'completed') {
+  // During tutorial, Mayor only chit-chats until the 'talk_mayor' step
+  const mayorInChitchatMode =
+    npc.def.id === 'mayorchen' &&
+    tutorialState.active &&
+    MAYOR_CHITCHAT_STEPS.has(tutorialState.step)
+
+  if (mayorInChitchatMode) {
+    npcDialogState.dialogLine = getRandomChitchat()
+    npcDialogState.mode       = 'greeting'
+  } else if (!questDef || !qp || qp.status === 'completed') {
     // No quest or already done — show normal greeting
     npcDialogState.dialogLine = npc.def.greeting
     npcDialogState.mode       = 'greeting'

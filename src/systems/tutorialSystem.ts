@@ -30,12 +30,14 @@ function showTutorialDialog(text: string, buttonLabel: string, onButton: () => v
 }
 
 // ---------------------------------------------------------------------------
-// Mayor walk helper — uses entity name to avoid circular import
+// Mayor walk helper — uses tutorialCallbacks.getFirstSoilEntity() to avoid
+// a circular import (interactionSetup ↔ tutorialSystem).
+// The callback is wired in index.ts after both modules are loaded.
 // ---------------------------------------------------------------------------
 function walkMayorToSoil(offsetX: number, offsetZ: number) {
-  const soil = engine.getEntityOrNullByName('Soil01.glb')
-  if (!soil) return
-  const pos = Transform.get(soil).position
+  const soil = tutorialCallbacks.getFirstSoilEntity()
+  if (soil === null) return
+  const pos = Transform.get(soil as import('@dcl/sdk/ecs').Entity).position
   walkNpcToPosition('mayorchen', Vector3.create(pos.x + offsetX, pos.y, pos.z + offsetZ))
 }
 
@@ -45,7 +47,7 @@ function walkMayorToSoil(offsetX: number, offsetZ: number) {
 
 function goToPlantFirst() {
   tutorialState.step = 'plant_first'
-  walkMayorToSoil(1.5, 0.5)
+  walkMayorToSoil(0, -1.2)
   showTutorialDialog(
     "Excellent! Now come here to this soil plot and try to plant your first seed.\n\nClick the soil to open the planting menu, then select Onion.",
     "On my way!",
@@ -56,7 +58,7 @@ function goToPlantFirst() {
 function goToWaterFirst() {
   tutorialState.step = 'water_first'
   showTutorialDialog(
-    "Your seed is in the ground!\n\nNow water it — click the plot again to use your watering can.",
+    "Once you plant a seed, you'll need to water it.\nAny plant needs water to grow — go ahead and use your watering can on it!",
     "On it!",
     () => {},
   )
@@ -66,15 +68,15 @@ function goToWaitGrow() {
   tutorialState.step = 'wait_grow'
   tutorialCallbacks.unlockSoilsPhase1()
   showTutorialDialog(
-    "Well watered! Now we wait for it to grow.\n\nIn the meantime, I've unlocked two more soil plots for you — go ahead and practice planting more seeds!",
-    "More space, nice!",
+    "Good — now it's time to wait for the plant to grow!\n\nI'll apply a quick Fertilizer to this soil so it goes faster. I've also unlocked two more plots for you — practice planting while you wait!",
+    "Nice, let's go!",
     () => {},
   )
 }
 
 function goToHarvestFirst() {
   tutorialState.step = 'harvest_first'
-  walkMayorToSoil(1.5, 0.5)
+  walkMayorToSoil(0, -1.2)
   showTutorialDialog(
     "Your first Onion is ready! Come and harvest it!\n\nClick the soil plot with the glowing hand icon.",
     "Let's harvest!",
@@ -119,7 +121,7 @@ function goToTalkMayor() {
     tutorialState.active = false
     // Mayor is already walking away (departure was triggered by closeDialog)
     showTutorialDialog(
-      "You've done it! You're a true farmer now.\n\nI've unlocked three more soil plots for you. The town of CozyFarm is proud of you — good luck on your farming endeavours!",
+      "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you. Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.\n\nThe town of CozyFarm is proud of you. Good luck!",
       "Thanks, Mayor!",
       () => {
         // If Mayor is somehow still idle, make sure he departs
@@ -144,11 +146,37 @@ function tutorialWatcherSystem(_dt: number) {
 
   switch (tutorialState.step) {
 
+    case 'plant_vfx': {
+      // Wait for the seed planting VFX to finish, then show the watering dialog.
+      // (We can't show it immediately in onTutorialAction because plantSeed()
+      //  resets activeMenu='none' right after the hook fires, hiding the dialog.)
+      const soil = tutorialCallbacks.getFirstSoilEntity()
+      if (soil === null) return
+      const plot = PlotState.getOrNull(soil as import('@dcl/sdk/ecs').Entity)
+      if (plot && !plot.isPlanting) {
+        goToWaterFirst()
+      }
+      break
+    }
+
+    case 'water_vfx': {
+      // Wait for the watering VFX to finish, THEN show the "wait for growth" dialog.
+      // This gives the player 3.5 s to clearly see the timer start counting from 30 s
+      // before Mayor Chen's dialog covers the screen.
+      const soil = tutorialCallbacks.getFirstSoilEntity()
+      if (soil === null) return
+      const plot = PlotState.getOrNull(soil as import('@dcl/sdk/ecs').Entity)
+      if (plot && !plot.isWatering) {
+        goToWaitGrow()
+      }
+      break
+    }
+
     case 'wait_grow': {
-      // Poll Soil01.glb until its crop is ready to harvest
-      const soil = engine.getEntityOrNullByName('Soil01.glb')
-      if (!soil) return
-      const plot = PlotState.getOrNull(soil)
+      // Poll the first soil plot until its crop is ready to harvest
+      const soil = tutorialCallbacks.getFirstSoilEntity()
+      if (soil === null) return
+      const plot = PlotState.getOrNull(soil as import('@dcl/sdk/ecs').Entity)
       if (plot && plot.isReady) {
         goToHarvestFirst()
       }
@@ -193,13 +221,23 @@ export function onTutorialAction(action: TutorialActionType) {
 
     case 'plant': {
       if (tutorialState.step !== 'plant_first') return
-      goToWaterFirst()
+      // Don't show the dialog yet — plantSeed() resets activeMenu='none' right after
+      // this hook fires, which would immediately hide the dialog.
+      // Instead, set an intermediate step and let the watcher detect when the
+      // seed VFX finishes (isPlanting=false), then show the watering dialog.
+      tutorialState.step = 'plant_vfx'
       break
     }
 
     case 'water': {
       if (tutorialState.step !== 'water_first') return
-      goToWaitGrow()
+      // Don't show the grow dialog immediately — waterCrop() is called in the same
+      // frame as the tutorial action, and the dialog would open before the player
+      // can even see the timer start counting.  Also, the 3D watering-can VFX model
+      // sits right on the timer text for 3.5 s and would block it.
+      // Instead, advance to an intermediate step and let the watcher detect when
+      // isWatering=false (VFX done), then show the dialog.
+      tutorialState.step = 'water_vfx'
       break
     }
 
