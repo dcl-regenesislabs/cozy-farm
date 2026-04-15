@@ -14,8 +14,8 @@ export const C = {
   orange:   { r: 1,    g: 0.72, b: 0.2,  a: 1     },
 }
 
-export const PANEL_W = 860
-export const PANEL_H = 580
+export const PANEL_W = 1290
+export const PANEL_H = 870
 
 type Props = {
   title: string
@@ -37,13 +37,25 @@ export const PanelShell = ({ title, onClose, children }: Props) => (
       pointerFilter: 'none',
     }}
   >
+    {/* Invisible full-screen blocker — prevents the mobile joystick from activating
+        in areas outside the panel card. pointerFilter:'block' swallows all touches
+        so they don't reach the 3D world. The panel card renders on top of this. */}
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: 0, left: 0 },
+        width: '100%',
+        height: '100%',
+        pointerFilter: 'block',
+      }}
+    />
     {/* Centered card — blocks its own area from 3D world clicks */}
     <UiEntity
       uiTransform={{
         width: PANEL_W,
         height: PANEL_H,
         flexDirection: 'column',
-        padding: { top: 16, bottom: 24, left: 30, right: 30 },
+        padding: { top: 24, bottom: 36, left: 45, right: 45 },
         pointerFilter: 'block',
       }}
       uiBackground={{ color: C.panelBg }}
@@ -52,7 +64,7 @@ export const PanelShell = ({ title, onClose, children }: Props) => (
       <UiEntity
         uiTransform={{
           width: '100%',
-          height: 44,
+          height: 66,
           margin: { bottom: 10 },
           alignItems: 'center',
           justifyContent: 'center',
@@ -60,7 +72,7 @@ export const PanelShell = ({ title, onClose, children }: Props) => (
       >
         <Label
           value={title}
-          fontSize={24}
+          fontSize={36}
           color={C.header}
           textAlign="middle-center"
           uiTransform={{ width: '100%' }}
@@ -70,22 +82,22 @@ export const PanelShell = ({ title, onClose, children }: Props) => (
             uiTransform={{
               positionType: 'absolute',
               position: { right: 0, top: 4 },
-              width: 36,
-              height: 36,
+              width: 54,
+              height: 54,
               alignItems: 'center',
               justifyContent: 'center',
             }}
             uiBackground={{ color: { r: 0.22, g: 0.08, b: 0.03, a: 1 } }}
             onMouseDown={onClose}
           >
-            <Label value="✕" fontSize={18} color={C.orange} textAlign="middle-center" />
+            <Label value="✕" fontSize={27} color={C.orange} textAlign="middle-center" />
           </UiEntity>
         )}
       </UiEntity>
 
       {/* Divider */}
       <UiEntity
-        uiTransform={{ width: '100%', height: 2, margin: { bottom: 16 } }}
+        uiTransform={{ width: '100%', height: 3, margin: { bottom: 16 } }}
         uiBackground={{ color: C.divider }}
       />
       {/* Content area */}

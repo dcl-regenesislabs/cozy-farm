@@ -27,4 +27,6 @@ export const playerState = {
   totalSeedPlanted: 0,
   totalSellCount: 0,
   totalCoinsEarned: 0,
+  // Level rewards — stores level numbers the player has manually claimed
+  claimedRewards: [] as number[],
 }

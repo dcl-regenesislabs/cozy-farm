@@ -3,8 +3,23 @@ import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { PanelShell, C } from './PanelShell'
+import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
 
 const tabState = { value: 'stats' as 'stats' | 'rewards' }
+
+function claimReward(level: number): void {
+  if (playerState.claimedRewards.includes(level)) return
+  const reward = LEVEL_REWARDS.find((r) => r.level === level)
+  if (!reward) return
+  playerState.claimedRewards.push(level)
+  if (reward.type === 'seeds' && reward.cropType !== null) {
+    const current = playerState.seeds.get(reward.cropType) ?? 0
+    playerState.seeds.set(reward.cropType, current + reward.amount)
+  } else if (reward.type === 'coins') {
+    playerState.coins += reward.amount
+    playerState.totalCoinsEarned += reward.amount
+  }
+}
 
 const StatsTab = () => {
   const xp    = getXpProgress()
@@ -14,17 +29,27 @@ const StatsTab = () => {
   return (
     <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
       {/* Level + XP row */}
-      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 18 } }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 30 } }}>
         <UiEntity
-          uiTransform={{ padding: { top: 8, bottom: 8, left: 20, right: 20 }, margin: { right: 20 }, alignItems: 'center', flexShrink: 0 }}
+          uiTransform={{
+            padding: { top: 14, bottom: 14, left: 34, right: 34 },
+            margin: { right: 34 },
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
           uiBackground={{ color: { r: 0.72, g: 0.52, b: 0.04, a: 1 } }}
         >
-          <Label value={`Level  ${playerState.level}`} fontSize={22} color={{ r: 0.05, g: 0.03, b: 0, a: 1 }} />
+          <Label value={`Level  ${playerState.level}`} fontSize={38} color={{ r: 0.05, g: 0.03, b: 0, a: 1 }} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
-          <Label value={maxLv ? 'Max Level Reached!' : `XP: ${xp.current} / ${xp.needed}`} fontSize={14} color={C.textMain} uiTransform={{ margin: { bottom: 6 } }} />
+          <Label
+            value={maxLv ? 'Max Level Reached!' : `XP: ${xp.current} / ${xp.needed}`}
+            fontSize={24}
+            color={C.textMain}
+            uiTransform={{ margin: { bottom: 10 } }}
+          />
           {!maxLv && (
-            <UiEntity uiTransform={{ width: '100%', height: 16 }} uiBackground={{ color: { r: 0.15, g: 0.13, b: 0.09, a: 1 } }}>
+            <UiEntity uiTransform={{ width: '100%', height: 28 }} uiBackground={{ color: { r: 0.15, g: 0.13, b: 0.09, a: 1 } }}>
               <UiEntity uiTransform={{ width: `${pct}%`, height: '100%' }} uiBackground={{ color: C.green }} />
             </UiEntity>
           )}
@@ -42,11 +67,11 @@ const StatsTab = () => {
         ].map((s) => (
           <UiEntity
             key={s.label}
-            uiTransform={{ flexDirection: 'column', width: '30%', margin: { right: '3%', bottom: 14 }, padding: 14 }}
+            uiTransform={{ flexDirection: 'column', width: '30%', margin: { right: '3%', bottom: 24 }, padding: 24 }}
             uiBackground={{ color: C.rowBg }}
           >
-            <Label value={`${s.value}`} fontSize={24} color={s.color} />
-            <Label value={s.label} fontSize={11} color={C.textMute} uiTransform={{ margin: { top: 5 } }} />
+            <Label value={`${s.value}`} fontSize={42} color={s.color} />
+            <Label value={s.label} fontSize={20} color={C.textMute} uiTransform={{ margin: { top: 9 } }} />
           </UiEntity>
         ))}
       </UiEntity>
@@ -57,16 +82,57 @@ const StatsTab = () => {
 const RewardsTab = () => (
   <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
     {LEVEL_REWARDS.map((r) => {
-      const unlocked = playerState.level >= r.level
+      const unlocked  = playerState.level >= r.level
+      const claimed   = playerState.claimedRewards.includes(r.level)
+      const claimable = unlocked && !claimed
+      const shakeKey  = `reward_${r.level}`
+      const offsetX   = getShakeOffset(shakeKey)
+
+      const bg = claimed   ? { r: 0.07, g: 0.18, b: 0.07, a: 1 }
+               : claimable ? { r: 0.52, g: 0.37, b: 0.02, a: 1 }
+               :             C.rowBg
+
       return (
         <UiEntity
           key={r.level}
-          uiTransform={{ flexDirection: 'column', alignItems: 'center', width: 134, height: 96, margin: { right: 10, bottom: 10 }, padding: { top: 12, bottom: 10, left: 8, right: 8 } }}
-          uiBackground={{ color: unlocked ? { r: 0.52, g: 0.37, b: 0.02, a: 1 } : C.rowBg }}
+          uiTransform={{
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: 220,
+            height: 165,
+            margin: { right: 15, bottom: 15 },
+            padding: { top: 20, bottom: 16, left: 14, right: 14 },
+            positionType: 'relative',
+            position: { left: offsetX },
+          }}
+          uiBackground={{ color: bg }}
+          onMouseDown={claimable ? () => {
+            if (isShaking(shakeKey)) return
+            triggerCardShake(shakeKey)
+            setTimeout(() => claimReward(r.level), 320)
+          } : undefined}
         >
-          <Label value={`Lv ${r.level}`} fontSize={15} color={unlocked ? C.gold : C.textMute} />
-          <Label value={r.label} fontSize={12} color={unlocked ? C.textMain : C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 6 } }} />
-          {unlocked && <Label value="Claimed ✓" fontSize={11} color={C.green} uiTransform={{ margin: { top: 5 } }} />}
+          <Label
+            value={`Lv ${r.level}`}
+            fontSize={26}
+            color={claimable ? C.gold : claimed ? C.green : C.textMute}
+          />
+          <Label
+            value={r.label}
+            fontSize={22}
+            color={unlocked ? C.textMain : C.textMute}
+            textAlign="middle-center"
+            uiTransform={{ margin: { top: 10 } }}
+          />
+          {claimed && (
+            <Label value="Claimed ✓" fontSize={20} color={C.green} uiTransform={{ margin: { top: 8 } }} />
+          )}
+          {claimable && (
+            <Label value="Tap to claim!" fontSize={20} color={C.gold} uiTransform={{ margin: { top: 8 } }} />
+          )}
+          {!unlocked && (
+            <Label value="Locked" fontSize={20} color={C.textMute} uiTransform={{ margin: { top: 8 } }} />
+          )}
         </UiEntity>
       )
     })}
@@ -75,14 +141,14 @@ const RewardsTab = () => (
 
 export const StatsPanel = () => (
   <PanelShell title="Profile" onClose={() => { playerState.activeMenu = 'none' }}>
-    <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 18 } }}>
+    <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 24 } }}>
       {(['stats', 'rewards'] as const).map((tab) => (
         <Button
           key={tab}
           value={tab === 'stats' ? 'Stats' : 'Rewards'}
           variant={tabState.value === tab ? 'primary' : 'secondary'}
-          fontSize={14}
-          uiTransform={{ width: 120, height: 38, margin: { right: 10 } }}
+          fontSize={24}
+          uiTransform={{ width: 240, height: 65, margin: { right: 15 } }}
           onMouseDown={() => { tabState.value = tab }}
         />
       ))}
