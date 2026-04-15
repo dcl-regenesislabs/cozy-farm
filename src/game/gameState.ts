@@ -17,7 +17,7 @@ export const playerState = {
   xp: 0,
   level: 1,
   // Player identity (populated async from getUserData)
-  avatarUrl: '',
+  userId: '',
   displayName: '',
   // Dog companion
   dogOwned: false,

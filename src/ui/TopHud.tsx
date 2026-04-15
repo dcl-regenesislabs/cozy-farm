@@ -34,8 +34,8 @@ export const TopHud = () => {
           pointerFilter: 'block',
         }}
         uiBackground={
-          playerState.avatarUrl
-            ? { texture: { src: playerState.avatarUrl, wrapMode: 'clamp' }, textureMode: 'stretch' }
+          playerState.userId
+            ? { avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }
             : { color: { r: 0.52, g: 0.37, b: 0.04, a: 1 } }
         }
         onMouseDown={() => {
