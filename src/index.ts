@@ -36,13 +36,33 @@ export function main() {
   executeTask(async () => {
     try {
       const result = await getUserData({})
-      if (result?.data) {
-        playerState.displayName = result.data.displayName ?? ''
-        const face = result.data.avatar?.snapshots?.face256
-        if (face) playerState.avatarUrl = face
+      if (!result?.data) return
+
+      playerState.displayName = result.data.displayName ?? ''
+      const userId = result.data.userId
+
+      // Try the snapshot bundled in getUserData first
+      const face = result.data.avatar?.snapshots?.face256
+      if (face) {
+        playerState.avatarUrl = face.startsWith('http')
+          ? face
+          : `https://peer.decentraland.org/content/contents/${face}`
+        return
       }
-    } catch (_) {
-      // Silently ignore — preview or guest mode has no profile
+
+      // Fallback: fetch the full profile from the peer API (snapshots are often
+      // absent from getUserData in Creator Hub preview but present in the API)
+      if (!userId) return
+      try {
+        const res  = await fetch(`https://peer.decentraland.org/lambdas/profiles?id=${userId}`)
+        const json = await res.json() as { avatars?: { avatar?: { snapshots?: { face256?: string } } }[] }
+        const snap = json?.avatars?.[0]?.avatar?.snapshots?.face256
+        if (snap) playerState.avatarUrl = snap
+      } catch (fetchErr) {
+        console.log('CozyFarm: profile API fetch error:', fetchErr)
+      }
+    } catch (e) {
+      console.log('CozyFarm: getUserData error:', e)
     }
   })
 

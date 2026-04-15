@@ -7,7 +7,8 @@ import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { PanelShell, C } from './PanelShell'
 
-const PLOTS_PER_PAGE = 12
+// 3 cols × 2 rows = 6 per page — tiles are square like seed cards
+const PLOTS_PER_PAGE = 6
 
 const farmTab  = { value: 'home' as 'home' | 'expansion' }
 const farmPage = { home: 0, expansion: 0 }
@@ -23,7 +24,7 @@ function formatTime(ms: number): string {
   return `${sec}s`
 }
 
-// ── Single plot tile ───────────────────────────────────────────────────────
+// ── Single plot tile — square, like seed cards ─────────────────────────────
 
 type TileProps = { key?: string | number; entity: ReturnType<typeof getSoilEntities>[number]; idx: number; now: number }
 
@@ -31,13 +32,13 @@ const PlotTile = ({ entity, idx, now }: TileProps) => {
   const plot = PlotState.getOrNull(entity)
   if (!plot) return null
 
-  let topLabel  = `Plot ${idx + 1}`
-  let midLabel  = ''
-  let subLabel  = ''
-  let barPct    = 0
-  let barColor  = C.textMute
-  let tileBg    = C.rowBg
-  let imgSrc    = ''
+  let topLabel = `Plot ${idx + 1}`
+  let midLabel = ''
+  let subLabel = ''
+  let barPct   = 0
+  let barColor = C.textMute
+  let tileBg   = C.rowBg
+  let imgSrc   = ''
 
   if (!plot.isUnlocked) {
     midLabel = 'Locked'
@@ -86,52 +87,51 @@ const PlotTile = ({ entity, idx, now }: TileProps) => {
   return (
     <UiEntity
       uiTransform={{
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
-        width: 276,
-        height: 120,
+        width: 260,
+        height: 240,
         margin: { right: 12, bottom: 12 },
-        padding: { top: 12, bottom: 12, left: 12, right: 12 },
+        padding: { top: 14, bottom: 14, left: 12, right: 12 },
       }}
       uiBackground={{ color: tileBg }}
     >
-      {imgSrc !== '' ? (
-        <UiEntity
-          uiTransform={{ width: 66, height: 66, margin: { right: 12 }, flexShrink: 0 }}
-          uiBackground={{ texture: { src: imgSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-      ) : (
-        <UiEntity
-          uiTransform={{ width: 66, height: 66, margin: { right: 12 }, flexShrink: 0 }}
-          uiBackground={{ texture: { src: SOIL_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-      )}
+      {/* Crop/soil image */}
+      <UiEntity
+        uiTransform={{ width: 84, height: 84, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{
+          texture: { src: imgSrc !== '' ? imgSrc : SOIL_ICON, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+        }}
+      />
 
-      <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
-        <Label value={topLabel} fontSize={20} color={C.textMain} />
-        <Label
-          value={midLabel}
-          fontSize={17}
-          color={(plot.isReady || plot.growthStage === 3) && plot.cropType !== -1 ? C.green : C.textMute}
-          uiTransform={{ margin: { top: 3, bottom: plot.isUnlocked && plot.cropType !== -1 ? 6 : 0 } }}
-        />
-        {plot.isUnlocked && plot.cropType !== -1 ? (
-          <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+      {/* Labels */}
+      <Label value={topLabel} fontSize={22} color={C.textMain} textAlign="middle-center" />
+      <Label
+        value={midLabel}
+        fontSize={19}
+        color={(plot.isReady || plot.growthStage === 3) && plot.cropType !== -1 ? C.green : C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 4 } }}
+      />
+
+      {/* Progress bar + water count */}
+      {plot.isUnlocked && plot.cropType !== -1 && (
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { top: 8 } }}>
+          <UiEntity
+            uiTransform={{ width: '100%', height: 10 }}
+            uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}
+          >
             <UiEntity
-              uiTransform={{ width: '100%', height: 9 }}
-              uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}
-            >
-              <UiEntity
-                uiTransform={{ width: `${barPct}%`, height: '100%' }}
-                uiBackground={{ color: barColor }}
-              />
-            </UiEntity>
-            {subLabel !== '' ? (
-              <Label value={subLabel} fontSize={15} color={C.textMute} uiTransform={{ margin: { top: 5 } }} />
-            ) : null}
+              uiTransform={{ width: `${barPct}%`, height: '100%' }}
+              uiBackground={{ color: barColor }}
+            />
           </UiEntity>
-        ) : null}
-      </UiEntity>
+          {subLabel !== '' && (
+            <Label value={subLabel} fontSize={16} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
+          )}
+        </UiEntity>
+      )}
     </UiEntity>
   )
 }
@@ -145,56 +145,48 @@ export const FarmPanel = () => {
   const homePlots      = soilEntities.slice(0, 6)
   const expansionPlots = soilEntities.slice(6)
 
-  const tab      = farmTab.value
-  const plots    = tab === 'home' ? homePlots : expansionPlots
-  const page     = farmPage[tab]
-  const total    = plots.length
-  const lastPage = Math.max(0, Math.ceil(total / PLOTS_PER_PAGE) - 1)
+  const tab       = farmTab.value
+  const plots     = tab === 'home' ? homePlots : expansionPlots
+  const page      = farmPage[tab]
+  const lastPage  = Math.max(0, Math.ceil(plots.length / PLOTS_PER_PAGE) - 1)
   const pageSlice = plots.slice(page * PLOTS_PER_PAGE, (page + 1) * PLOTS_PER_PAGE)
   const offset    = tab === 'home' ? 0 : 6
 
   return (
     <PanelShell title="Farm" onClose={() => { playerState.activeMenu = 'none' }}>
+
       {/* Tab row */}
-      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 24 } }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 20 } }}>
         {([['home', 'My Farm'], ['expansion', 'Expansion']] as const).map(([t, label]) => (
           <Button
             key={t}
             value={label}
             variant={tab === t ? 'primary' : 'secondary'}
-            fontSize={21}
-            uiTransform={{ width: 210, height: 57, margin: { right: 15 } }}
+            fontSize={24}
+            uiTransform={{ width: 240, height: 70, margin: { right: 14 } }}
             onMouseDown={() => { farmTab.value = t }}
           />
         ))}
       </UiEntity>
 
-      {/* Fixed-height tile grid (3 rows × 4 cols) */}
-      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', height: 396 }}>
+      {/* Tile grid: 3 cols × 2 rows */}
+      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', height: 504 }}>
         {pageSlice.map((e, i) => (
           <PlotTile key={page * PLOTS_PER_PAGE + i} entity={e} idx={offset + page * PLOTS_PER_PAGE + i} now={now} />
         ))}
       </UiEntity>
 
-      {/* Pagination nav */}
+      {/* Pagination */}
       {lastPage > 0 && (
         <UiEntity
-          uiTransform={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            width: '100%',
-            margin: { top: 16 },
-          }}
+          uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 16 } }}
         >
           <Button
             value="< Prev"
             variant="secondary"
-            fontSize={20}
-            uiTransform={{ width: 150, height: 52, margin: { right: 24 } }}
-            onMouseDown={() => {
-              if (farmPage[tab] > 0) farmPage[tab]--
-            }}
+            fontSize={22}
+            uiTransform={{ width: 160, height: 60, margin: { right: 24 } }}
+            onMouseDown={() => { if (farmPage[tab] > 0) farmPage[tab]-- }}
           />
           <Label
             value={`${page + 1} / ${lastPage + 1}`}
@@ -206,11 +198,9 @@ export const FarmPanel = () => {
           <Button
             value="Next >"
             variant="secondary"
-            fontSize={20}
-            uiTransform={{ width: 150, height: 52, margin: { left: 24 } }}
-            onMouseDown={() => {
-              if (farmPage[tab] < lastPage) farmPage[tab]++
-            }}
+            fontSize={22}
+            uiTransform={{ width: 160, height: 60, margin: { left: 24 } }}
+            onMouseDown={() => { if (farmPage[tab] < lastPage) farmPage[tab]++ }}
           />
         </UiEntity>
       )}

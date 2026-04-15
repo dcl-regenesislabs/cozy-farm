@@ -7,7 +7,11 @@ import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 
-const shopTab = { value: 'seeds' as 'seeds' | 'pets' }
+const shopTab  = { value: 'seeds' as 'seeds' | 'pets' }
+const shopPage = { seeds: 0, pets: 0 }
+
+// 5 cards per row × 2 rows = 10 per page
+const SHOP_PAGE_SIZE = 10
 
 type BuyButtonProps = { cost: number; canAfford: boolean; onPress: () => void }
 
@@ -17,9 +21,9 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 225,
-      height: 78,
-      margin: { top: 14 },
+      width: 175,
+      height: 58,
+      margin: { top: 10 },
     }}
     uiBackground={{
       color: canAfford
@@ -30,17 +34,14 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
   >
     <Label
       value={`${cost}`}
-      fontSize={36}
+      fontSize={24}
       color={canAfford ? C.textMain : C.textMute}
       textAlign="middle-center"
-      uiTransform={{ margin: { right: 12 } }}
+      uiTransform={{ margin: { right: 8 } }}
     />
     <UiEntity
-      uiTransform={{ width: 45, height: 45 }}
-      uiBackground={{
-        texture: { src: COINS_IMAGE, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-      }}
+      uiTransform={{ width: 34, height: 34 }}
+      uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
   </UiEntity>
 )
@@ -59,48 +60,37 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 248,
-        height: 350,
-        margin: { right: 23, bottom: 23 },
-        padding: { top: 23, bottom: 23, left: 14, right: 14 },
+        width: 200,
+        height: 245,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
         positionType: 'relative',
         position: { left: offsetX },
       }}
       uiBackground={{ color: unlocked ? C.rowBg : { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
     >
       <UiEntity
-        uiTransform={{ width: 140, height: 140, margin: { bottom: 14 }, flexShrink: 0 }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
         uiBackground={{
           texture: { src: imgSrc, wrapMode: 'clamp' },
           textureMode: 'stretch',
           color: unlocked ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 },
         }}
       />
-
       <Label
         value={def.name}
-        fontSize={36}
+        fontSize={25}
         color={unlocked ? C.textMain : C.textMute}
         textAlign="middle-center"
       />
-
       {unlocked ? (
         <BuyButton
           cost={def.seedCost}
           canAfford={canAfford}
-          onPress={() => {
-            triggerCardShake(shakeKey)
-            buySeed(cropType, 1)
-          }}
+          onPress={() => { triggerCardShake(shakeKey); buySeed(cropType, 1) }}
         />
       ) : (
-        <Label
-          value="Locked"
-          fontSize={26}
-          color={C.textMute}
-          textAlign="middle-center"
-          uiTransform={{ margin: { top: 18 } }}
-        />
+        <Label value="Locked" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       )}
     </UiEntity>
   )
@@ -115,44 +105,38 @@ const DogCard = () => {
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 248,
-        height: 350,
-        margin: { right: 23, bottom: 23 },
-        padding: { top: 23, bottom: 23, left: 14, right: 14 },
+        width: 200,
+        height: 245,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
         positionType: 'relative',
         position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
       <UiEntity
-        uiTransform={{ width: 140, height: 140, margin: { bottom: 14 }, flexShrink: 0 }}
-        uiBackground={{
-          texture: { src: DOG01_ICON, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-        }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: DOG01_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value="Dog" fontSize={36} color={C.textMain} textAlign="middle-center" />
+      <Label value="Dog" fontSize={25} color={C.textMain} textAlign="middle-center" />
       {playerState.dogOwned ? (
-        <Label
-          value="Owned"
-          fontSize={26}
-          color={C.green}
-          textAlign="middle-center"
-          uiTransform={{ margin: { top: 18 } }}
-        />
+        <Label value="Owned" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
-        <BuyButton
-          cost={500}
-          canAfford={canAfford}
-          onPress={() => {
-            triggerCardShake('shop_dog')
-            buyDog()
-          }}
-        />
+        <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardShake('shop_dog'); buyDog() }} />
       )}
     </UiEntity>
   )
 }
+
+const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => (
+  <UiEntity
+    uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}
+  >
+    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={onPrev} />
+    <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
+    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={onNext} />
+  </UiEntity>
+)
 
 export const ShopMenu = () => {
   const tutorialActive = tutorialState.active
@@ -167,49 +151,57 @@ export const ShopMenu = () => {
     return def.tier > 1 && !playerState.cropsUnlocked
   })
 
+  const tab      = shopTab.value
+  const allSeeds = [...visibleCrops.map(ct => ({ ct, unlocked: true })), ...lockedCrops.map(ct => ({ ct, unlocked: false }))]
+  const seedPage  = shopPage.seeds
+  const seedLast  = Math.max(0, Math.ceil(allSeeds.length / SHOP_PAGE_SIZE) - 1)
+  const seedSlice = allSeeds.slice(seedPage * SHOP_PAGE_SIZE, (seedPage + 1) * SHOP_PAGE_SIZE)
+
   return (
     <PanelShell title="El Amazonas" onClose={() => { playerState.activeMenu = 'none' }}>
 
       {/* Tab bar */}
-      <UiEntity
-        uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 32 } }}
-      >
+      <UiEntity uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 20 } }}>
         <Button
           value="Seeds"
-          variant={shopTab.value === 'seeds' ? 'primary' : 'secondary'}
-          fontSize={42}
-          uiTransform={{ width: 330, height: 90, margin: { right: 18 } }}
+          variant={tab === 'seeds' ? 'primary' : 'secondary'}
+          fontSize={28}
+          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { shopTab.value = 'seeds' }}
         />
         <Button
           value="Pets"
-          variant={shopTab.value === 'pets' ? 'primary' : 'secondary'}
-          fontSize={42}
-          uiTransform={{ width: 330, height: 90 }}
+          variant={tab === 'pets' ? 'primary' : 'secondary'}
+          fontSize={28}
+          uiTransform={{ width: 240, height: 68 }}
           onMouseDown={() => { shopTab.value = 'pets' }}
         />
       </UiEntity>
 
       {/* Seeds tab */}
-      {shopTab.value === 'seeds' && (
+      {tab === 'seeds' && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-            {visibleCrops.map((ct) => (
-              <ShopCard key={`u${ct}`} cropType={ct} unlocked={true} />
-            ))}
-            {lockedCrops.map((ct) => (
-              <ShopCard key={`l${ct}`} cropType={ct} unlocked={false} />
+            {seedSlice.map(({ ct, unlocked }) => (
+              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} />
             ))}
           </UiEntity>
-
+          {seedLast > 0 && (
+            <PaginationBar
+              page={seedPage}
+              lastPage={seedLast}
+              onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
+              onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
+            />
+          )}
           {!playerState.cropsUnlocked && !tutorialActive && (
             <UiEntity
-              uiTransform={{ padding: { top: 18, bottom: 18, left: 32, right: 32 }, margin: { top: 9 } }}
+              uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
               uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
             >
               <Label
                 value="Tier 2 & 3 seeds are locked — visit the For Sale Sign to unlock them"
-                fontSize={30}
+                fontSize={20}
                 color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
                 textAlign="middle-center"
               />
@@ -219,7 +211,7 @@ export const ShopMenu = () => {
       )}
 
       {/* Pets tab */}
-      {shopTab.value === 'pets' && (
+      {tab === 'pets' && (
         <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
           <DogCard />
         </UiEntity>

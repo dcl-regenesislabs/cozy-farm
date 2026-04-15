@@ -17,10 +17,10 @@ const SeedCard = ({ cropType, count }: SeedCardProps) => {
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 248,
-        height: 275,
-        margin: { right: 23, bottom: 23 },
-        padding: { top: 23, bottom: 18, left: 14, right: 14 },
+        width: 200,
+        height: 215,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
         positionType: 'relative',
         position: { left: offsetX },
       }}
@@ -33,19 +33,19 @@ const SeedCard = ({ cropType, count }: SeedCardProps) => {
       }}
     >
       <UiEntity
-        uiTransform={{ width: 140, height: 140, margin: { bottom: 14 }, flexShrink: 0 }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
         uiBackground={{
           texture: { src: CROP_SEED_IMAGES[cropType], wrapMode: 'clamp' },
           textureMode: 'stretch',
         }}
       />
-      <Label value={CROP_NAMES[cropType]} fontSize={36} color={C.textMain} textAlign="middle-center" />
+      <Label value={CROP_NAMES[cropType]} fontSize={25} color={C.textMain} textAlign="middle-center" />
       <Label
         value={`x${count}`}
-        fontSize={33}
+        fontSize={22}
         color={{ r: 0.55, g: 1, b: 0.35, a: 1 }}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 5 } }}
+        uiTransform={{ margin: { top: 4 } }}
       />
     </UiEntity>
   )
@@ -59,33 +59,25 @@ export const PlantMenu = () => {
       playerState.activeMenu       = 'none'
       playerState.activePlotEntity = null
     }}>
-
       {availableSeeds.length === 0 ? (
-        <UiEntity
-          uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}
-        >
-          <Label
-            value="No seeds in inventory!"
-            fontSize={45}
-            color={C.textMute}
-            textAlign="middle-center"
-          />
+        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+          <Label value="No seeds in inventory!" fontSize={32} color={C.textMute} textAlign="middle-center" />
           <Label
             value="Visit the Seed Shop to buy some."
-            fontSize={33}
+            fontSize={24}
             color={C.textMute}
             textAlign="middle-center"
-            uiTransform={{ margin: { top: 18 } }}
+            uiTransform={{ margin: { top: 12 } }}
           />
         </UiEntity>
       ) : (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
           <Label
             value="Click a seed to plant it:"
-            fontSize={33}
+            fontSize={24}
             color={C.textMute}
             textAlign="top-left"
-            uiTransform={{ margin: { bottom: 27 } }}
+            uiTransform={{ margin: { bottom: 16 } }}
           />
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
             {availableSeeds.map((ct) => (
