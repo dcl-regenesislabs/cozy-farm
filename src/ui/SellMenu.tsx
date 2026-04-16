@@ -5,6 +5,7 @@ import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { playSound } from '../systems/sfxSystem'
 
 const SHAKE_DURATION = 320
 
@@ -58,6 +59,7 @@ const SellCard = ({ cropType, count }: SellCardProps) => {
         uiBackground={{ color: { r: 0.15, g: 0.45, b: 0.15, a: 1 } }}
         onMouseDown={() => {
           if (isShaking(shakeKey)) return
+          playSound('buttonclick')
           triggerCardShake(shakeKey)
           setTimeout(() => sellCrop(cropType, count), SHAKE_DURATION)
         }}

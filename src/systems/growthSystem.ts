@@ -12,7 +12,12 @@ const TUTORIAL_ONION_GROW_MS = 30_000
 /** Tracks when justHarvested plots should auto-clear (timestamp in ms) */
 const harvestClearTimers = new Map<Entity, number>()
 
-function formatTime(ms: number): string {
+/** Tracks last known canWater state per entity to detect changes */
+const prevCanWater = new Map<Entity, boolean>()
+/** Tracks last hover text update time to refresh the timer display (~60s) */
+const lastHoverUpdateAt = new Map<Entity, number>()
+
+export function formatTime(ms: number): string {
   if (ms <= 0) return 'Ready!'
   const totalSeconds = Math.ceil(ms / 1000)
   const hours   = Math.floor(totalSeconds / 3600)
@@ -39,6 +44,8 @@ function growthSystem(_dt: number) {
       }
       if (now >= clearAt) {
         harvestClearTimers.delete(entity)
+        prevCanWater.delete(entity)
+        lastHoverUpdateAt.delete(entity)
         PlotState.getMutable(entity).justHarvested = false
         removeSoilIcons(entity)
         updatePlotHoverText(entity)
@@ -99,6 +106,8 @@ function growthSystem(_dt: number) {
         canWater: false, isReady: true, isPlanting: false, justHarvested: false,
       })
       removeSoilTimerText(entity)
+      prevCanWater.delete(entity)
+      lastHoverUpdateAt.delete(entity)
       updatePlotHoverText(entity)
       continue
     }
@@ -113,6 +122,18 @@ function growthSystem(_dt: number) {
 
     // Update timer text every frame (cheap — just updates TextShape content)
     setSoilTimerText(entity, formatTime(effectiveGrowTimeMs - elapsed))
+
+    // Refresh hover text when canWater changes, or on a timer based on remaining time
+    // (sub-minute: every second so the countdown feels live; otherwise every 60s)
+    const wasCanWater = prevCanWater.get(entity)
+    const lastUpdate = lastHoverUpdateAt.get(entity) ?? 0
+    const remaining = effectiveGrowTimeMs - elapsed
+    const updateInterval = remaining < 60_000 ? 1_000 : 60_000
+    if (wasCanWater !== canWater || now - lastUpdate > updateInterval) {
+      prevCanWater.set(entity, canWater)
+      lastHoverUpdateAt.set(entity, now)
+      updatePlotHoverText(entity)
+    }
   }
 }
 

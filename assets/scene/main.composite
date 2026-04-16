@@ -1140,6 +1140,27 @@
             "parent": 0
           }
         },
+        "562": {
+          "json": {
+            "position": {
+              "x": 17.25,
+              "y": 1.1406011581420898,
+              "z": 46.75
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": -0.9659258127212524,
+              "z": 0,
+              "w": 0.258819043636322
+            },
+            "parent": 0
+          }
+        },
         "566": {
           "json": {
             "position": {
@@ -8978,6 +8999,13 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
+        "562": {
+          "json": {
+            "src": "assets/asset-packs/boombox/Boombox_01/Boombox_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
         "566": {
           "json": {
             "src": "assets/asset-packs/mines_wood_fence3_4m/Mines Wood Fence3 4M.glb",
@@ -11700,6 +11728,11 @@
             "value": "Mines Wood Fence3 4M_19"
           }
         },
+        "562": {
+          "json": {
+            "value": "Boombox"
+          }
+        },
         "566": {
           "json": {
             "value": "Mines Wood Fence3 4M_24"
@@ -13800,7 +13833,8 @@
                   666,
                   1939,
                   2196,
-                  670
+                  670,
+                  562
                 ]
               },
               {
@@ -15689,6 +15723,10 @@
               {
                 "entity": 670,
                 "children": []
+              },
+              {
+                "entity": 562,
+                "children": []
               }
             ]
           }
@@ -15864,6 +15902,9 @@
           "json": {}
         },
         "561": {
+          "json": {}
+        },
+        "562": {
           "json": {}
         },
         "566": {

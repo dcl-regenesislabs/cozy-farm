@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
 
-export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm'
+export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox'
 
 export const playerState = {
   coins: 0,

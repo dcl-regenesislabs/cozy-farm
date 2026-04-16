@@ -1,5 +1,6 @@
 import { engine } from '@dcl/sdk/ecs'
 import type { MenuType } from '../game/gameState'
+import { tutorialNavState } from '../game/tutorialState'
 
 export const BTN_BASE = 228   // matches BottomNav BTN_SIZE
 
@@ -39,17 +40,32 @@ export function triggerBtnAnim(key: NavKey): void {
   navAnim[key].startAt = Date.now()
 }
 
-engine.addSystem(() => {
+let bounceTime = 0
+
+engine.addSystem((dt: number) => {
   const now = Date.now()
+
+  // One-shot press animations
   for (const k of Object.keys(navAnim) as NavKey[]) {
     const a = navAnim[k]
     if (a.startAt === 0) continue
     const elapsed = now - a.startAt
     if (elapsed >= DURATION) {
-      a.size = BTN_BASE
+      a.size    = BTN_BASE
       a.startAt = 0
     } else {
       a.size = Math.round(BTN_BASE * evalKf(elapsed))
     }
+  }
+
+  // Continuous bounce on the quests button during the open_quests tutorial step
+  if (tutorialNavState.highlightQuests) {
+    bounceTime += dt
+    // Smooth sine bounce: peaks ~18% larger, ~1.5 cycles/sec
+    if (navAnim.quests.startAt === 0) {
+      navAnim.quests.size = Math.round(BTN_BASE * (1 + 0.18 * Math.abs(Math.sin(bounceTime * Math.PI * 1.5))))
+    }
+  } else {
+    bounceTime = 0
   }
 })

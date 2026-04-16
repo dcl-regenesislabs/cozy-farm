@@ -1,4 +1,5 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { playSound } from '../systems/sfxSystem'
 
 export const C = {
   panelBg:  { r: 0.09, g: 0.07, b: 0.04, a: 0.97 },
@@ -88,7 +89,7 @@ export const PanelShell = ({ title, onClose, children }: Props) => (
               justifyContent: 'center',
             }}
             uiBackground={{ color: { r: 0.22, g: 0.08, b: 0.03, a: 1 } }}
-            onMouseDown={onClose}
+            onMouseDown={() => { playSound('buttonclick'); onClose() }}
           >
             <Label value="✕" fontSize={27} color={C.orange} textAlign="middle-center" />
           </UiEntity>

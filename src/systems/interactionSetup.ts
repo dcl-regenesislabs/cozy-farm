@@ -1,10 +1,14 @@
 import { engine, Entity, GltfContainer, InputAction, pointerEventsSystem, Transform, Billboard, BillboardMode, MeshRenderer, MeshCollider, ColliderLayer, Material } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { PlotState } from '../components/farmComponents'
-import { handlePlotClick } from '../game/actions'
+import { handlePlotClick, getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
 import { skipTutorial } from './tutorialSystem'
+import { playSound } from './sfxSystem'
+import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
+import { formatTime } from './growthSystem'
+import { tutorialState } from '../game/tutorialState'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -59,10 +63,13 @@ function enablePointerOnGltf(entity: Entity) {
 
 const soilEntities: Entity[] = []
 let forSaleSignEntity: Entity | null = null
+let computerEntity: Entity | null = null
+let truckEntity: Entity | null = null
 
 export function setupEntities() {
   // ── Computer ──────────────────────────────────────────────────────────────
-  const computer = engine.getEntityOrNullByName('Computer.glb')
+  computerEntity = engine.getEntityOrNullByName('Computer.glb')
+  const computer = computerEntity
   if (computer) {
     spawnVisualIcon(computer, COMPUTER_ICON_Y, COMPUTER_ICON_SIZE, SHOPINGCART_ICON)
     // Promote the GLB's own collision mesh to also respond to pointer rays.
@@ -70,19 +77,20 @@ export function setupEntities() {
     enablePointerOnGltf(computer)
     pointerEventsSystem.onPointerDown(
       { entity: computer, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Shop', maxDistance: 8 } },
-      () => { playerState.activeMenu = 'shop' }
+      () => { playSound('menu'); playerState.activeMenu = 'shop' }
     )
   }
 
   // ── Truck ─────────────────────────────────────────────────────────────────
-  const truck = engine.getEntityOrNullByName('Truck01.glb')
+  truckEntity = engine.getEntityOrNullByName('Truck01.glb')
+  const truck = truckEntity
   if (truck) {
     spawnVisualIcon(truck, TRUCK_ICON_Y, TRUCK_ICON_SIZE, COINS_ICON)
     // Same fix: promote the GLB collision mesh to include CL_POINTER.
     enablePointerOnGltf(truck)
     pointerEventsSystem.onPointerDown(
       { entity: truck, opts: { button: InputAction.IA_POINTER, hoverText: 'Sell Crops', maxDistance: 10 } },
-      () => { playerState.activeMenu = 'sell' }
+      () => { playSound('truck'); playerState.activeMenu = 'sell' }
     )
   }
 
@@ -94,7 +102,7 @@ export function setupEntities() {
         entity: forSaleSignEntity,
         opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock Crops (1000 coins)', maxDistance: 8 },
       },
-      () => { playerState.activeMenu = 'unlock' }
+      () => { playSound('menu'); playerState.activeMenu = 'unlock' }
     )
   }
 
@@ -128,6 +136,16 @@ export function setupEntities() {
     registerPlotPointerEvent(entity)
   })
 
+  // ── Boombox ───────────────────────────────────────────────────────────────
+  const boombox = engine.getEntityOrNullByName('Boombox')
+  if (boombox) {
+    enablePointerOnGltf(boombox)
+    pointerEventsSystem.onPointerDown(
+      { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: 'Change Music', maxDistance: 8 } },
+      () => { playSound('menu'); playerState.activeMenu = 'jukebox' }
+    )
+  }
+
   // ── Bed (tutorial skip — 3 clicks = skip tutorial + 2000 coins) ──────────
   let bedClickCount = 0
   const bed = engine.getEntityOrNullByName('Bed.glb')
@@ -142,7 +160,7 @@ export function setupEntities() {
     )
   }
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, bed=${!!bed}`)
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}`)
 }
 
 export function removeForSaleSign() {
@@ -210,7 +228,28 @@ export function registerPlotPointerEvent(entity: Entity) {
   if (!plot.isUnlocked) {
     hoverText = 'Locked'
   } else if (plot.cropType !== -1) {
-    hoverText = plot.growthStage < 3 ? 'Water' : 'Harvest'
+    if (plot.isReady) {
+      hoverText = 'Harvest'
+    } else {
+      const { canWater } = getWateringStatus(plot, Date.now())
+      if (canWater) {
+        hoverText = 'Water'
+      } else {
+        const cropName = CROP_NAMES[plot.cropType as CropType] ?? 'Crop'
+        if (plot.growthStarted) {
+          const def = CROP_DATA.get(plot.cropType as CropType)!
+          const TUTORIAL_ONION_GROW_MS = 30_000
+          const effectiveGrowTimeMs =
+            tutorialState.active && plot.cropType === CropType.Onion
+              ? TUTORIAL_ONION_GROW_MS
+              : def.growTimeMs
+          const remaining = effectiveGrowTimeMs - (Date.now() - plot.plantedAt)
+          hoverText = `${cropName} - ${formatTime(remaining)}`
+        } else {
+          hoverText = cropName
+        }
+      }
+    }
   }
 
   pointerEventsSystem.onPointerDown(
@@ -226,4 +265,12 @@ export function updatePlotHoverText(entity: Entity) {
 
 export function getSoilEntities(): Entity[] {
   return soilEntities
+}
+
+export function getComputerEntity(): Entity | null {
+  return computerEntity
+}
+
+export function getTruckEntity(): Entity | null {
+  return truckEntity
 }

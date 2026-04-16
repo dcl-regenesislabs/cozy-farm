@@ -13,6 +13,7 @@ import { addXp, XP_PLANT, XP_WATER, XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVE
 import { onHarvestCrop, onWater, onPlant, onSell } from './questState'
 import { spawnDog } from '../systems/dogSystem'
 import { onTutorialAction } from '../systems/tutorialSystem'
+import { playSound } from '../systems/sfxSystem'
 
 /** Create or update the crop child entity on a soil plot */
 function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -191,6 +192,7 @@ export function handlePlotClick(entity: Entity) {
     clearPlot(entity)
   } else if (plot.cropType === -1) {
     // Empty plot -> open plant menu
+    playSound('menu')
     playerState.activePlotEntity = entity
     playerState.activeMenu = 'plant'
   } else if (plot.isReady) {
@@ -224,6 +226,7 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
     canWater: false, isReady: false, isPlanting: true, justHarvested: false,
   })
   playSeedVfx(entity, cropType)
+  playSound('seeds')
   addXp(XP_PLANT)
   playerState.totalSeedPlanted += 1
   onPlant()
@@ -300,6 +303,7 @@ export function waterCrop(entity: Entity): boolean {
   }
 
   playWateringVfx(entity)
+  playSound('wateringcan')
   addXp(XP_WATER)
   playerState.totalWaterCount += 1
   onWater()
@@ -326,6 +330,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
 
   // Floating sprite VFX — one sprite per harvested item (capped at 5)
   spawnHarvestVfx(Transform.get(entity).position, cropType, Math.min(finalYield, 5))
+  playSound('harvest')
 
   const harvestXp = def.tier === 1 ? XP_HARVEST_TIER1 : def.tier === 2 ? XP_HARVEST_TIER2 : XP_HARVEST_TIER3
   addXp(harvestXp)

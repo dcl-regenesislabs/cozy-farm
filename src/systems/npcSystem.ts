@@ -24,6 +24,7 @@ import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from '../game/questState'
 import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
 import { tutorialState, TutorialStep } from '../game/tutorialState'
+import { playSound } from './sfxSystem'
 
 // ---------------------------------------------------------------------------
 // Mayor tutorial chit-chat — shown when player clicks Mayor during tutorial
@@ -271,6 +272,11 @@ function stopMovement(npc: NpcInstance) {
 // ---------------------------------------------------------------------------
 
 /** Returns world positions of NPCs currently visible in the wander area. */
+/** Return the live Entity for a given NPC id (e.g. 'mayorchen'), or null if not spawned. */
+export function getNpcEntity(npcId: string): Entity | null {
+  return activeNpcs.find((n) => n.def.id === npcId)?.entity ?? null
+}
+
 export function getActiveNpcPositions(): Vector3[] {
   return activeNpcs
     .filter(n => n.state === 'wandering' || n.state === 'pauseWander' || n.state === 'talkAtDoor')
@@ -484,6 +490,7 @@ function onNpcClick(entity: Entity) {
     }
   }
 
+  playSound('menu')
   playerState.activeMenu = 'npcDialog'
   console.log(`CozyFarm NPC: Player talked to ${npc.def.name} (mode: ${npcDialogState.mode})`)
 }
