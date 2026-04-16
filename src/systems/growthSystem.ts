@@ -4,6 +4,10 @@ import { CropType, CROP_DATA } from '../data/cropData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText, setSoilTimerText, getWateringStatus } from '../game/actions'
 import { updatePlotHoverText } from './interactionSetup'
+import { tutorialState } from '../game/tutorialState'
+
+// Grow time override for Tier 1 crops while the tutorial is active (30s instead of 2min+)
+const TUTORIAL_T1_GROW_TIME_MS = 30_000
 
 function formatTime(ms: number): string {
   if (ms <= 0) return 'Ready!'
@@ -33,8 +37,11 @@ function growthSystem(_dt: number) {
     if (plot.isReady) continue
 
     const def = CROP_DATA.get(plot.cropType as CropType)!
+    const growTimeMs = (tutorialState.active && def.tier === 1)
+      ? TUTORIAL_T1_GROW_TIME_MS
+      : def.growTimeMs
     const elapsed = now - plot.plantedAt
-    const progress = elapsed / def.growTimeMs
+    const progress = elapsed / growTimeMs
 
     // Stages: 0=no model (0-25%), 1=sprout01 (25-50%), 2=sprout02 (50-75%), 3=sprout03 (75-100%+)
     let targetStage: number
@@ -83,7 +90,7 @@ function growthSystem(_dt: number) {
     })
 
     // Update timer text every frame (cheap — just updates TextShape content)
-    setSoilTimerText(entity, formatTime(def.growTimeMs - elapsed))
+    setSoilTimerText(entity, formatTime(growTimeMs - elapsed))
   }
 }
 
