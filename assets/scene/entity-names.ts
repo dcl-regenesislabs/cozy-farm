@@ -8,6 +8,7 @@ export enum EntityNames {
   Axe_2 = "Axe 2",
   Bed_glb = "Bed.glb",
   Blooming_Green_Acacia_Tree = "Blooming Green Acacia Tree",
+  Boombox = "Boombox",
   Campfire = "Campfire",
   Computer_glb = "Computer.glb",
   Farm01_glb = "Farm01.glb",

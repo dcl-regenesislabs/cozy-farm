@@ -8,6 +8,7 @@ import { MAYOR_DEF } from '../data/npcData'
 import { setOnQuestAccepted, setOnQuestClaimed } from '../game/questState'
 import { walkNpcToPosition, requestNpcDeparture } from './npcSystem'
 import { PlotState } from '../components/farmComponents'
+import { playSound } from './sfxSystem'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
 const SEEDS_TO_BUY          = 5
@@ -26,6 +27,7 @@ function showTutorialDialog(text: string, buttonLabel: string, onButton: () => v
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
+  playSound('menu')
   playerState.activeMenu             = 'npcDialog'
 }
 

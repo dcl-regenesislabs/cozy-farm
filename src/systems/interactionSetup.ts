@@ -5,6 +5,7 @@ import { handlePlotClick } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
 import { skipTutorial } from './tutorialSystem'
+import { playSound } from './sfxSystem'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -70,7 +71,7 @@ export function setupEntities() {
     enablePointerOnGltf(computer)
     pointerEventsSystem.onPointerDown(
       { entity: computer, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Shop', maxDistance: 8 } },
-      () => { playerState.activeMenu = 'shop' }
+      () => { playSound('menu'); playerState.activeMenu = 'shop' }
     )
   }
 
@@ -82,7 +83,7 @@ export function setupEntities() {
     enablePointerOnGltf(truck)
     pointerEventsSystem.onPointerDown(
       { entity: truck, opts: { button: InputAction.IA_POINTER, hoverText: 'Sell Crops', maxDistance: 10 } },
-      () => { playerState.activeMenu = 'sell' }
+      () => { playSound('truck'); playerState.activeMenu = 'sell' }
     )
   }
 
@@ -94,7 +95,7 @@ export function setupEntities() {
         entity: forSaleSignEntity,
         opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock Crops (1000 coins)', maxDistance: 8 },
       },
-      () => { playerState.activeMenu = 'unlock' }
+      () => { playSound('menu'); playerState.activeMenu = 'unlock' }
     )
   }
 
@@ -128,6 +129,16 @@ export function setupEntities() {
     registerPlotPointerEvent(entity)
   })
 
+  // ── Boombox ───────────────────────────────────────────────────────────────
+  const boombox = engine.getEntityOrNullByName('Boombox')
+  if (boombox) {
+    enablePointerOnGltf(boombox)
+    pointerEventsSystem.onPointerDown(
+      { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: 'Change Music', maxDistance: 8 } },
+      () => { playSound('menu'); playerState.activeMenu = 'jukebox' }
+    )
+  }
+
   // ── Bed (tutorial skip — 3 clicks = skip tutorial + 2000 coins) ──────────
   let bedClickCount = 0
   const bed = engine.getEntityOrNullByName('Bed.glb')
@@ -142,7 +153,7 @@ export function setupEntities() {
     )
   }
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, bed=${!!bed}`)
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}`)
 }
 
 export function removeForSaleSign() {

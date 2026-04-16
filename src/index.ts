@@ -16,6 +16,8 @@ import { playerState } from './game/gameState'
 import { initTutorialSystem } from './systems/tutorialSystem'
 import { tutorialCallbacks } from './game/tutorialState'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
+import { setupMusicSystem } from './systems/musicSystem'
+import { setupSfxSystem } from './systems/sfxSystem'
 
 // Seconds between each regular NPC arrival once the tutorial is complete
 const NPC_SPAWN_INTERVAL = 30
@@ -23,6 +25,8 @@ const NPC_SPAWN_INTERVAL = 30
 export function main() {
   setupUi()
   setupEntities()
+  setupSfxSystem()
+  setupMusicSystem()
   setupInputModifierSystem()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.

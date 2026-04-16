@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { BTN_INVENTORY, BTN_FARM, BTN_QUESTS } from '../data/imagePaths'
 import type { MenuType } from '../game/gameState'
 import { navAnim, triggerBtnAnim, BTN_BASE } from './navAnimSystem'
+import { playSound } from '../systems/sfxSystem'
 
 type NavBtn = { src: string; menu: MenuType }
 
@@ -39,6 +40,8 @@ export const BottomNav = () => (
           }}
           onMouseDown={() => {
             triggerBtnAnim(btn.menu as AnimKey)
+            if (playerState.activeMenu !== btn.menu) playSound('menu')
+            else playSound('buttonclick')
             playerState.activeMenu = playerState.activeMenu === btn.menu ? 'none' : btn.menu
           }}
         >

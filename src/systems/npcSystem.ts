@@ -24,6 +24,7 @@ import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from '../game/questState'
 import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
 import { tutorialState, TutorialStep } from '../game/tutorialState'
+import { playSound } from './sfxSystem'
 
 // ---------------------------------------------------------------------------
 // Mayor tutorial chit-chat — shown when player clicks Mayor during tutorial
@@ -484,6 +485,7 @@ function onNpcClick(entity: Entity) {
     }
   }
 
+  playSound('menu')
   playerState.activeMenu = 'npcDialog'
   console.log(`CozyFarm NPC: Player talked to ${npc.def.name} (mode: ${npcDialogState.mode})`)
 }

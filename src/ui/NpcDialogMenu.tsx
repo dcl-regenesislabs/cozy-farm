@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { playSound } from '../systems/sfxSystem'
 
 const SHAKE_KEY = 'dialog_btn'
 const SHAKE_DURATION = 320
@@ -92,7 +93,7 @@ export const NpcDialogMenu = () => (
         justifyContent: 'center',
       }}
       uiBackground={{ color: { r: 0.22, g: 0.08, b: 0.03, a: 1 } }}
-      onMouseDown={closeDialog}
+      onMouseDown={() => { playSound('buttonclick'); closeDialog() }}
     >
       <Label value="✕" fontSize={24} color={C.orange} textAlign="middle-center" />
     </UiEntity>
@@ -117,6 +118,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_PAIR, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking('dialog_accept')) return
+            playSound('buttonclick')
             const accept = npcDialogState.onAccept
             triggerCardShake('dialog_accept')
             setTimeout(() => { closeDialog(); accept?.() }, SHAKE_DURATION)
@@ -142,6 +144,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_PAIR, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking('dialog_decline')) return
+            playSound('buttonclick')
             triggerCardShake('dialog_decline')
             setTimeout(closeDialog, SHAKE_DURATION)
           }}
@@ -164,6 +167,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking(SHAKE_KEY)) return
+            playSound('buttonclick')
             triggerCardShake(SHAKE_KEY)
             setTimeout(closeDialog, SHAKE_DURATION)
           }}
@@ -186,6 +190,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking(SHAKE_KEY)) return
+            playSound('buttonclick')
             const claim = npcDialogState.onClaim
             triggerCardShake(SHAKE_KEY)
             setTimeout(() => { closeDialog(); claim?.() }, SHAKE_DURATION)
@@ -209,6 +214,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking(SHAKE_KEY)) return
+            playSound('buttonclick')
             triggerCardShake(SHAKE_KEY)
             setTimeout(closeDialog, SHAKE_DURATION)
           }}
@@ -231,6 +237,7 @@ export const NpcDialogMenu = () => (
           uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
           onMouseDown={() => {
             if (isShaking(SHAKE_KEY)) return
+            playSound('buttonclick')
             triggerCardShake(SHAKE_KEY)
             setTimeout(closeDialog, SHAKE_DURATION)
           }}

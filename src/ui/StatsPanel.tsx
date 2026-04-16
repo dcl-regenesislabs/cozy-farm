@@ -4,6 +4,7 @@ import { getXpProgress } from '../systems/levelingSystem'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { playSound } from '../systems/sfxSystem'
 
 const tabState = { value: 'stats' as 'stats' | 'rewards' }
 
@@ -108,6 +109,7 @@ const RewardsTab = () => (
           uiBackground={{ color: bg }}
           onMouseDown={claimable ? () => {
             if (isShaking(shakeKey)) return
+            playSound('buttonclick')
             triggerCardShake(shakeKey)
             setTimeout(() => claimReward(r.level), 320)
           } : undefined}
@@ -149,7 +151,7 @@ export const StatsPanel = () => (
           variant={tabState.value === tab ? 'primary' : 'secondary'}
           fontSize={24}
           uiTransform={{ width: 240, height: 65, margin: { right: 15 } }}
-          onMouseDown={() => { tabState.value = tab }}
+          onMouseDown={() => { playSound('buttonclick'); tabState.value = tab }}
         />
       ))}
     </UiEntity>
