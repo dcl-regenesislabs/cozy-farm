@@ -2,13 +2,14 @@ import { engine, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
-import { tutorialState, TutorialActionType, tutorialCallbacks } from '../game/tutorialState'
+import { tutorialState, TutorialActionType, tutorialCallbacks, tutorialNavState } from '../game/tutorialState'
 import { CropType } from '../data/cropData'
 import { MAYOR_DEF } from '../data/npcData'
-import { setOnQuestAccepted, setOnQuestClaimed } from '../game/questState'
+import { setOnQuestAccepted, setOnQuestClaimed, setOnQuestClaimable } from '../game/questState'
 import { walkNpcToPosition, requestNpcDeparture } from './npcSystem'
 import { PlotState } from '../components/farmComponents'
 import { playSound } from './sfxSystem'
+import { initTutorialArrow, setArrowTarget } from './tutorialArrowSystem'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
 const SEEDS_TO_BUY          = 5
@@ -50,6 +51,7 @@ function walkMayorToSoil(offsetX: number, offsetZ: number) {
 function goToPlantFirst() {
   tutorialState.step = 'plant_first'
   walkMayorToSoil(0, -1.2)
+  setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
     "Excellent! Now come here to this soil plot and try to plant your first seed.\n\nClick the soil to open the planting menu, then select Onion.",
     "On my way!",
@@ -59,6 +61,7 @@ function goToPlantFirst() {
 
 function goToWaterFirst() {
   tutorialState.step = 'water_first'
+  setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
     "Once you plant a seed, you'll need to water it.\nAny plant needs water to grow — go ahead and use your watering can on it!",
     "On it!",
@@ -69,6 +72,7 @@ function goToWaterFirst() {
 function goToWaitGrow() {
   tutorialState.step = 'wait_grow'
   tutorialCallbacks.unlockSoilsPhase1()
+  setArrowTarget(null)   // just waiting — no arrow needed
   showTutorialDialog(
     "Good — now it's time to wait for the plant to grow!\n\nI'll apply a quick Fertilizer to this soil so it goes faster. I've also unlocked two more plots for you — practice planting while you wait!",
     "Nice, let's go!",
@@ -79,6 +83,7 @@ function goToWaitGrow() {
 function goToHarvestFirst() {
   tutorialState.step = 'harvest_first'
   walkMayorToSoil(0, -1.2)
+  setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
     "Your first Onion is ready! Come and harvest it!\n\nClick the soil plot with the glowing hand icon.",
     "Let's harvest!",
@@ -89,6 +94,7 @@ function goToHarvestFirst() {
 function goToHarvestMore() {
   tutorialState.step             = 'harvest_more'
   tutorialState.harvestMoreCount = 0
+  setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
     "Amazing! You're a real farmer now, these are the basics of farming!\n\nLet's keep practicing — harvest 3 more onions!",
     "I'm on fire!",
@@ -98,6 +104,8 @@ function goToHarvestMore() {
 
 function goToOpenQuests() {
   tutorialState.step = 'open_quests'
+  setArrowTarget(null)                      // quests button is 2D UI — no 3D arrow
+  tutorialNavState.highlightQuests = true   // dim other nav buttons, bounce quests
   showTutorialDialog(
     "On your farm you'll get a lot of nearby visitors and neighbours with requests!\n\nOpen the Quests panel using the button at the bottom of the screen to see what awaits you.",
     "Show me!",
@@ -107,13 +115,18 @@ function goToOpenQuests() {
 
 function goToTalkMayor() {
   tutorialState.step = 'talk_mayor'
+  setArrowTarget((tutorialCallbacks.getMayorEntity() as import('@dcl/sdk/ecs').Entity | null))
 
   // Pre-register both quest callbacks before opening the dialog.
   // setOnQuestAccepted fires when Mayor's quest is accepted.
   // setOnQuestClaimed fires when Mayor's quest reward is collected.
   setOnQuestAccepted(() => {
     tutorialState.step = 'sell_quest'
-    // No extra dialog — the quest panel will show progress
+    setArrowTarget((tutorialCallbacks.getTruckEntity() as import('@dcl/sdk/ecs').Entity | null))
+    // Once the player sells enough, point back to Mayor to claim the reward
+    setOnQuestClaimable(() => {
+      setArrowTarget((tutorialCallbacks.getMayorEntity() as import('@dcl/sdk/ecs').Entity | null))
+    })
   })
 
   setOnQuestClaimed(() => {
@@ -121,6 +134,7 @@ function goToTalkMayor() {
     tutorialCallbacks.unlockSoilsPhase2()
     tutorialState.step   = 'complete'
     tutorialState.active = false
+    setArrowTarget(null)   // tutorial done — hide arrow
     // Mayor is already walking away (departure was triggered by closeDialog)
     showTutorialDialog(
       "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you. Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.\n\nThe town of CozyFarm is proud of you. Good luck!",
@@ -196,6 +210,7 @@ function tutorialWatcherSystem(_dt: number) {
     case 'close_quests': {
       // Advance once the player closes the quests panel
       if (playerState.activeMenu !== 'quests') {
+        tutorialNavState.highlightQuests = false
         goToTalkMayor()
       }
       break
@@ -268,6 +283,9 @@ export function onTutorialAction(action: TutorialActionType) {
 export function initTutorialSystem() {
   if (!tutorialState.active) return
 
+  // Initialise the guide arrow (creates the entity, registers bob system)
+  initTutorialArrow()
+
   // Register the per-frame watcher
   engine.addSystem(tutorialWatcherSystem, 5, 'tutorialWatcherSystem')
 
@@ -278,6 +296,8 @@ export function initTutorialSystem() {
     () => {
       playerState.coins += STARTER_COINS
       tutorialState.step = 'buy_seeds'
+      // Point arrow at the shop Computer once the player dismisses the welcome dialog
+      setArrowTarget((tutorialCallbacks.getComputerEntity() as import('@dcl/sdk/ecs').Entity | null))
     },
   )
 }
@@ -292,6 +312,7 @@ export function skipTutorial() {
   playerState.coins    = 2000
   playerState.seeds.set(CropType.Onion, 5)
   playerState.activeMenu = 'none'
+  setArrowTarget(null)
   tutorialCallbacks.unlockSoilsAll6()
   requestNpcDeparture()
   console.log('CozyFarm Tutorial: skipped via Bed (3 clicks)')

@@ -1,7 +1,7 @@
 import { executeTask, engine } from '@dcl/sdk/ecs'
 import { getUserData } from '~system/UserIdentity'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -10,7 +10,7 @@ import './systems/farmerSystem'
 import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
-import { initNpcSystem } from './systems/npcSystem'
+import { initNpcSystem, getNpcEntity } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER } from './data/npcData'
 import { playerState } from './game/gameState'
 import { initTutorialSystem } from './systems/tutorialSystem'
@@ -35,6 +35,9 @@ export function main() {
   tutorialCallbacks.unlockSoilsPhase2  = unlockSoilsPhase2
   tutorialCallbacks.unlockSoilsAll6    = unlockSoilsAll6
   tutorialCallbacks.getFirstSoilEntity = () => getSoilEntities()[0] ?? null
+  tutorialCallbacks.getComputerEntity  = () => getComputerEntity()
+  tutorialCallbacks.getTruckEntity     = () => getTruckEntity()
+  tutorialCallbacks.getMayorEntity     = () => getNpcEntity('mayorchen')
 
   // Fetch player identity for the TopHud — userId drives the native avatarTexture
   executeTask(async () => {

@@ -1,9 +1,18 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
+import { getQuestForNpc, questProgressMap } from '../game/questState'
 import { C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
+import {
+  CROP_HARVEST_IMAGES,
+  COINS_IMAGE,
+  SOIL_ICON,
+  WATERINGCAN_ICON,
+  BOX_CROPS_ICON,
+  SHOPINGCART_ICON,
+} from '../data/imagePaths'
 
 const SHAKE_KEY = 'dialog_btn'
 const SHAKE_DURATION = 320
@@ -27,7 +36,27 @@ function closeDialog() {
   cb?.()
 }
 
-export const NpcDialogMenu = () => (
+export const NpcDialogMenu = () => {
+  // For quest_active mode: derive the quest icon, progress, and reward
+  const activeQuest = npcDialogState.mode === 'quest_active'
+    ? getQuestForNpc(npcDialogState.npcId)
+    : null
+  const activeQuestProgress = activeQuest ? questProgressMap.get(activeQuest.id) : null
+
+  let questIcon = BOX_CROPS_ICON
+  if (activeQuest) {
+    if (activeQuest.type === 'harvest_crop' && activeQuest.cropType !== null) {
+      questIcon = CROP_HARVEST_IMAGES[activeQuest.cropType]
+    } else if (activeQuest.type === 'water_total') {
+      questIcon = WATERINGCAN_ICON
+    } else if (activeQuest.type === 'plant_total') {
+      questIcon = SOIL_ICON
+    } else if (activeQuest.type === 'sell_total') {
+      questIcon = SHOPINGCART_ICON
+    }
+  }
+
+  return (
   <UiEntity
     uiTransform={{
       positionType: 'absolute',
@@ -54,7 +83,7 @@ export const NpcDialogMenu = () => (
       }}
     />
 
-    {/* ── Right: text content only, no buttons ── */}
+    {/* ── Right: text content ── */}
     <UiEntity
       uiTransform={{
         flex: 1,
@@ -73,13 +102,59 @@ export const NpcDialogMenu = () => (
         uiTransform={{ width: '100%', height: 2, margin: { bottom: 14 } }}
         uiBackground={{ color: C.divider }}
       />
-      <Label
-        value={npcDialogState.dialogLine}
-        fontSize={24}
-        color={C.textMain}
-        textAlign="top-left"
-        uiTransform={{ flex: 1 }}
-      />
+
+      {/* Default: plain dialog text */}
+      {!activeQuest && (
+        <Label
+          value={npcDialogState.dialogLine}
+          fontSize={24}
+          color={C.textMain}
+          textAlign="top-left"
+          uiTransform={{ flex: 1 }}
+        />
+      )}
+
+      {/* quest_active: structured inline layout */}
+      {activeQuest && (
+        <UiEntity uiTransform={{ flex: 1, flexDirection: 'column' }}>
+          {/* Quest title */}
+          <Label
+            value={activeQuest.title}
+            fontSize={22}
+            color={C.textMain}
+            uiTransform={{ margin: { bottom: 10 } }}
+          />
+          {/* Quest item icon */}
+          <UiEntity
+            uiTransform={{ width: 82, height: 82, margin: { bottom: 10 } }}
+            uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+          />
+          {/* Progress */}
+          <Label
+            value={`Progress: ${activeQuestProgress?.current ?? 0} / ${activeQuest.target}`}
+            fontSize={21}
+            color={C.blue}
+            uiTransform={{ margin: { bottom: 0 } }}
+          />
+          {/* Spacer pushes reward to bottom */}
+          <UiEntity uiTransform={{ flex: 1 }} />
+          {/* Reward row */}
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Label value="Reward: " fontSize={22} color={C.textMute} />
+            <UiEntity
+              uiTransform={{ width: 26, height: 26, margin: { left: 4, right: 6 }, flexShrink: 0 }}
+              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            />
+            <Label value={`${activeQuest.rewardCoins}`} fontSize={24} color={C.gold} />
+            <Label
+              value={`+ ${activeQuest.rewardXp} XP`}
+              fontSize={22}
+              color={C.textMute}
+              uiTransform={{ margin: { left: 14 } }}
+            />
+          </UiEntity>
+        </UiEntity>
+      )}
     </UiEntity>
 
     {/* ── X button — absolute top-right ── */}
@@ -246,4 +321,5 @@ export const NpcDialogMenu = () => (
     )}
 
   </UiEntity>
-)
+  )
+}

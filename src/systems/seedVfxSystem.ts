@@ -3,6 +3,7 @@ import { PlotState } from '../components/farmComponents'
 import { CropType } from '../data/cropData'
 import { setSoilIconDisplay } from '../game/actions'
 import { CROP_DATA } from '../data/cropData'
+import { updatePlotHoverText } from './interactionSetup'
 
 // ─── Animation duration ───────────────────────────────────────────────────────
 // 63 frames at 24 fps = 2625 ms. +75 ms buffer so the last frame fully plays.
@@ -64,6 +65,7 @@ function seedVfxSystem(dt: number) {
       cropType: plot.cropType, waterCount: 0, wateringsRequired: def.wateringsRequired,
       canWater: true, isReady: false, isPlanting: false, justHarvested: false,
     })
+    updatePlotHoverText(entry.soilEntity)
   }
 }
 
