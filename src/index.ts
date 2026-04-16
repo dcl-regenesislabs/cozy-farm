@@ -3,7 +3,7 @@ import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6 } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -19,6 +19,7 @@ import { initTutorialSystem } from './systems/tutorialSystem'
 import { tutorialCallbacks } from './game/tutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
+import { setupInputModifierSystem } from './systems/inputModifierSystem'
 
 // Seconds between each regular NPC arrival once the tutorial is complete
 const NPC_SPAWN_INTERVAL = 30
@@ -33,17 +34,19 @@ export function main() {
   // ── Client branch ─────────────────────────────────────────────────────────
   setupUi()
   setupEntities()
+  setupInputModifierSystem()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.
-  tutorialCallbacks.unlockSoilsPhase1 = unlockSoilsPhase1
-  tutorialCallbacks.unlockSoilsPhase2 = unlockSoilsPhase2
-  tutorialCallbacks.unlockSoilsAll6   = unlockSoilsAll6
+  tutorialCallbacks.unlockSoilsPhase1  = unlockSoilsPhase1
+  tutorialCallbacks.unlockSoilsPhase2  = unlockSoilsPhase2
+  tutorialCallbacks.unlockSoilsAll6    = unlockSoilsAll6
+  tutorialCallbacks.getFirstSoilEntity = () => getSoilEntities()[0] ?? null
 
-  // Fetch player identity: wallet address (for save system) + display name + avatar
+  // Fetch player identity: wallet (save system) + userId (avatar texture) + displayName
   executeTask(async () => {
     try {
-      // Wallet address comes from the ECS PlayerIdentityData component
+      // Wallet address from ECS PlayerIdentityData (available immediately)
       const identity = PlayerIdentityData.getOrNull(engine.PlayerEntity)
       if (identity?.address) {
         playerState.wallet = identity.address.toLowerCase()
@@ -52,16 +55,17 @@ export function main() {
       const result = await getUserData({})
       if (result?.data) {
         playerState.displayName = result.data.displayName ?? ''
+        playerState.userId      = result.data.userId ?? ''
         const face = result.data.avatar?.snapshots?.face256
         if (face) playerState.avatarUrl = face
 
-        // Fallback: getUserData also exposes the wallet
+        // Fallback: userId also serves as wallet if PlayerIdentityData wasn't ready
         if (!playerState.wallet && result.data.userId) {
           playerState.wallet = result.data.userId.toLowerCase()
         }
       }
     } catch (_) {
-      // Silently ignore — preview or guest mode has no profile
+      // Silently ignore — preview or guest mode may have no profile
     }
 
     // Init save service after wallet is set.
@@ -74,7 +78,7 @@ export function main() {
       // When he departs, start the regular NPC rotation.
       initNpcSystem(MAYOR_DEF, () => {
         let nextIndex = 0
-        let timer     = 0
+        let timer     = 3  // 3-second grace period after Mayor departs
 
         engine.addSystem((dt: number) => {
           if (nextIndex >= REGULAR_NPC_ROSTER.length) return

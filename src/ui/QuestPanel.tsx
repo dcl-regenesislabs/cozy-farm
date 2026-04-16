@@ -26,13 +26,13 @@ export const QuestPanel = () => {
     <PanelShell title="Quests" onClose={() => { playerState.activeMenu = 'none' }}>
       {visible.length === 0 ? (
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <Label value="No active quests" fontSize={18} color={C.textMute} textAlign="middle-center" />
+          <Label value="No active quests" fontSize={27} color={C.textMute} textAlign="middle-center" />
           <Label
             value="Talk to villagers to receive quests!"
-            fontSize={14}
+            fontSize={21}
             color={{ r: 0.4, g: 0.4, b: 0.4, a: 1 }}
             textAlign="middle-center"
-            uiTransform={{ margin: { top: 10 } }}
+            uiTransform={{ margin: { top: 15 } }}
           />
         </UiEntity>
       ) : (
@@ -70,18 +70,18 @@ export const QuestPanel = () => {
             return (
               <UiEntity
                 key={def.id}
-                uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 10 } }}
+                uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 15 } }}
                 uiBackground={{ color: rowBg }}
               >
                 {/* Left accent bar */}
                 <UiEntity
-                  uiTransform={{ width: 4, alignSelf: 'stretch', flexShrink: 0 }}
+                  uiTransform={{ width: 6, alignSelf: 'stretch', flexShrink: 0 }}
                   uiBackground={{ color: accentColor }}
                 />
 
                 {/* NPC portrait */}
                 <UiEntity
-                  uiTransform={{ width: 64, height: 64, margin: { top: 12, bottom: 12, left: 14 }, flexShrink: 0 }}
+                  uiTransform={{ width: 96, height: 96, margin: { top: 18, bottom: 18, left: 21 }, flexShrink: 0 }}
                   uiBackground={{ texture: { src: npcHead, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                 />
 
@@ -89,22 +89,22 @@ export const QuestPanel = () => {
                 <UiEntity
                   uiTransform={{
                     flex: 1, flexDirection: 'column',
-                    padding: { top: 12, bottom: 12, left: 14, right: 10 },
+                    padding: { top: 18, bottom: 18, left: 21, right: 15 },
                   }}
                 >
-                  <Label value={def.npcName} fontSize={11} color={C.orange} />
+                  <Label value={def.npcName} fontSize={17} color={C.orange} />
                   <Label
                     value={def.title}
-                    fontSize={15}
+                    fontSize={22}
                     color={C.textMain}
-                    uiTransform={{ margin: { top: 3, bottom: 8 } }}
+                    uiTransform={{ margin: { top: 5, bottom: 12 } }}
                   />
 
                   {/* Progress bar */}
                   {isActive && (
                     <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
                       <UiEntity
-                        uiTransform={{ width: '100%', height: 8, margin: { bottom: 5 } }}
+                        uiTransform={{ width: '100%', height: 12, margin: { bottom: 8 } }}
                         uiBackground={{ color: { r: 0.12, g: 0.10, b: 0.07, a: 1 } }}
                       >
                         <UiEntity
@@ -112,28 +112,28 @@ export const QuestPanel = () => {
                           uiBackground={{ color: C.blue }}
                         />
                       </UiEntity>
-                      <Label value={`${qp.current} / ${def.target}`} fontSize={11} color={C.blue} />
+                      <Label value={`${qp.current} / ${def.target}`} fontSize={17} color={C.blue} />
                     </UiEntity>
                   )}
 
                   {/* Claimable / completed badge */}
                   {!isActive && (
-                    <Label value={statusText} fontSize={13} color={statusColor} />
+                    <Label value={statusText} fontSize={20} color={statusColor} />
                   )}
 
                   {/* Reward row */}
                   {!isDone && (
-                    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 8 } }}>
+                    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 12 } }}>
                       <UiEntity
-                        uiTransform={{ width: 18, height: 18, margin: { right: 5 }, flexShrink: 0 }}
+                        uiTransform={{ width: 27, height: 27, margin: { right: 8 }, flexShrink: 0 }}
                         uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                       />
-                      <Label value={`${def.rewardCoins}`} fontSize={13} color={C.gold} />
+                      <Label value={`${def.rewardCoins}`} fontSize={20} color={C.gold} />
                       <Label
                         value={`+ ${def.rewardXp} XP`}
-                        fontSize={12}
+                        fontSize={18}
                         color={C.textMute}
-                        uiTransform={{ margin: { left: 12 } }}
+                        uiTransform={{ margin: { left: 18 } }}
                       />
                     </UiEntity>
                   )}
@@ -141,7 +141,7 @@ export const QuestPanel = () => {
 
                 {/* Quest type / crop icon */}
                 <UiEntity
-                  uiTransform={{ width: 56, height: 56, margin: { top: 14, bottom: 14, right: 16 }, flexShrink: 0 }}
+                  uiTransform={{ width: 84, height: 84, margin: { top: 21, bottom: 21, right: 24 }, flexShrink: 0 }}
                   uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                 />
               </UiEntity>

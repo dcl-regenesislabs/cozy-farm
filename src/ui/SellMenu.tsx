@@ -1,63 +1,79 @@
-import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
+import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { sellCrop } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
+import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+
+const SHAKE_DURATION = 320
 
 type SellCardProps = { key?: string | number; cropType: CropType; count: number }
 
 const SellCard = ({ cropType, count }: SellCardProps) => {
   const def        = CROP_DATA.get(cropType)!
   const totalValue = def.sellPrice * count
+  const shakeKey   = `sell_${cropType}`
+  const offsetX    = getShakeOffset(shakeKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 110,
-        height: 155,
-        margin: { right: 10, bottom: 10 },
-        padding: { top: 10, bottom: 10, left: 6, right: 6 },
+        width: 200,
+        height: 245,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+        positionType: 'relative',
+        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
-      {/* Crop image */}
       <UiEntity
-        uiTransform={{ width: 62, height: 62, margin: { bottom: 6 }, flexShrink: 0 }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
         uiBackground={{
           texture: { src: CROP_HARVEST_IMAGES[cropType], wrapMode: 'clamp' },
           textureMode: 'stretch',
         }}
       />
-
-      {/* Name + count */}
-      <Label value={def.name} fontSize={12} color={C.textMain} textAlign="middle-center" />
+      <Label value={def.name} fontSize={25} color={C.textMain} textAlign="middle-center" />
       <Label
         value={`x${count}`}
-        fontSize={14}
+        fontSize={22}
         color={C.orange}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 2 } }}
+        uiTransform={{ margin: { top: 4 } }}
       />
-
-      {/* Value */}
-      <Label
-        value={`${totalValue} 🪙`}
-        fontSize={11}
-        color={C.gold}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 2 } }}
-      />
-
-      <Button
-        value="Sell All"
-        variant="primary"
-        fontSize={12}
-        uiTransform={{ width: 90, height: 28, margin: { top: 6 } }}
-        onMouseDown={() => sellCrop(cropType, count)}
-      />
+      {/* Sell button */}
+      <UiEntity
+        uiTransform={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 175,
+          height: 58,
+          margin: { top: 10 },
+        }}
+        uiBackground={{ color: { r: 0.15, g: 0.45, b: 0.15, a: 1 } }}
+        onMouseDown={() => {
+          if (isShaking(shakeKey)) return
+          triggerCardShake(shakeKey)
+          setTimeout(() => sellCrop(cropType, count), SHAKE_DURATION)
+        }}
+      >
+        <Label
+          value={`${totalValue}`}
+          fontSize={24}
+          color={C.gold}
+          textAlign="middle-center"
+          uiTransform={{ margin: { right: 8 } }}
+        />
+        <UiEntity
+          uiTransform={{ width: 34, height: 34 }}
+          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+      </UiEntity>
     </UiEntity>
   )
 }
@@ -74,58 +90,33 @@ export const SellMenu = () => {
 
       {/* Coins + total value row */}
       <UiEntity
-        uiTransform={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          width: '100%',
-          margin: { bottom: 16 },
-        }}
+        uiTransform={{ flexDirection: 'row', alignItems: 'center', width: '100%', margin: { bottom: 20 } }}
       >
         <UiEntity
-          uiTransform={{ width: 24, height: 24, margin: { right: 6 } }}
-          uiBackground={{
-            texture: { src: COINS_IMAGE, wrapMode: 'clamp' },
-            textureMode: 'stretch',
-          }}
+          uiTransform={{ width: 38, height: 38, margin: { right: 10 } }}
+          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
         <Label
           value={`${playerState.coins} coins`}
-          fontSize={18}
+          fontSize={28}
           color={C.gold}
           textAlign="middle-left"
           uiTransform={{ flex: 1 }}
         />
         {harvestedCrops.length > 0 && (
-          <Label
-            value={`Total: ${totalValue} 🪙`}
-            fontSize={14}
-            color={C.orange}
-            textAlign="middle-right"
-          />
+          <Label value={`Total: ${totalValue} 🪙`} fontSize={22} color={C.orange} textAlign="middle-right" />
         )}
       </UiEntity>
 
       {harvestedCrops.length === 0 ? (
-        <UiEntity
-          uiTransform={{
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            flexDirection: 'column',
-          }}
-        >
-          <Label
-            value="Nothing to sell."
-            fontSize={20}
-            color={C.textMute}
-            textAlign="middle-center"
-          />
+        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+          <Label value="Nothing to sell." fontSize={32} color={C.textMute} textAlign="middle-center" />
           <Label
             value="Go harvest some crops first!"
-            fontSize={15}
+            fontSize={24}
             color={C.textMute}
             textAlign="middle-center"
-            uiTransform={{ margin: { top: 8 } }}
+            uiTransform={{ margin: { top: 12 } }}
           />
         </UiEntity>
       ) : (

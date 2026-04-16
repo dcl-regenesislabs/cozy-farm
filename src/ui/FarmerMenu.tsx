@@ -4,8 +4,13 @@ import { ALL_CROP_TYPES, CROP_NAMES, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
+import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 
 const HIRE_COST = 100
+
+// 4 cards per row, 1 row per page
+const FARMER_SEED_PAGE_SIZE = 4
+const farmerSeedPage = { value: 0 }
 
 function giveSeeds(cropType: CropType, amount: number) {
   const playerCount = playerState.seeds.get(cropType) ?? 0
@@ -28,67 +33,62 @@ function collectAll() {
 
 type SeedGiveCardProps = { key?: string | number; cropType: CropType; playerCount: number; farmerCount: number }
 
-const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps) => (
-  <UiEntity
-    uiTransform={{
-      flexDirection: 'column',
-      alignItems: 'center',
-      width: 120,
-      height: 175,
-      margin: { right: 10, bottom: 10 },
-      padding: { top: 10, bottom: 10, left: 6, right: 6 },
-    }}
-    uiBackground={{ color: C.rowBg }}
-  >
-    {/* Seed image */}
+const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps) => {
+  const shakeKey = `farmer_${cropType}`
+  const offsetX  = getShakeOffset(shakeKey)
+
+  return (
     <UiEntity
-      uiTransform={{ width: 62, height: 62, margin: { bottom: 6 }, flexShrink: 0 }}
-      uiBackground={{
-        texture: { src: CROP_SEED_IMAGES[cropType], wrapMode: 'clamp' },
-        textureMode: 'stretch',
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: 260,
+        height: 290,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+        positionType: 'relative',
+        position: { left: offsetX },
       }}
-    />
-
-    {/* Name */}
-    <Label value={CROP_NAMES[cropType]} fontSize={12} color={C.textMain} textAlign="middle-center" />
-
-    {/* Player stock */}
-    <Label
-      value={`You: x${playerCount}`}
-      fontSize={11}
-      color={{ r: 0.55, g: 1, b: 0.35, a: 1 }}
-      textAlign="middle-center"
-      uiTransform={{ margin: { top: 2 } }}
-    />
-
-    {/* Farmer stock */}
-    <Label
-      value={`Farmer: x${farmerCount}`}
-      fontSize={11}
-      color={C.gold}
-      textAlign="middle-center"
-      uiTransform={{ margin: { top: 2 } }}
-    />
-
-    {/* Buttons */}
-    <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 6 } }}>
-      <Button
-        value="+1"
-        variant="primary"
-        fontSize={12}
-        uiTransform={{ width: 44, height: 28, margin: { right: 4 } }}
-        onMouseDown={() => giveSeeds(cropType, 1)}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: CROP_SEED_IMAGES[cropType], wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Button
-        value="All"
-        variant="primary"
-        fontSize={12}
-        uiTransform={{ width: 44, height: 28 }}
-        onMouseDown={() => giveSeeds(cropType, playerCount)}
+      <Label value={CROP_NAMES[cropType]} fontSize={24} color={C.textMain} textAlign="middle-center" />
+      <Label
+        value={`You: x${playerCount}`}
+        fontSize={20}
+        color={{ r: 0.55, g: 1, b: 0.35, a: 1 }}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 4 } }}
       />
+      <Label
+        value={`Farmer: x${farmerCount}`}
+        fontSize={20}
+        color={C.gold}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 4 } }}
+      />
+      <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 12 } }}>
+        <Button
+          value="+1"
+          variant="primary"
+          fontSize={22}
+          uiTransform={{ width: 100, height: 58, margin: { right: 10 } }}
+          onMouseDown={() => { triggerCardShake(shakeKey); giveSeeds(cropType, 1) }}
+        />
+        <Button
+          value="All"
+          variant="primary"
+          fontSize={22}
+          uiTransform={{ width: 100, height: 58 }}
+          onMouseDown={() => { triggerCardShake(shakeKey); giveSeeds(cropType, playerCount) }}
+        />
+      </UiEntity>
     </UiEntity>
-  </UiEntity>
-)
+  )
+}
 
 type CollectCardProps = { key?: string | number; cropType: CropType; count: number }
 
@@ -98,41 +98,29 @@ const CollectCard = ({ cropType, count }: CollectCardProps) => (
       flexDirection: 'row',
       alignItems: 'center',
       width: '100%',
-      height: 52,
-      margin: { bottom: 6 },
-      padding: { left: 10, right: 10 },
+      height: 90,
+      margin: { bottom: 10 },
+      padding: { left: 15, right: 15 },
     }}
     uiBackground={{ color: C.rowBg }}
   >
-    {/* Crop icon */}
     <UiEntity
-      uiTransform={{ width: 36, height: 36, margin: { right: 10 }, flexShrink: 0 }}
-      uiBackground={{
-        texture: { src: CROP_HARVEST_IMAGES[cropType], wrapMode: 'clamp' },
-        textureMode: 'stretch',
-      }}
+      uiTransform={{ width: 60, height: 60, margin: { right: 15 }, flexShrink: 0 }}
+      uiBackground={{ texture: { src: CROP_HARVEST_IMAGES[cropType], wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
-    {/* Name */}
-    <Label
-      value={CROP_NAMES[cropType]}
-      fontSize={14}
-      color={C.textMain}
-      uiTransform={{ flex: 1 }}
-    />
-    {/* Count badge */}
-    <Label
-      value={`x${count}`}
-      fontSize={16}
-      color={C.gold}
-      textAlign="middle-right"
-    />
+    <Label value={CROP_NAMES[cropType]} fontSize={26} color={C.textMain} uiTransform={{ flex: 1 }} />
+    <Label value={`x${count}`} fontSize={28} color={C.gold} textAlign="middle-right" />
   </UiEntity>
 )
 
 export const FarmerMenu = () => {
-  const availableToGive     = ALL_CROP_TYPES.filter((ct) => (playerState.seeds.get(ct) ?? 0) > 0)
-  const collectedEntries    = ALL_CROP_TYPES.filter((ct) => (playerState.farmerInventory.get(ct) ?? 0) > 0)
-  const hasCollected        = collectedEntries.length > 0
+  const availableToGive  = ALL_CROP_TYPES.filter((ct) => (playerState.seeds.get(ct) ?? 0) > 0)
+  const collectedEntries = ALL_CROP_TYPES.filter((ct) => (playerState.farmerInventory.get(ct) ?? 0) > 0)
+  const hasCollected     = collectedEntries.length > 0
+
+  const seedPage  = farmerSeedPage.value
+  const seedLast  = Math.max(0, Math.ceil(availableToGive.length / FARMER_SEED_PAGE_SIZE) - 1)
+  const seedSlice = availableToGive.slice(seedPage * FARMER_SEED_PAGE_SIZE, (seedPage + 1) * FARMER_SEED_PAGE_SIZE)
 
   return (
     <PanelShell title="Farmer" onClose={() => { playerState.activeMenu = 'none' }}>
@@ -140,57 +128,39 @@ export const FarmerMenu = () => {
       {!playerState.farmerHired ? (
 
         /* ── Hire screen ── */
-        <UiEntity
-          uiTransform={{
-            flex: 1,
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
+        <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Label
             value="I can work these fields for you."
-            fontSize={18}
+            fontSize={32}
             color={C.textMain}
             textAlign="middle-center"
-            uiTransform={{ margin: { bottom: 6 } }}
+            uiTransform={{ margin: { bottom: 10 } }}
           />
           <Label
             value="Pay me 100 coins and give me seeds to get started."
-            fontSize={15}
+            fontSize={26}
             color={C.textMute}
             textAlign="middle-center"
-            uiTransform={{ margin: { bottom: 30 } }}
+            uiTransform={{ margin: { bottom: 40 } }}
           />
-
-          <UiEntity
-            uiTransform={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              margin: { bottom: 30 },
-            }}
-          >
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 40 } }}>
             <UiEntity
-              uiTransform={{ width: 28, height: 28, margin: { right: 8 } }}
-              uiBackground={{
-                texture: { src: COINS_IMAGE, wrapMode: 'clamp' },
-                textureMode: 'stretch',
-              }}
+              uiTransform={{ width: 44, height: 44, margin: { right: 12 } }}
+              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
             />
             <Label
               value={`${playerState.coins} / ${HIRE_COST} coins`}
-              fontSize={18}
+              fontSize={30}
               color={playerState.coins >= HIRE_COST ? C.gold : { r: 1, g: 0.4, b: 0.4, a: 1 }}
               textAlign="middle-left"
             />
           </UiEntity>
-
           <Button
             value={`Hire for ${HIRE_COST} coins`}
             variant={playerState.coins >= HIRE_COST ? 'primary' : 'secondary'}
             disabled={playerState.coins < HIRE_COST}
-            fontSize={18}
-            uiTransform={{ width: 240, height: 50 }}
+            fontSize={28}
+            uiTransform={{ width: 400, height: 80 }}
             onMouseDown={() => {
               if (playerState.coins < HIRE_COST) return
               playerState.coins -= HIRE_COST
@@ -204,79 +174,76 @@ export const FarmerMenu = () => {
         /* ── Hired screen ── */
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%' }}>
 
-          {/* ─ Collected Harvest section ─ */}
-          <Label
-            value="Collected Harvest"
-            fontSize={15}
-            color={C.textMain}
-            textAlign="top-left"
-            uiTransform={{ margin: { bottom: 8 } }}
-          />
-
+          {/* ─ Collected Harvest ─ */}
+          <Label value="Collected Harvest" fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
           {hasCollected ? (
-            <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 8 } }}>
+            <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 10 } }}>
               {collectedEntries.map((ct) => (
-                <CollectCard
-                  key={ct}
-                  cropType={ct}
-                  count={playerState.farmerInventory.get(ct) ?? 0}
-                />
+                <CollectCard key={ct} cropType={ct} count={playerState.farmerInventory.get(ct) ?? 0} />
               ))}
               <Button
                 value="Collect All"
                 variant="primary"
-                fontSize={14}
-                uiTransform={{ width: 140, height: 38, margin: { top: 6 } }}
+                fontSize={24}
+                uiTransform={{ width: 240, height: 62, margin: { top: 8 } }}
                 onMouseDown={collectAll}
               />
             </UiEntity>
           ) : (
-            <Label
-              value="Nothing collected yet."
-              fontSize={13}
-              color={C.textMute}
-              textAlign="top-left"
-              uiTransform={{ margin: { bottom: 16 } }}
-            />
+            <Label value="Nothing collected yet." fontSize={22} color={C.textMute} textAlign="top-left" uiTransform={{ margin: { bottom: 16 } }} />
           )}
 
           {/* ─ Divider ─ */}
-          <UiEntity
-            uiTransform={{ width: '100%', height: 1, margin: { bottom: 12 } }}
-            uiBackground={{ color: { r: 1, g: 1, b: 1, a: 0.08 } }}
-          />
+          <UiEntity uiTransform={{ width: '100%', height: 2, margin: { bottom: 16 } }} uiBackground={{ color: { r: 1, g: 1, b: 1, a: 0.08 } }} />
 
-          {/* ─ Give Seeds section ─ */}
-          <Label
-            value="Give Seeds to Farmer"
-            fontSize={15}
-            color={C.textMain}
-            textAlign="top-left"
-            uiTransform={{ margin: { bottom: 8 } }}
-          />
+          {/* ─ Give Seeds ─ */}
+          <Label value="Give Seeds to Farmer" fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
 
           {availableToGive.length === 0 ? (
-            <Label
-              value="You have no seeds to give."
-              fontSize={13}
-              color={C.textMute}
-              textAlign="top-left"
-            />
+            <Label value="You have no seeds to give." fontSize={22} color={C.textMute} textAlign="top-left" />
           ) : (
-            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-              {availableToGive.map((ct) => (
-                <SeedGiveCard
-                  key={ct}
-                  cropType={ct}
-                  playerCount={playerState.seeds.get(ct) ?? 0}
-                  farmerCount={playerState.farmerSeeds.get(ct) ?? 0}
-                />
-              ))}
+            <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+              <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+                {seedSlice.map((ct) => (
+                  <SeedGiveCard
+                    key={ct}
+                    cropType={ct}
+                    playerCount={playerState.seeds.get(ct) ?? 0}
+                    farmerCount={playerState.farmerSeeds.get(ct) ?? 0}
+                  />
+                ))}
+              </UiEntity>
+              {seedLast > 0 && (
+                <UiEntity
+                  uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 10 } }}
+                >
+                  <Button
+                    value="< Prev"
+                    variant="secondary"
+                    fontSize={22}
+                    uiTransform={{ width: 160, height: 58, margin: { right: 20 } }}
+                    onMouseDown={() => { if (farmerSeedPage.value > 0) farmerSeedPage.value-- }}
+                  />
+                  <Label
+                    value={`${seedPage + 1} / ${seedLast + 1}`}
+                    fontSize={22}
+                    color={C.textMute}
+                    textAlign="middle-center"
+                    uiTransform={{ width: 90 }}
+                  />
+                  <Button
+                    value="Next >"
+                    variant="secondary"
+                    fontSize={22}
+                    uiTransform={{ width: 160, height: 58, margin: { left: 20 } }}
+                    onMouseDown={() => { if (farmerSeedPage.value < seedLast) farmerSeedPage.value++ }}
+                  />
+                </UiEntity>
+              )}
             </UiEntity>
           )}
 
         </UiEntity>
-
       )}
     </PanelShell>
   )

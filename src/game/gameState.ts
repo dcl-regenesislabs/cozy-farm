@@ -18,6 +18,7 @@ export const playerState = {
   level: 1,
   // Player identity (populated async from getUserData)
   wallet: '',         // lowercase wallet address — used as server-side key
+  userId: '',         // DCL userId (for avatar texture)
   avatarUrl: '',
   displayName: '',
   // Dog companion
@@ -28,4 +29,6 @@ export const playerState = {
   totalSeedPlanted: 0,
   totalSellCount: 0,
   totalCoinsEarned: 0,
+  // Level rewards — stores level numbers the player has manually claimed
+  claimedRewards: [] as number[],
 }

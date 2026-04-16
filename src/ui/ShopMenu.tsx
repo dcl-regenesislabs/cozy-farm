@@ -5,14 +5,13 @@ import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
+import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 
-const TIER_COLOR: Record<1 | 2 | 3, { r: number; g: number; b: number; a: number }> = {
-  1: { r: 0.4,  g: 1,    b: 0.4,  a: 1 },
-  2: { r: 1,    g: 0.85, b: 0.2,  a: 1 },
-  3: { r: 1,    g: 0.45, b: 0.2,  a: 1 },
-}
+const shopTab  = { value: 'seeds' as 'seeds' | 'pets' }
+const shopPage = { seeds: 0, pets: 0 }
 
-const shopTab = { value: 'seeds' as 'seeds' | 'pets' }
+// 5 cards per row × 2 rows = 10 per page
+const SHOP_PAGE_SIZE = 10
 
 type BuyButtonProps = { cost: number; canAfford: boolean; onPress: () => void }
 
@@ -22,9 +21,9 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      width: 90,
-      height: 28,
-      margin: { top: 6 },
+      width: 175,
+      height: 58,
+      margin: { top: 10 },
     }}
     uiBackground={{
       color: canAfford
@@ -35,81 +34,63 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
   >
     <Label
       value={`${cost}`}
-      fontSize={12}
+      fontSize={24}
       color={canAfford ? C.textMain : C.textMute}
       textAlign="middle-center"
-      uiTransform={{ margin: { right: 4 } }}
+      uiTransform={{ margin: { right: 8 } }}
     />
     <UiEntity
-      uiTransform={{ width: 16, height: 16 }}
-      uiBackground={{
-        texture: { src: COINS_IMAGE, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-      }}
+      uiTransform={{ width: 34, height: 34 }}
+      uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
   </UiEntity>
 )
 
-type ShopCardProps = {
-  key?: string | number
-  cropType: CropType
-  unlocked: boolean
-}
+type ShopCardProps = { key?: string | number; cropType: CropType; unlocked: boolean }
 
 const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
   const def       = CROP_DATA.get(cropType)!
   const canAfford = playerState.coins >= def.seedCost
   const imgSrc    = CROP_SEED_IMAGES[cropType]
+  const shakeKey  = `shop_${cropType}`
+  const offsetX   = getShakeOffset(shakeKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 110,
-        height: 155,
-        margin: { right: 10, bottom: 10 },
-        padding: { top: 10, bottom: 10, left: 6, right: 6 },
+        width: 200,
+        height: 245,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+        positionType: 'relative',
+        position: { left: offsetX },
       }}
       uiBackground={{ color: unlocked ? C.rowBg : { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
     >
-      {/* Crop image */}
       <UiEntity
-        uiTransform={{ width: 62, height: 62, margin: { bottom: 6 }, flexShrink: 0 }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
         uiBackground={{
           texture: { src: imgSrc, wrapMode: 'clamp' },
           textureMode: 'stretch',
           color: unlocked ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 },
         }}
       />
-
-      {/* Name */}
       <Label
         value={def.name}
-        fontSize={12}
+        fontSize={25}
         color={unlocked ? C.textMain : C.textMute}
         textAlign="middle-center"
       />
-
-      {/* Tier badge */}
-      <Label
-        value={`Tier ${def.tier}`}
-        fontSize={10}
-        color={unlocked ? TIER_COLOR[def.tier] : C.textMute}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 2 } }}
-      />
-
       {unlocked ? (
-        <BuyButton cost={def.seedCost} canAfford={canAfford} onPress={() => buySeed(cropType, 1)} />
-      ) : (
-        <Label
-          value="Locked"
-          fontSize={11}
-          color={C.textMute}
-          textAlign="middle-center"
-          uiTransform={{ margin: { top: 8 } }}
+        <BuyButton
+          cost={def.seedCost}
+          canAfford={canAfford}
+          onPress={() => { triggerCardShake(shakeKey); buySeed(cropType, 1) }}
         />
+      ) : (
+        <Label value="Locked" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       )}
     </UiEntity>
   )
@@ -117,52 +98,49 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
 
 const DogCard = () => {
   const canAfford = playerState.coins >= 500
+  const offsetX   = getShakeOffset('shop_dog')
+
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 110,
-        height: 155,
-        margin: { right: 10, bottom: 10 },
-        padding: { top: 10, bottom: 10, left: 6, right: 6 },
+        width: 200,
+        height: 245,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+        positionType: 'relative',
+        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
       <UiEntity
-        uiTransform={{ width: 62, height: 62, margin: { bottom: 6 }, flexShrink: 0 }}
-        uiBackground={{
-          texture: { src: DOG01_ICON, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-        }}
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: DOG01_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value="Dog" fontSize={12} color={C.textMain} textAlign="middle-center" />
-      <Label
-        value="Pet"
-        fontSize={10}
-        color={C.blue}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 2 } }}
-      />
+      <Label value="Dog" fontSize={25} color={C.textMain} textAlign="middle-center" />
       {playerState.dogOwned ? (
-        <Label
-          value="Owned"
-          fontSize={11}
-          color={C.green}
-          textAlign="middle-center"
-          uiTransform={{ margin: { top: 8 } }}
-        />
+        <Label value="Owned" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
-        <BuyButton cost={500} canAfford={canAfford} onPress={() => buyDog()} />
+        <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardShake('shop_dog'); buyDog() }} />
       )}
     </UiEntity>
   )
 }
 
+const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => (
+  <UiEntity
+    uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}
+  >
+    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={onPrev} />
+    <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
+    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={onNext} />
+  </UiEntity>
+)
+
 export const ShopMenu = () => {
   const tutorialActive = tutorialState.active
 
-  // During tutorial, only Onion seeds are available for purchase
   const visibleCrops = ALL_CROP_TYPES.filter((ct) => {
     if (tutorialActive) return ct === CropType.Onion
     const def = CROP_DATA.get(ct)!
@@ -173,71 +151,57 @@ export const ShopMenu = () => {
     return def.tier > 1 && !playerState.cropsUnlocked
   })
 
+  const tab      = shopTab.value
+  const allSeeds = [...visibleCrops.map(ct => ({ ct, unlocked: true })), ...lockedCrops.map(ct => ({ ct, unlocked: false }))]
+  const seedPage  = shopPage.seeds
+  const seedLast  = Math.max(0, Math.ceil(allSeeds.length / SHOP_PAGE_SIZE) - 1)
+  const seedSlice = allSeeds.slice(seedPage * SHOP_PAGE_SIZE, (seedPage + 1) * SHOP_PAGE_SIZE)
+
   return (
     <PanelShell title="El Amazonas" onClose={() => { playerState.activeMenu = 'none' }}>
 
-      {/* Coins row */}
-      <UiEntity
-        uiTransform={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          width: '100%',
-          margin: { bottom: 12 },
-        }}
-      >
-        <UiEntity
-          uiTransform={{ width: 24, height: 24, margin: { right: 6 } }}
-          uiBackground={{
-            texture: { src: COINS_IMAGE, wrapMode: 'clamp' },
-            textureMode: 'stretch',
-          }}
-        />
-        <Label
-          value={`${playerState.coins} coins`}
-          fontSize={18}
-          color={C.gold}
-          textAlign="middle-left"
-        />
-      </UiEntity>
-
       {/* Tab bar */}
-      <UiEntity
-        uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 14 } }}
-      >
+      <UiEntity uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 20 } }}>
         <Button
           value="Seeds"
-          variant={shopTab.value === 'seeds' ? 'primary' : 'secondary'}
-          uiTransform={{ width: 120, height: 32, margin: { right: 8 } }}
+          variant={tab === 'seeds' ? 'primary' : 'secondary'}
+          fontSize={28}
+          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { shopTab.value = 'seeds' }}
         />
         <Button
           value="Pets"
-          variant={shopTab.value === 'pets' ? 'primary' : 'secondary'}
-          uiTransform={{ width: 120, height: 32 }}
+          variant={tab === 'pets' ? 'primary' : 'secondary'}
+          fontSize={28}
+          uiTransform={{ width: 240, height: 68 }}
           onMouseDown={() => { shopTab.value = 'pets' }}
         />
       </UiEntity>
 
       {/* Seeds tab */}
-      {shopTab.value === 'seeds' && (
+      {tab === 'seeds' && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-            {visibleCrops.map((ct) => (
-              <ShopCard key={`u${ct}`} cropType={ct} unlocked={true} />
-            ))}
-            {lockedCrops.map((ct) => (
-              <ShopCard key={`l${ct}`} cropType={ct} unlocked={false} />
+            {seedSlice.map(({ ct, unlocked }) => (
+              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} />
             ))}
           </UiEntity>
-
+          {seedLast > 0 && (
+            <PaginationBar
+              page={seedPage}
+              lastPage={seedLast}
+              onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
+              onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
+            />
+          )}
           {!playerState.cropsUnlocked && !tutorialActive && (
             <UiEntity
-              uiTransform={{ padding: { top: 8, bottom: 8, left: 14, right: 14 }, margin: { top: 4 } }}
+              uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
               uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
             >
               <Label
                 value="Tier 2 & 3 seeds are locked — visit the For Sale Sign to unlock them"
-                fontSize={13}
+                fontSize={20}
                 color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
                 textAlign="middle-center"
               />
@@ -247,7 +211,7 @@ export const ShopMenu = () => {
       )}
 
       {/* Pets tab */}
-      {shopTab.value === 'pets' && (
+      {tab === 'pets' && (
         <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
           <DogCard />
         </UiEntity>

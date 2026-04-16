@@ -11,22 +11,19 @@ const CropCard = ({ cropType, count, imgSrc, countColor }: CardProps) => (
     uiTransform={{
       flexDirection: 'column',
       alignItems: 'center',
-      width: 110,
-      height: 122,
-      margin: { right: 10, bottom: 10 },
-      padding: { top: 10, bottom: 8, left: 6, right: 6 },
+      width: 200,
+      height: 215,
+      margin: { right: 12, bottom: 12 },
+      padding: { top: 12, bottom: 12, left: 10, right: 10 },
     }}
     uiBackground={{ color: C.rowBg }}
   >
     <UiEntity
-      uiTransform={{ width: 62, height: 62, margin: { bottom: 6 } }}
-      uiBackground={{
-        texture: { src: imgSrc, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-      }}
+      uiTransform={{ width: 108, height: 108, margin: { bottom: 10 } }}
+      uiBackground={{ texture: { src: imgSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
-    <Label value={CROP_NAMES[cropType]} fontSize={12} color={C.textMain} textAlign="middle-center" />
-    <Label value={`x${count}`} fontSize={15} color={countColor} textAlign="middle-center" uiTransform={{ margin: { top: 2 } }} />
+    <Label value={CROP_NAMES[cropType]} fontSize={22} color={C.textMain} textAlign="middle-center" />
+    <Label value={`x${count}`} fontSize={22} color={countColor} textAlign="middle-center" uiTransform={{ margin: { top: 4 } }} />
   </UiEntity>
 )
 
@@ -39,10 +36,10 @@ export const InventoryPanel = () => {
       <UiEntity uiTransform={{ flexDirection: 'row', flex: 1, width: '100%' }}>
 
         {/* Seeds */}
-        <UiEntity uiTransform={{ flexDirection: 'column', flex: 1, margin: { right: 16 } }}>
-          <Label value="Seeds" fontSize={15} color={{ r: 0.65, g: 1, b: 0.55, a: 1 }} uiTransform={{ margin: { bottom: 12 } }} />
+        <UiEntity uiTransform={{ flexDirection: 'column', flex: 1, margin: { right: 24 } }}>
+          <Label value="Seeds" fontSize={24} color={{ r: 0.65, g: 1, b: 0.55, a: 1 }} uiTransform={{ margin: { bottom: 16 } }} />
           {seedRows.length === 0
-            ? <Label value="No seeds in stock" fontSize={13} color={C.textMute} />
+            ? <Label value="No seeds in stock" fontSize={22} color={C.textMute} />
             : (
               <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {seedRows.map((c) => (
@@ -60,13 +57,13 @@ export const InventoryPanel = () => {
         </UiEntity>
 
         {/* Vertical divider */}
-        <UiEntity uiTransform={{ width: 2, margin: { right: 16 } }} uiBackground={{ color: C.divider }} />
+        <UiEntity uiTransform={{ width: 3, margin: { right: 24 } }} uiBackground={{ color: C.divider }} />
 
         {/* Harvested */}
         <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
-          <Label value="Harvested" fontSize={15} color={C.orange} uiTransform={{ margin: { bottom: 12 } }} />
+          <Label value="Harvested" fontSize={24} color={C.orange} uiTransform={{ margin: { bottom: 16 } }} />
           {harvestRows.length === 0
-            ? <Label value="Nothing harvested yet" fontSize={13} color={C.textMute} />
+            ? <Label value="Nothing harvested yet" fontSize={22} color={C.textMute} />
             : (
               <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap' }}>
                 {harvestRows.map((c) => (
