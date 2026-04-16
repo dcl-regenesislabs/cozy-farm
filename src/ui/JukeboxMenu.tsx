@@ -3,7 +3,7 @@ import { playerState } from '../game/gameState'
 import { musicState, SONGS, SongDef } from '../game/musicState'
 import { playSong, toggleMute, setMusicVolume } from '../systems/musicSystem'
 import { playSound } from '../systems/sfxSystem'
-import { PanelShell, C } from './PanelShell'
+import { PanelShell, C, PANEL_W } from './PanelShell'
 
 // ─── Palette additions for the jukebox ─────────────────────────────────────
 const CARD_ACTIVE:   { r: number; g: number; b: number; a: number } = { r: 0.18, g: 0.14, b: 0.06, a: 1 }
@@ -15,6 +15,11 @@ const VOL_ACTIVE_BG: { r: number; g: number; b: number; a: number } = { r: 0.60,
 const VOL_INACTIVE_BG: { r: number; g: number; b: number; a: number } = { r: 0.12, g: 0.10, b: 0.05, a: 1 }
 
 const VOLUME_STEPS = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+// PanelShell has 45px padding on each side; use explicit pixel width per button
+// so DCL's layout engine never has to resolve a percentage in a nested component.
+const PANEL_PADDING = 45
+const VOL_BTN_W     = (PANEL_W - PANEL_PADDING * 2) / VOLUME_STEPS.length  // = 120
 
 // ─── Song card ─────────────────────────────────────────────────────────────
 type SongCardProps = { key?: string; song: SongDef; isPlaying: boolean; isMuted: boolean }
@@ -54,8 +59,8 @@ const SongCard = ({ song, isPlaying, isMuted }: SongCardProps) => {
         uiBackground={{ color: active ? C.divider : { r: 0.07, g: 0.05, b: 0.02, a: 1 } }}
       >
         <Label
-          value={active ? (isMuted ? '🔇' : '🎵') : '♪'}
-          fontSize={active ? 34 : 38}
+          value="♪"
+          fontSize={38}
           color={active ? ACCENT_PINK : C.textMute}
           textAlign="middle-center"
         />
@@ -79,24 +84,6 @@ const SongCard = ({ song, isPlaying, isMuted }: SongCardProps) => {
           />
         )}
       </UiEntity>
-
-      {/* Badge */}
-      {!active && (
-        <UiEntity
-          uiTransform={{ width: 90, height: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-          uiBackground={{ color: C.divider }}
-        >
-          <Label value="Play" fontSize={20} color={C.textMute} textAlign="middle-center" />
-        </UiEntity>
-      )}
-      {active && (
-        <UiEntity
-          uiTransform={{ width: 120, height: 40, alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-          uiBackground={{ color: { r: 0.30, g: 0.18, b: 0.02, a: 1 } }}
-        >
-          <Label value="▶ Playing" fontSize={18} color={ACCENT_PINK} textAlign="middle-center" />
-        </UiEntity>
-      )}
     </UiEntity>
   )
 }
@@ -109,7 +96,7 @@ const VolumePicker = ({ volume }: { volume: number }) => {
     <UiEntity
       uiTransform={{
         flexDirection:  'column',
-        width:          '100%',
+        alignSelf:      'stretch',
         margin:         { top: 10, bottom: 10 },
       }}
     >
@@ -120,18 +107,17 @@ const VolumePicker = ({ volume }: { volume: number }) => {
         textAlign="top-left"
         uiTransform={{ margin: { bottom: 8 } }}
       />
-      <UiEntity uiTransform={{ flexDirection: 'row', width: '100%' }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', width: PANEL_W - PANEL_PADDING * 2 }}>
         {VOLUME_STEPS.map((pct) => {
           const isActive = activeStep === pct
           return (
             <UiEntity
               key={`vol_${pct}`}
               uiTransform={{
-                flex:           1,
-                height:         52,
+                width:          VOL_BTN_W,
+                height:         70,
                 alignItems:     'center',
                 justifyContent: 'center',
-                margin:         { right: pct < 100 ? 4 : 0 },
                 pointerFilter:  'block',
               }}
               uiBackground={{ color: isActive ? VOL_ACTIVE_BG : VOL_INACTIVE_BG }}
@@ -144,7 +130,7 @@ const VolumePicker = ({ volume }: { volume: number }) => {
             >
               <Label
                 value={`${pct}%`}
-                fontSize={18}
+                fontSize={20}
                 color={isActive ? C.gold : C.textMute}
                 textAlign="middle-center"
               />
@@ -171,7 +157,7 @@ const MuteButton = ({ muted }: { muted: boolean }) => (
     onMouseDown={() => { playSound('buttonclick'); toggleMute() }}
   >
     <Label
-      value={muted ? '🔇  Unmute Music' : '🔊  Mute Music'}
+      value={muted ? 'Unmute Music' : 'Mute Music'}
       fontSize={24}
       color={muted ? { r: 1, g: 0.9, b: 0.9, a: 1 } : C.textMain}
       textAlign="middle-center"
