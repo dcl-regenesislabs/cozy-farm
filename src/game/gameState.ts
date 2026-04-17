@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
 
-export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox'
+export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2'
 
 export const playerState = {
   coins: 0,
@@ -10,6 +10,8 @@ export const playerState = {
   activeMenu: 'none' as MenuType,
   activePlotEntity: null as Entity | null,
   cropsUnlocked: false,
+  expansion1Unlocked: false,
+  expansion2Unlocked: false,
   farmerHired: false,
   farmerSeeds: new Map<CropType, number>(),
   farmerInventory: new Map<CropType, number>(),

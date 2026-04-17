@@ -37,24 +37,21 @@ function closeDialog() {
 }
 
 export const NpcDialogMenu = () => {
-  // For quest_active mode: derive the quest icon, progress, and reward
-  const activeQuest = npcDialogState.mode === 'quest_active'
-    ? getQuestForNpc(npcDialogState.npcId)
-    : null
+  // Derive quest data for quest_offer and quest_active modes
+  const isQuestMode = npcDialogState.mode === 'quest_active' || npcDialogState.mode === 'quest_offer'
+  const activeQuest = isQuestMode ? getQuestForNpc(npcDialogState.npcId) : null
   const activeQuestProgress = activeQuest ? questProgressMap.get(activeQuest.id) : null
 
-  let questIcon = BOX_CROPS_ICON
-  if (activeQuest) {
-    if (activeQuest.type === 'harvest_crop' && activeQuest.cropType !== null) {
-      questIcon = CROP_HARVEST_IMAGES[activeQuest.cropType]
-    } else if (activeQuest.type === 'water_total') {
-      questIcon = WATERINGCAN_ICON
-    } else if (activeQuest.type === 'plant_total') {
-      questIcon = SOIL_ICON
-    } else if (activeQuest.type === 'sell_total') {
-      questIcon = SHOPINGCART_ICON
-    }
+  function getQuestIcon(quest: ReturnType<typeof getQuestForNpc>): string {
+    if (!quest) return BOX_CROPS_ICON
+    if (quest.type === 'harvest_crop' && quest.cropType !== null) return CROP_HARVEST_IMAGES[quest.cropType]
+    if (quest.type === 'harvest_total') return BOX_CROPS_ICON
+    if (quest.type === 'water_total')   return WATERINGCAN_ICON
+    if (quest.type === 'plant_total')   return SOIL_ICON
+    if (quest.type === 'sell_total')    return SHOPINGCART_ICON
+    return BOX_CROPS_ICON
   }
+  const questIcon = getQuestIcon(activeQuest ?? undefined)
 
   return (
   <UiEntity
@@ -103,8 +100,8 @@ export const NpcDialogMenu = () => {
         uiBackground={{ color: C.divider }}
       />
 
-      {/* Default: plain dialog text */}
-      {!activeQuest && (
+      {/* Default: plain dialog text (greeting / tutorial) */}
+      {npcDialogState.mode !== 'quest_offer' && npcDialogState.mode !== 'quest_active' && (
         <Label
           value={npcDialogState.dialogLine}
           fontSize={24}
@@ -114,8 +111,55 @@ export const NpcDialogMenu = () => {
         />
       )}
 
+      {/* quest_offer: description + task card + reward row */}
+      {npcDialogState.mode === 'quest_offer' && activeQuest && (
+        <UiEntity uiTransform={{ flex: 1, flexDirection: 'column' }}>
+          {/* NPC speech */}
+          <Label
+            value={npcDialogState.dialogLine}
+            fontSize={22}
+            color={C.textMain}
+            textAlign="top-left"
+            uiTransform={{ flex: 1 }}
+          />
+          {/* Task row */}
+          <UiEntity
+            uiTransform={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              margin: { bottom: 10 },
+            }}
+            uiBackground={{ color: C.rowBg }}
+          >
+            <UiEntity
+              uiTransform={{ width: 52, height: 52, margin: { top: 8, bottom: 8, left: 10, right: 12 }, flexShrink: 0 }}
+              uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            />
+            <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
+              <Label value="Task" fontSize={18} color={C.textMute} textAlign="top-left" />
+              <Label value={activeQuest.title} fontSize={22} color={C.textMain} textAlign="top-left" />
+            </UiEntity>
+          </UiEntity>
+          {/* Reward row */}
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Label value="Reward: " fontSize={22} color={C.textMute} />
+            <UiEntity
+              uiTransform={{ width: 26, height: 26, margin: { left: 4, right: 6 }, flexShrink: 0 }}
+              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            />
+            <Label value={`${activeQuest.rewardCoins}`} fontSize={24} color={C.gold} />
+            <Label
+              value={`+ ${activeQuest.rewardXp} XP`}
+              fontSize={22}
+              color={C.textMute}
+              uiTransform={{ margin: { left: 14 } }}
+            />
+          </UiEntity>
+        </UiEntity>
+      )}
+
       {/* quest_active: structured inline layout */}
-      {activeQuest && (
+      {npcDialogState.mode === 'quest_active' && activeQuest && (
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column' }}>
           {/* Quest title */}
           <Label

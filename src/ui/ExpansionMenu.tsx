@@ -1,27 +1,44 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
-import { spawnFarmer } from '../systems/farmerSystem'
-import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
+import {
+  removeForSaleSign2, removeForSaleSign3,
+  unlockExpansion1Plots, unlockExpansion2Plots,
+} from '../systems/interactionSetup'
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
 import { COINS_ICON, SOIL_ICON } from '../data/imagePaths'
 
-const UNLOCK_COST    = 10000
-const DIALOG_H       = 400
-const BTN_H          = 64
-const BTN_FONT       = 22
-const BTN_W_BUY      = 220
-const BTN_W_CANCEL   = 180
-const BTN_BOTTOM     = 24
-const BTN_RIGHT      = 24
-const SHAKE_DURATION = 320
+const EXPANSION_COST  = 500
+const DIALOG_H        = 400
+const BTN_H           = 64
+const BTN_FONT        = 22
+const BTN_W_BUY       = 220
+const BTN_W_CANCEL    = 180
+const BTN_BOTTOM      = 24
+const BTN_RIGHT       = 24
+const SHAKE_DURATION  = 320
 
-const BUY_BTN_BG         = { r: 0.17, g: 0.52, b: 0.17, a: 1 }
+const BUY_BTN_BG          = { r: 0.17, g: 0.52, b: 0.17, a: 1 }
 const BUY_BTN_BG_DISABLED = { r: 0.22, g: 0.22, b: 0.22, a: 1 }
 
-export const UnlockMenu = () => {
-  const canAfford = playerState.coins >= UNLOCK_COST
+export const ExpansionMenu = () => {
+  const pack      = playerState.activeMenu === 'expansion1' ? 1 : 2
+  const canAfford = playerState.coins >= EXPANSION_COST
+
+  function doConfirm() {
+    playerState.coins -= EXPANSION_COST
+    if (pack === 1) {
+      playerState.expansion1Unlocked = true
+      removeForSaleSign2()
+      unlockExpansion1Plots()
+    } else {
+      playerState.expansion2Unlocked = true
+      removeForSaleSign3()
+      unlockExpansion2Plots()
+    }
+    playerState.activeMenu = 'none'
+  }
 
   return (
     <UiEntity
@@ -59,7 +76,7 @@ export const UnlockMenu = () => {
         }}
       >
         <Label
-          value="Land Expansion"
+          value={`Plot Expansion — Pack ${pack}`}
           fontSize={30}
           color={C.header}
           textAlign="middle-left"
@@ -70,7 +87,7 @@ export const UnlockMenu = () => {
           uiBackground={{ color: C.divider }}
         />
         <Label
-          value="Unlock Tier 2 & 3 crops and hire a farmer to tend 24 additional plots automatically."
+          value="Unlock 3 new soil plots to grow your own crops. These are yours to manage — no farmer needed."
           fontSize={22}
           color={C.textMain}
           textAlign="top-left"
@@ -85,7 +102,7 @@ export const UnlockMenu = () => {
             uiBackground={{ texture: { src: COINS_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
           />
           <Label
-            value={`${UNLOCK_COST}`}
+            value={`${EXPANSION_COST}`}
             fontSize={28}
             color={canAfford ? C.gold : { r: 1, g: 0.38, b: 0.38, a: 1 }}
           />
@@ -119,7 +136,7 @@ export const UnlockMenu = () => {
         uiTransform={{
           positionType: 'absolute',
           position: {
-            right: BTN_RIGHT + BTN_W_CANCEL + 12 - getShakeOffset('unlock_confirm'),
+            right: BTN_RIGHT + BTN_W_CANCEL + 12 - getShakeOffset('expansion_confirm'),
             bottom: BTN_BOTTOM,
           },
           width: BTN_W_BUY,
@@ -130,17 +147,10 @@ export const UnlockMenu = () => {
         }}
         uiBackground={{ color: canAfford ? BUY_BTN_BG : BUY_BTN_BG_DISABLED }}
         onMouseDown={() => {
-          if (!canAfford || isShaking('unlock_confirm')) return
+          if (!canAfford || isShaking('expansion_confirm')) return
           playSound('buttonclick')
-          triggerCardShake('unlock_confirm')
-          setTimeout(() => {
-            playerState.coins -= UNLOCK_COST
-            playerState.cropsUnlocked = true
-            removeForSaleSign()
-            unlockFarmerPlots()
-            spawnFarmer()
-            playerState.activeMenu = 'none'
-          }, SHAKE_DURATION)
+          triggerCardShake('expansion_confirm')
+          setTimeout(doConfirm, SHAKE_DURATION)
         }}
       >
         <Label
@@ -154,7 +164,7 @@ export const UnlockMenu = () => {
           uiBackground={{ texture: { src: COINS_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
         <Label
-          value={`${UNLOCK_COST}`}
+          value={`${EXPANSION_COST}`}
           fontSize={BTN_FONT}
           color={canAfford ? C.gold : C.textMute}
           textAlign="middle-center"
@@ -166,7 +176,7 @@ export const UnlockMenu = () => {
         uiTransform={{
           positionType: 'absolute',
           position: {
-            right: BTN_RIGHT - getShakeOffset('unlock_cancel'),
+            right: BTN_RIGHT - getShakeOffset('expansion_cancel'),
             bottom: BTN_BOTTOM,
           },
         }}
@@ -177,9 +187,9 @@ export const UnlockMenu = () => {
           fontSize={BTN_FONT}
           uiTransform={{ width: BTN_W_CANCEL, height: BTN_H }}
           onMouseDown={() => {
-            if (isShaking('unlock_cancel')) return
+            if (isShaking('expansion_cancel')) return
             playSound('buttonclick')
-            triggerCardShake('unlock_cancel')
+            triggerCardShake('expansion_cancel')
             setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
           }}
         />

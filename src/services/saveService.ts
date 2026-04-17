@@ -6,6 +6,14 @@ import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
 import { room, FarmStatePayload, CropCount, PlotSaveState } from '../shared/farmMessages'
 import { setCropModel, setSoilIconDisplay } from '../game/actions'
+import {
+  unlockExpansion1Plots, unlockExpansion2Plots,
+  removeForSaleSign2, removeForSaleSign3,
+  applyPlotUnlockVisual,
+} from '../systems/interactionSetup'
+import { questProgressMap, QuestStatus } from '../game/questState'
+import { musicState } from '../game/musicState'
+import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval
@@ -65,8 +73,10 @@ export function buildSavePayload(): FarmStatePayload {
     harvested: mapToArray(playerState.harvested),
     xp:       playerState.xp,
     level:    playerState.level,
-    cropsUnlocked:   playerState.cropsUnlocked,
-    farmerHired:     playerState.farmerHired,
+    cropsUnlocked:      playerState.cropsUnlocked,
+    expansion1Unlocked: playerState.expansion1Unlocked,
+    expansion2Unlocked: playerState.expansion2Unlocked,
+    farmerHired:        playerState.farmerHired,
     farmerSeeds:     mapToArray(playerState.farmerSeeds),
     farmerInventory: mapToArray(playerState.farmerInventory),
     dogOwned:        playerState.dogOwned,
@@ -80,7 +90,13 @@ export function buildSavePayload(): FarmStatePayload {
     tutorialSeedsBought: tutorialState.seedsBought,
     tutorialHarvestMore: tutorialState.harvestMoreCount,
     claimedRewards:      playerState.claimedRewards,
-    plotStates: collectPlotStates(),
+    plotStates:          collectPlotStates(),
+    questProgress:       Array.from(questProgressMap.values()).map((qp) => ({
+      id: qp.id, current: qp.current, status: qp.status,
+    })),
+    musicSongId:         musicState.currentSongId,
+    musicMuted:          musicState.muted,
+    musicVolume:         musicState.volume,
   }
 }
 
@@ -98,7 +114,18 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.level = payload.level
 
   // ── Unlocks ───────────────────────────────────────────────────────────────
-  playerState.cropsUnlocked = payload.cropsUnlocked
+  playerState.cropsUnlocked      = payload.cropsUnlocked
+  playerState.expansion1Unlocked = payload.expansion1Unlocked
+  playerState.expansion2Unlocked = payload.expansion2Unlocked
+
+  if (payload.expansion1Unlocked) {
+    unlockExpansion1Plots()
+    removeForSaleSign2()
+  }
+  if (payload.expansion2Unlocked) {
+    unlockExpansion2Plots()
+    removeForSaleSign3()
+  }
 
   // ── Farmer ────────────────────────────────────────────────────────────────
   playerState.farmerHired      = payload.farmerHired
@@ -123,6 +150,20 @@ function applyPayload(payload: FarmStatePayload): void {
   tutorialState.seedsBought      = payload.tutorialSeedsBought
   tutorialState.harvestMoreCount = payload.tutorialHarvestMore
   playerState.claimedRewards     = payload.claimedRewards ?? []
+
+  // ── Quest progress ────────────────────────────────────────────────────────
+  for (const saved of payload.questProgress ?? []) {
+    const qp = questProgressMap.get(saved.id)
+    if (qp) {
+      qp.current = saved.current
+      qp.status  = saved.status as QuestStatus
+    }
+  }
+
+  // ── Jukebox preferences ───────────────────────────────────────────────────
+  if (payload.musicSongId) playSong(payload.musicSongId as typeof musicState.currentSongId)
+  setMuted(payload.musicMuted ?? false)
+  setMusicVolume(payload.musicVolume ?? 0.42)
 
   // ── Restore in-progress plots ─────────────────────────────────────────────
   restorePlotStates(payload.plotStates)
@@ -150,8 +191,8 @@ function restorePlotStates(savedPlots: PlotSaveState[]): void {
 
     const mutable = PlotState.getMutable(entity)
 
-    // Always restore unlock state — this is the root of the regression
     mutable.isUnlocked = saved.isUnlocked
+    if (saved.isUnlocked) applyPlotUnlockVisual(entity)
 
     // Nothing else to restore for empty plots
     if (saved.cropType === -1) continue

@@ -63,6 +63,8 @@ function enablePointerOnGltf(entity: Entity) {
 
 const soilEntities: Entity[] = []
 let forSaleSignEntity: Entity | null = null
+let forSaleSign2Entity: Entity | null = null
+let forSaleSign3Entity: Entity | null = null
 let computerEntity: Entity | null = null
 let truckEntity: Entity | null = null
 
@@ -94,23 +96,45 @@ export function setupEntities() {
     )
   }
 
-  // ── For Sale Sign ─────────────────────────────────────────────────────────
+  // ── For Sale Signs ────────────────────────────────────────────────────────
   forSaleSignEntity = engine.getEntityOrNullByName('For Sale Sign')
   if (forSaleSignEntity) {
     pointerEventsSystem.onPointerDown(
       {
         entity: forSaleSignEntity,
-        opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock Crops (1000 coins)', maxDistance: 8 },
+        opts: { button: InputAction.IA_POINTER, hoverText: 'Expand Farm (10000 coins)', maxDistance: 8 },
       },
       () => { playSound('menu'); playerState.activeMenu = 'unlock' }
     )
   }
 
+  forSaleSign2Entity = engine.getEntityOrNullByName('For Sale Sign_2')
+  if (forSaleSign2Entity) {
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: forSaleSign2Entity,
+        opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
+      },
+      () => { playSound('menu'); playerState.activeMenu = 'expansion1' }
+    )
+  }
+
+  forSaleSign3Entity = engine.getEntityOrNullByName('For Sale Sign_3')
+  if (forSaleSign3Entity) {
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: forSaleSign3Entity,
+        opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
+      },
+      () => { playSound('menu'); playerState.activeMenu = 'expansion2' }
+    )
+  }
+
   // ── Soil plots ────────────────────────────────────────────────────────────
-  // First one is named "Soil01.glb", rest are "Soil01.glb_2" through "Soil01.glb_27"
+  // First one is named "Soil01.glb", rest are "Soil01.glb_2" through "Soil01.glb_36"
   const firstSoil = engine.getEntityOrNullByName('Soil01.glb')
   if (firstSoil) soilEntities.push(firstSoil)
-  for (let i = 2; i <= 30; i++) {
+  for (let i = 2; i <= 36; i++) {
     const soil = engine.getEntityOrNullByName(`Soil01.glb_${i}`)
     if (soil) soilEntities.push(soil)
   }
@@ -171,10 +195,51 @@ export function removeForSaleSign() {
   }
 }
 
+export function removeForSaleSign2() {
+  if (forSaleSign2Entity) {
+    pointerEventsSystem.removeOnPointerDown(forSaleSign2Entity)
+    engine.removeEntity(forSaleSign2Entity)
+    forSaleSign2Entity = null
+  }
+}
+
+export function removeForSaleSign3() {
+  if (forSaleSign3Entity) {
+    pointerEventsSystem.removeOnPointerDown(forSaleSign3Entity)
+    engine.removeEntity(forSaleSign3Entity)
+    forSaleSign3Entity = null
+  }
+}
+
+/** Expansion Pack 1: unlock player-only plots 6–8 (entity names Soil01.glb_7 through _9) */
+export function unlockExpansion1Plots() {
+  soilEntities.forEach((entity) => {
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex >= 6 && plot.plotIndex <= 8) {
+      PlotState.getMutable(entity).isUnlocked = true
+      updatePlotHoverText(entity)
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+}
+
+/** Expansion Pack 2: unlock player-only plots 9–11 (entity names Soil01.glb_10 through _12) */
+export function unlockExpansion2Plots() {
+  soilEntities.forEach((entity) => {
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex >= 9 && plot.plotIndex <= 11) {
+      PlotState.getMutable(entity).isUnlocked = true
+      updatePlotHoverText(entity)
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+}
+
+/** Farmer zone: unlock plots 12–35 (entity names Soil01.glb_13 through _36) */
 export function unlockFarmerPlots() {
   soilEntities.forEach((entity) => {
     const plot = PlotState.get(entity)
-    if (plot.plotIndex >= 6) {
+    if (plot.plotIndex >= 12) {
       PlotState.getMutable(entity).isUnlocked = true
       updatePlotHoverText(entity)
       GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
@@ -261,6 +326,19 @@ export function registerPlotPointerEvent(entity: Entity) {
 export function updatePlotHoverText(entity: Entity) {
   pointerEventsSystem.removeOnPointerDown(entity)
   registerPlotPointerEvent(entity)
+}
+
+/**
+ * Restore the visual model and hover text for a plot that was unlocked in a
+ * previous session. Call this from saveService after setting isUnlocked in ECS.
+ * Plot 0 keeps its scene-editor model; plots 1+ swap from transparent to opaque.
+ */
+export function applyPlotUnlockVisual(entity: Entity): void {
+  const plot = PlotState.get(entity)
+  if (plot.plotIndex >= 1) {
+    GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+  }
+  updatePlotHoverText(entity)
 }
 
 export function getSoilEntities(): Entity[] {

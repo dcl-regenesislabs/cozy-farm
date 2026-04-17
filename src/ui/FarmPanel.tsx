@@ -7,8 +7,8 @@ import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { PanelShell, C } from './PanelShell'
 
-// 3 cols × 2 rows = 6 per page — tiles are square like seed cards
-const PLOTS_PER_PAGE = 6
+// 4 cols × 2 rows = 8 per page
+const PLOTS_PER_PAGE = 8
 
 const farmTab  = { value: 'home' as 'home' | 'expansion' }
 const farmPage = { home: 0, expansion: 0 }
@@ -142,15 +142,17 @@ export const FarmPanel = () => {
   const soilEntities = getSoilEntities()
   const now          = Date.now()
 
-  const homePlots      = soilEntities.slice(0, 6)
-  const expansionPlots = soilEntities.slice(6)
+  // Plots 0-11: player-managed (tutorial 0-5 + expansion packs 6-8, 9-11) → My Farm
+  // Plots 12-35: farmer zone → Expansion tab
+  const homePlots      = soilEntities.slice(0, 12)
+  const expansionPlots = soilEntities.slice(12)
 
   const tab       = farmTab.value
   const plots     = tab === 'home' ? homePlots : expansionPlots
   const page      = farmPage[tab]
   const lastPage  = Math.max(0, Math.ceil(plots.length / PLOTS_PER_PAGE) - 1)
   const pageSlice = plots.slice(page * PLOTS_PER_PAGE, (page + 1) * PLOTS_PER_PAGE)
-  const offset    = tab === 'home' ? 0 : 6
+  const offset    = tab === 'home' ? 0 : 12
 
   return (
     <PanelShell title="Farm" onClose={() => { playerState.activeMenu = 'none' }}>

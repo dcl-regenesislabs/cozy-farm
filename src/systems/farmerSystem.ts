@@ -260,7 +260,7 @@ function isTweenComplete(): boolean {
 function pickNextTask(): { plot: Entity; action: ActionType; cropType: number } | null {
   const farmerPlots = getSoilEntities().filter((e) => {
     const p = PlotState.get(e)
-    return p.plotIndex >= 6 && p.isUnlocked
+    return p.plotIndex >= 12 && p.isUnlocked
   })
 
   const harvest = farmerPlots.filter((e) => PlotState.get(e).isReady)

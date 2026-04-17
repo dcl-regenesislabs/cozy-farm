@@ -16,7 +16,7 @@ import { initNpcSystem, getNpcEntity } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER } from './data/npcData'
 import { playerState } from './game/gameState'
 import { initTutorialSystem } from './systems/tutorialSystem'
-import { tutorialCallbacks } from './game/tutorialState'
+import { tutorialCallbacks, tutorialState } from './game/tutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
@@ -81,11 +81,9 @@ export function main() {
     initSaveService(() => {
       initTutorialSystem()
 
-      // Spawn Mayor as tutorial guide (or normal NPC if tutorial is already done).
-      // When he departs, start the regular NPC rotation.
-      initNpcSystem(MAYOR_DEF, () => {
+      function startRegularNpcRotation() {
         let nextIndex = 0
-        let timer     = 3  // 3-second grace period after Mayor departs
+        let timer     = 3  // 3-second grace period before first regular NPC arrives
 
         engine.addSystem((dt: number) => {
           if (nextIndex >= REGULAR_NPC_ROSTER.length) return
@@ -96,8 +94,16 @@ export function main() {
           timer = NPC_SPAWN_INTERVAL
         })
 
-        console.log('CozyFarm: Mayor departed — regular NPC rotation started')
-      })
+        console.log('CozyFarm: Regular NPC rotation started')
+      }
+
+      if (tutorialState.active) {
+        // Tutorial in progress — spawn Mayor as guide; regular rotation starts after he departs
+        initNpcSystem(MAYOR_DEF, startRegularNpcRotation)
+      } else {
+        // Tutorial already complete — skip Mayor, go straight to regular rotation
+        startRegularNpcRotation()
+      }
     })
   })
 }

@@ -1,11 +1,11 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, PlotSaveState, CropCount } from '../../shared/farmMessages'
+import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave } from '../../shared/farmMessages'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 1
+const SCHEMA_VERSION = 2
 
 // ---------------------------------------------------------------------------
 // Persisted type — what actually goes into Storage
@@ -18,8 +18,10 @@ export type FarmSaveV1 = {
   harvested:     CropCount[]
   xp:            number
   level:         number
-  cropsUnlocked:    boolean
-  farmerHired:      boolean
+  cropsUnlocked:      boolean
+  expansion1Unlocked: boolean
+  expansion2Unlocked: boolean
+  farmerHired:        boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   dogOwned:         boolean
@@ -33,8 +35,12 @@ export type FarmSaveV1 = {
   tutorialSeedsBought: number
   tutorialHarvestMore: number
   claimedRewards: number[]
-  plotStates: PlotSaveState[]
-  updatedAt: number
+  plotStates:     PlotSaveState[]
+  questProgress:  QuestProgressSave[]
+  musicSongId:    string
+  musicMuted:     boolean
+  musicVolume:    number
+  updatedAt:      number
 }
 
 // ---------------------------------------------------------------------------
@@ -50,6 +56,8 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     xp: 0,
     level: 1,
     cropsUnlocked: false,
+    expansion1Unlocked: false,
+    expansion2Unlocked: false,
     farmerHired: false,
     farmerSeeds: [],
     farmerInventory: [],
@@ -64,8 +72,12 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     tutorialSeedsBought: 0,
     tutorialHarvestMore: 0,
     claimedRewards: [],
-    plotStates: [],
-    updatedAt: Date.now(),
+    plotStates:     [],
+    questProgress:  [],
+    musicSongId:    'a_la_fresca',
+    musicMuted:     false,
+    musicVolume:    0.42,
+    updatedAt:      Date.now(),
   }
 }
 
@@ -92,8 +104,10 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     harvested:     safeArray<CropCount>(maybe.harvested),
     xp:            safeInt(maybe.xp),
     level:         Math.max(1, safeInt(maybe.level, 1)),
-    cropsUnlocked:    safeBool(maybe.cropsUnlocked),
-    farmerHired:      safeBool(maybe.farmerHired),
+    cropsUnlocked:      safeBool(maybe.cropsUnlocked),
+    expansion1Unlocked: safeBool(maybe.expansion1Unlocked),
+    expansion2Unlocked: safeBool(maybe.expansion2Unlocked),
+    farmerHired:        safeBool(maybe.farmerHired),
     farmerSeeds:      safeArray<CropCount>(maybe.farmerSeeds),
     farmerInventory:  safeArray<CropCount>(maybe.farmerInventory),
     dogOwned:         safeBool(maybe.dogOwned),
@@ -108,6 +122,10 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     tutorialHarvestMore: safeInt(maybe.tutorialHarvestMore),
     claimedRewards:      safeArray<number>(maybe.claimedRewards),
     plotStates:          safeArray<PlotSaveState>(maybe.plotStates),
+    questProgress:       safeArray<QuestProgressSave>(maybe.questProgress),
+    musicSongId:         safeStr(maybe.musicSongId, 'a_la_fresca'),
+    musicMuted:          safeBool(maybe.musicMuted),
+    musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
 }
@@ -124,6 +142,8 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     xp:                  save.xp,
     level:               save.level,
     cropsUnlocked:       save.cropsUnlocked,
+    expansion1Unlocked:  save.expansion1Unlocked,
+    expansion2Unlocked:  save.expansion2Unlocked,
     farmerHired:         save.farmerHired,
     farmerSeeds:         save.farmerSeeds,
     farmerInventory:     save.farmerInventory,
@@ -139,6 +159,10 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     tutorialHarvestMore: save.tutorialHarvestMore,
     claimedRewards:      save.claimedRewards,
     plotStates:          save.plotStates,
+    questProgress:       save.questProgress,
+    musicSongId:         save.musicSongId,
+    musicMuted:          save.musicMuted,
+    musicVolume:         save.musicVolume,
   }
 }
 
@@ -179,6 +203,8 @@ export class FarmProgressStore {
       xp:                  payload.xp,
       level:               payload.level,
       cropsUnlocked:       payload.cropsUnlocked,
+      expansion1Unlocked:  payload.expansion1Unlocked,
+      expansion2Unlocked:  payload.expansion2Unlocked,
       farmerHired:         payload.farmerHired,
       farmerSeeds:         payload.farmerSeeds,
       farmerInventory:     payload.farmerInventory,
@@ -194,6 +220,10 @@ export class FarmProgressStore {
       tutorialHarvestMore: payload.tutorialHarvestMore,
       claimedRewards:      payload.claimedRewards,
       plotStates:          payload.plotStates,
+      questProgress:       payload.questProgress,
+      musicSongId:         payload.musicSongId,
+      musicMuted:          payload.musicMuted,
+      musicVolume:         payload.musicVolume,
       updatedAt:           Date.now(),
     }
 

@@ -358,7 +358,7 @@ export function initTutorialSystem() {
 export function skipTutorial() {
   tutorialState.active = false
   tutorialState.step   = 'complete'
-  playerState.coins    = 2000
+  playerState.coins    = 20000
   playerState.seeds.set(CropType.Onion, 5)
   playerState.activeMenu = 'none'
   setArrowTarget(null)

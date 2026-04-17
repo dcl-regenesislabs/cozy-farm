@@ -16,6 +16,15 @@ const PlotSaveSchema = Schemas.Map({
 })
 
 // ---------------------------------------------------------------------------
+// Quest progress entry — one per quest definition
+// ---------------------------------------------------------------------------
+const QuestProgressSaveSchema = Schemas.Map({
+  id:      Schemas.String,
+  current: Schemas.Int,
+  status:  Schemas.String,   // 'available' | 'active' | 'claimable' | 'completed'
+})
+
+// ---------------------------------------------------------------------------
 // Seed / harvested crop pair — used in both directions
 // ---------------------------------------------------------------------------
 const CropCountSchema = Schemas.Map({
@@ -41,7 +50,9 @@ const FarmStateSchema = Schemas.Map({
   level: Schemas.Int,
 
   // Unlocks
-  cropsUnlocked: Schemas.Boolean,
+  cropsUnlocked:      Schemas.Boolean,
+  expansion1Unlocked: Schemas.Boolean,
+  expansion2Unlocked: Schemas.Boolean,
 
   // Farmer / worker
   farmerHired:      Schemas.Boolean,
@@ -69,6 +80,14 @@ const FarmStateSchema = Schemas.Map({
 
   // Active plots
   plotStates: Schemas.Array(PlotSaveSchema),
+
+  // Quest progress
+  questProgress: Schemas.Array(QuestProgressSaveSchema),
+
+  // Jukebox preferences
+  musicSongId: Schemas.String,
+  musicMuted:  Schemas.Boolean,
+  musicVolume: Schemas.Number,
 })
 
 // ---------------------------------------------------------------------------
@@ -106,6 +125,12 @@ export type CropCount = {
   count:    number
 }
 
+export type QuestProgressSave = {
+  id:      string
+  current: number
+  status:  string
+}
+
 export type FarmStatePayload = {
   wallet:   string
   coins:    number
@@ -113,8 +138,10 @@ export type FarmStatePayload = {
   harvested: CropCount[]
   xp:       number
   level:    number
-  cropsUnlocked:    boolean
-  farmerHired:      boolean
+  cropsUnlocked:      boolean
+  expansion1Unlocked: boolean
+  expansion2Unlocked: boolean
+  farmerHired:        boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   dogOwned: boolean
@@ -128,5 +155,9 @@ export type FarmStatePayload = {
   tutorialSeedsBought: number
   tutorialHarvestMore: number
   claimedRewards: number[]
-  plotStates: PlotSaveState[]
+  plotStates:     PlotSaveState[]
+  questProgress:  QuestProgressSave[]
+  musicSongId:    string
+  musicMuted:     boolean
+  musicVolume:    number
 }
