@@ -43,8 +43,8 @@ function emptyFarm(wallet: string): FarmSaveV1 {
   return {
     schemaVersion: SCHEMA_VERSION,
     wallet,
-    coins: 50,
-    seeds: [{ cropType: 0, count: 6 }],   // 6 Onion seeds to start
+    coins: 0,
+    seeds: [],
     harvested: [],
     xp: 0,
     level: 1,

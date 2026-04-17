@@ -3,7 +3,7 @@ import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -12,7 +12,7 @@ import './systems/farmerSystem'
 import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
-import { initNpcSystem } from './systems/npcSystem'
+import { initNpcSystem, getNpcEntity } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER } from './data/npcData'
 import { playerState } from './game/gameState'
 import { initTutorialSystem } from './systems/tutorialSystem'
@@ -20,6 +20,8 @@ import { tutorialCallbacks } from './game/tutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
+import { setupMusicSystem } from './systems/musicSystem'
+import { setupSfxSystem } from './systems/sfxSystem'
 
 // Seconds between each regular NPC arrival once the tutorial is complete
 const NPC_SPAWN_INTERVAL = 30
@@ -34,6 +36,8 @@ export function main() {
   // ── Client branch ─────────────────────────────────────────────────────────
   setupUi()
   setupEntities()
+  setupSfxSystem()
+  setupMusicSystem()
   setupInputModifierSystem()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
@@ -42,6 +46,9 @@ export function main() {
   tutorialCallbacks.unlockSoilsPhase2  = unlockSoilsPhase2
   tutorialCallbacks.unlockSoilsAll6    = unlockSoilsAll6
   tutorialCallbacks.getFirstSoilEntity = () => getSoilEntities()[0] ?? null
+  tutorialCallbacks.getComputerEntity  = () => getComputerEntity()
+  tutorialCallbacks.getTruckEntity     = () => getTruckEntity()
+  tutorialCallbacks.getMayorEntity     = () => getNpcEntity('mayorchen')
 
   // Fetch player identity: wallet (save system) + userId (avatar texture) + displayName
   executeTask(async () => {

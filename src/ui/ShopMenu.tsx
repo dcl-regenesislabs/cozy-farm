@@ -6,6 +6,7 @@ import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
+import { playSound } from '../systems/sfxSystem'
 
 const shopTab  = { value: 'seeds' as 'seeds' | 'pets' }
 const shopPage = { seeds: 0, pets: 0 }
@@ -30,7 +31,7 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
         ? { r: 0.2, g: 0.55, b: 0.2, a: 1 }
         : { r: 0.25, g: 0.25, b: 0.25, a: 1 },
     }}
-    onMouseDown={canAfford ? onPress : undefined}
+    onMouseDown={canAfford ? () => { playSound('buttonclick'); onPress() } : undefined}
   >
     <Label
       value={`${cost}`}
@@ -132,9 +133,9 @@ const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastP
   <UiEntity
     uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}
   >
-    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={onPrev} />
+    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onPrev() }} />
     <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
-    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={onNext} />
+    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onNext() }} />
   </UiEntity>
 )
 
@@ -167,14 +168,14 @@ export const ShopMenu = () => {
           variant={tab === 'seeds' ? 'primary' : 'secondary'}
           fontSize={28}
           uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
-          onMouseDown={() => { shopTab.value = 'seeds' }}
+          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'seeds' }}
         />
         <Button
           value="Pets"
           variant={tab === 'pets' ? 'primary' : 'secondary'}
           fontSize={28}
           uiTransform={{ width: 240, height: 68 }}
-          onMouseDown={() => { shopTab.value = 'pets' }}
+          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'pets' }}
         />
       </UiEntity>
 

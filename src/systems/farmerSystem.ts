@@ -27,6 +27,7 @@ import { waterCrop, harvestCrop, setSoilIconDisplay, removeSoilIcons, removeSoil
 import { playSeedVfx } from '../systems/seedVfxSystem'
 import { spawnHarvestVfx } from '../systems/harvestVfxSystem'
 import { DIALOG_ICON, BOX_CROPS_ICON } from '../data/imagePaths'
+import { playSound } from './sfxSystem'
 
 const FARMER_MODEL  = 'assets/scene/Models/Farmer01/Farmer01.glb'
 const HOME_POS       = Vector3.create(44.66, 0, 70.91)
@@ -545,6 +546,7 @@ export function spawnFarmer() {
       opts: { button: InputAction.IA_POINTER, hoverText: 'Talk to Farmer', maxDistance: 8 },
     },
     () => {
+      playSound('menu')
       playerState.activeMenu = 'farmer'
       if (farmer.state === 'idle') {
         playAnim('Talk')

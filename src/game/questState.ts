@@ -23,8 +23,9 @@ export const questProgressMap: Map<string, QuestProgress> = new Map(
 // Tutorial hooks — fire once when a quest is accepted / claimed
 // ---------------------------------------------------------------------------
 
-let onQuestAcceptedCb: (() => void) | null = null
-let onQuestClaimedCb:  (() => void) | null = null
+let onQuestAcceptedCb:  (() => void) | null = null
+let onQuestClaimedCb:   (() => void) | null = null
+let onQuestClaimableCb: (() => void) | null = null
 
 export function setOnQuestAccepted(cb: () => void): void {
   onQuestAcceptedCb = cb
@@ -32,6 +33,11 @@ export function setOnQuestAccepted(cb: () => void): void {
 
 export function setOnQuestClaimed(cb: () => void): void {
   onQuestClaimedCb = cb
+}
+
+/** Fires once when the active quest first becomes claimable (target reached). */
+export function setOnQuestClaimable(cb: () => void): void {
+  onQuestClaimableCb = cb
 }
 
 // ---------------------------------------------------------------------------
@@ -117,6 +123,9 @@ function checkCompletion(def: QuestDefinition, qp: QuestProgress): void {
   if (qp.status === 'active' && qp.current >= def.target) {
     qp.status = 'claimable'
     console.log(`CozyFarm Quest: "${def.title}" ready to claim — talk to ${def.npcName}!`)
+    const cb = onQuestClaimableCb
+    onQuestClaimableCb = null
+    cb?.()
   }
 }
 

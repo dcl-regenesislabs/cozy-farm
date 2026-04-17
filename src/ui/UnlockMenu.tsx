@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { spawnFarmer } from '../systems/farmerSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { C } from './PanelShell'
+import { playSound } from '../systems/sfxSystem'
 
 const UNLOCK_COST = 1000
 const PANEL_W     = 480
@@ -60,7 +61,7 @@ export const UnlockMenu = () => {
               justifyContent: 'center',
             }}
             uiBackground={{ color: { r: 0.22, g: 0.08, b: 0.03, a: 1 } }}
-            onMouseDown={() => { playerState.activeMenu = 'none' }}
+            onMouseDown={() => { playSound('buttonclick'); playerState.activeMenu = 'none' }}
           >
             <Label value="✕" fontSize={16} color={C.orange} textAlign="middle-center" />
           </UiEntity>
@@ -106,6 +107,7 @@ export const UnlockMenu = () => {
               uiTransform={{ width: 120, height: 38, margin: { right: 10 } }}
               onMouseDown={() => {
                 if (!canAfford) return
+                playSound('buttonclick')
                 playerState.coins -= UNLOCK_COST
                 playerState.cropsUnlocked = true
                 removeForSaleSign()
@@ -119,7 +121,7 @@ export const UnlockMenu = () => {
               variant="secondary"
               fontSize={15}
               uiTransform={{ width: 100, height: 38 }}
-              onMouseDown={() => { playerState.activeMenu = 'none' }}
+              onMouseDown={() => { playSound('buttonclick'); playerState.activeMenu = 'none' }}
             />
           </UiEntity>
         </UiEntity>

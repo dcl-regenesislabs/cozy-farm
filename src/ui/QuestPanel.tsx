@@ -2,8 +2,10 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { QUEST_DEFINITIONS } from '../data/questData'
 import { questProgressMap } from '../game/questState'
 import { playerState } from '../game/gameState'
+import { tutorialState, TUTORIAL_MILESTONES, getTutorialMilestoneStatus } from '../game/tutorialState'
 import { PanelShell, C } from './PanelShell'
 import { NPC_ROSTER } from '../data/npcData'
+import { MAYOR_DEF } from '../data/npcData'
 import {
   CROP_HARVEST_IMAGES,
   COINS_IMAGE,
@@ -16,15 +18,90 @@ import {
 const NPC_HEAD: Record<string, string> = {}
 for (const npc of NPC_ROSTER) NPC_HEAD[npc.id] = npc.headImage
 
+// ── Tutorial progress card ────────────────────────────────────────────────────
+const TutorialQuestCard = () => {
+  const doneCount = TUTORIAL_MILESTONES.filter(
+    (m) => getTutorialMilestoneStatus(m) === 'done'
+  ).length
+
+  return (
+    <UiEntity
+      uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 15 } }}
+      uiBackground={{ color: { r: 0.10, g: 0.08, b: 0.18, a: 1 } }}
+    >
+      {/* Left accent — purple/tutorial colour */}
+      <UiEntity
+        uiTransform={{ width: 6, alignSelf: 'stretch', flexShrink: 0 }}
+        uiBackground={{ color: { r: 0.55, g: 0.35, b: 1.0, a: 1 } }}
+      />
+
+      {/* Mayor portrait */}
+      <UiEntity
+        uiTransform={{ width: 80, height: 80, margin: { top: 18, bottom: 18, left: 18 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: MAYOR_DEF.headImage, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+
+      {/* Content */}
+      <UiEntity
+        uiTransform={{
+          flex: 1, flexDirection: 'column',
+          padding: { top: 14, bottom: 14, left: 18, right: 15 },
+        }}
+      >
+        {/* Header row */}
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
+          <Label value="Mayor Chen" fontSize={16} color={{ r: 0.7, g: 0.55, b: 1.0, a: 1 }} />
+          <Label
+            value={`  ${doneCount} / ${TUTORIAL_MILESTONES.length}`}
+            fontSize={15}
+            color={C.textMute}
+          />
+        </UiEntity>
+        <Label
+          value="Tutorial"
+          fontSize={21}
+          color={C.textMain}
+          uiTransform={{ margin: { bottom: 12 } }}
+        />
+
+        {/* Checklist */}
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          {TUTORIAL_MILESTONES.map((m) => {
+            const status = getTutorialMilestoneStatus(m)
+            const icon   = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
+            const color  =
+              status === 'done'    ? C.green :
+              status === 'current' ? C.gold  :
+              C.textMute
+            return (
+              <UiEntity
+                key={m.label}
+                uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 5 } }}
+              >
+                <Label value={icon}       fontSize={15} color={color} uiTransform={{ width: 22 }} />
+                <Label value={m.label}    fontSize={16} color={color} />
+              </UiEntity>
+            )
+          })}
+        </UiEntity>
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+// ── Main panel ────────────────────────────────────────────────────────────────
 export const QuestPanel = () => {
   const visible = QUEST_DEFINITIONS.filter((d) => {
     const qp = questProgressMap.get(d.id)
-    return qp && qp.status !== 'available'
+    return qp && qp.status !== 'available' && qp.status !== 'completed'
   })
 
   return (
     <PanelShell title="Quests" onClose={() => { playerState.activeMenu = 'none' }}>
-      {visible.length === 0 ? (
+      {/* Tutorial progress card — always shown while tutorial is active */}
+      {tutorialState.active && <TutorialQuestCard />}
+
+      {visible.length === 0 && !tutorialState.active ? (
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Label value="No active quests" fontSize={27} color={C.textMute} textAlign="middle-center" />
           <Label

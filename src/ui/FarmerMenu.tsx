@@ -5,6 +5,7 @@ import { CROP_SEED_IMAGES, CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imag
 import { PanelShell, C } from './PanelShell'
 import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
+import { playSound } from '../systems/sfxSystem'
 
 const HIRE_COST = 100
 
@@ -76,14 +77,14 @@ const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps)
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58, margin: { right: 10 } }}
-          onMouseDown={() => { triggerCardShake(shakeKey); giveSeeds(cropType, 1) }}
+          onMouseDown={() => { playSound('buttonclick'); triggerCardShake(shakeKey); giveSeeds(cropType, 1) }}
         />
         <Button
           value="All"
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58 }}
-          onMouseDown={() => { triggerCardShake(shakeKey); giveSeeds(cropType, playerCount) }}
+          onMouseDown={() => { playSound('buttonclick'); triggerCardShake(shakeKey); giveSeeds(cropType, playerCount) }}
         />
       </UiEntity>
     </UiEntity>
@@ -163,6 +164,7 @@ export const FarmerMenu = () => {
             uiTransform={{ width: 400, height: 80 }}
             onMouseDown={() => {
               if (playerState.coins < HIRE_COST) return
+              playSound('buttonclick')
               playerState.coins -= HIRE_COST
               playerState.farmerHired = true
             }}
@@ -186,7 +188,7 @@ export const FarmerMenu = () => {
                 variant="primary"
                 fontSize={24}
                 uiTransform={{ width: 240, height: 62, margin: { top: 8 } }}
-                onMouseDown={collectAll}
+                onMouseDown={() => { playSound('buttonclick'); collectAll() }}
               />
             </UiEntity>
           ) : (
@@ -222,7 +224,7 @@ export const FarmerMenu = () => {
                     variant="secondary"
                     fontSize={22}
                     uiTransform={{ width: 160, height: 58, margin: { right: 20 } }}
-                    onMouseDown={() => { if (farmerSeedPage.value > 0) farmerSeedPage.value-- }}
+                    onMouseDown={() => { if (farmerSeedPage.value > 0) { playSound('pagination'); playSound('buttonclick'); farmerSeedPage.value-- } }}
                   />
                   <Label
                     value={`${seedPage + 1} / ${seedLast + 1}`}
@@ -236,7 +238,7 @@ export const FarmerMenu = () => {
                     variant="secondary"
                     fontSize={22}
                     uiTransform={{ width: 160, height: 58, margin: { left: 20 } }}
-                    onMouseDown={() => { if (farmerSeedPage.value < seedLast) farmerSeedPage.value++ }}
+                    onMouseDown={() => { if (farmerSeedPage.value < seedLast) { playSound('pagination'); playSound('buttonclick'); farmerSeedPage.value++ } }}
                   />
                 </UiEntity>
               )}
