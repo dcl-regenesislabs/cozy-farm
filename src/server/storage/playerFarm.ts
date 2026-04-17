@@ -32,6 +32,7 @@ export type FarmSaveV1 = {
   tutorialStep:        string
   tutorialSeedsBought: number
   tutorialHarvestMore: number
+  claimedRewards: number[]
   plotStates: PlotSaveState[]
   updatedAt: number
 }
@@ -62,6 +63,7 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     tutorialStep: 'welcome',
     tutorialSeedsBought: 0,
     tutorialHarvestMore: 0,
+    claimedRewards: [],
     plotStates: [],
     updatedAt: Date.now(),
   }
@@ -85,7 +87,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
   return {
     schemaVersion: SCHEMA_VERSION,
     wallet:        safeStr(maybe.wallet, wallet),
-    coins:         safeInt(maybe.coins, 50),
+    coins:         safeInt(maybe.coins, 0),
     seeds:         safeArray<CropCount>(maybe.seeds),
     harvested:     safeArray<CropCount>(maybe.harvested),
     xp:            safeInt(maybe.xp),
@@ -104,6 +106,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     tutorialStep:        safeStr(maybe.tutorialStep, 'welcome'),
     tutorialSeedsBought: safeInt(maybe.tutorialSeedsBought),
     tutorialHarvestMore: safeInt(maybe.tutorialHarvestMore),
+    claimedRewards:      safeArray<number>(maybe.claimedRewards),
     plotStates:          safeArray<PlotSaveState>(maybe.plotStates),
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
@@ -134,6 +137,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     tutorialStep:        save.tutorialStep,
     tutorialSeedsBought: save.tutorialSeedsBought,
     tutorialHarvestMore: save.tutorialHarvestMore,
+    claimedRewards:      save.claimedRewards,
     plotStates:          save.plotStates,
   }
 }
@@ -188,6 +192,7 @@ export class FarmProgressStore {
       tutorialStep:        payload.tutorialStep,
       tutorialSeedsBought: payload.tutorialSeedsBought,
       tutorialHarvestMore: payload.tutorialHarvestMore,
+      claimedRewards:      payload.claimedRewards,
       plotStates:          payload.plotStates,
       updatedAt:           Date.now(),
     }

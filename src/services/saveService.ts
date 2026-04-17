@@ -40,9 +40,9 @@ function collectPlotStates(): PlotSaveState[] {
   const states: PlotSaveState[] = []
   for (const [entity] of engine.getEntitiesWith(PlotState)) {
     const plot = PlotState.get(entity)
-    if (plot.cropType === -1) continue   // skip empty plots — no need to persist
     states.push({
       plotIndex:     plot.plotIndex,
+      isUnlocked:    plot.isUnlocked,
       cropType:      plot.cropType,
       plantedAt:     plot.plantedAt,
       waterCount:    plot.waterCount,
@@ -79,6 +79,7 @@ export function buildSavePayload(): FarmStatePayload {
     tutorialStep:        tutorialState.step,
     tutorialSeedsBought: tutorialState.seedsBought,
     tutorialHarvestMore: tutorialState.harvestMoreCount,
+    claimedRewards:      playerState.claimedRewards,
     plotStates: collectPlotStates(),
   }
 }
@@ -121,11 +122,10 @@ function applyPayload(payload: FarmStatePayload): void {
   tutorialState.step             = payload.tutorialStep as typeof tutorialState.step
   tutorialState.seedsBought      = payload.tutorialSeedsBought
   tutorialState.harvestMoreCount = payload.tutorialHarvestMore
+  playerState.claimedRewards     = payload.claimedRewards ?? []
 
   // ── Restore in-progress plots ─────────────────────────────────────────────
-  if (payload.plotStates.length > 0) {
-    restorePlotStates(payload.plotStates)
-  }
+  restorePlotStates(payload.plotStates)
 
   farmLoaded = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
@@ -148,10 +148,17 @@ function restorePlotStates(savedPlots: PlotSaveState[]): void {
     const entity = entityByIndex.get(saved.plotIndex)
     if (!entity) continue
 
+    const mutable = PlotState.getMutable(entity)
+
+    // Always restore unlock state — this is the root of the regression
+    mutable.isUnlocked = saved.isUnlocked
+
+    // Nothing else to restore for empty plots
+    if (saved.cropType === -1) continue
+
     const def = CROP_DATA.get(saved.cropType as CropType)
     if (!def) continue
 
-    const mutable = PlotState.getMutable(entity)
     mutable.cropType      = saved.cropType
     mutable.plantedAt     = saved.plantedAt
     mutable.waterCount    = saved.waterCount

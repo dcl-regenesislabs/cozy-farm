@@ -6,6 +6,7 @@ import { registerMessages } from '@dcl/sdk/network'
 // ---------------------------------------------------------------------------
 const PlotSaveSchema = Schemas.Map({
   plotIndex:    Schemas.Int,
+  isUnlocked:   Schemas.Boolean,
   cropType:     Schemas.Int,       // -1 = empty
   plantedAt:    Schemas.Number,    // Date.now() timestamp (ms)
   waterCount:   Schemas.Int,
@@ -63,6 +64,9 @@ const FarmStateSchema = Schemas.Map({
   tutorialSeedsBought:    Schemas.Int,
   tutorialHarvestMore:    Schemas.Int,
 
+  // Level rewards claimed
+  claimedRewards: Schemas.Array(Schemas.Int),
+
   // Active plots
   plotStates: Schemas.Array(PlotSaveSchema),
 })
@@ -88,6 +92,7 @@ export const room = registerMessages(FarmMessages)
 // ---------------------------------------------------------------------------
 export type PlotSaveState = {
   plotIndex:     number
+  isUnlocked:    boolean
   cropType:      number
   plantedAt:     number
   waterCount:    number
@@ -122,5 +127,6 @@ export type FarmStatePayload = {
   tutorialStep:        string
   tutorialSeedsBought: number
   tutorialHarvestMore: number
+  claimedRewards: number[]
   plotStates: PlotSaveState[]
 }
