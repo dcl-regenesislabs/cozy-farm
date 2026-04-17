@@ -19,6 +19,7 @@ import { initTutorialSystem } from './systems/tutorialSystem'
 import { tutorialCallbacks, tutorialState } from './game/tutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
+import { initVisitService } from './services/visitService'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
@@ -39,6 +40,7 @@ export function main() {
   setupSfxSystem()
   setupMusicSystem()
   setupInputModifierSystem()
+  initVisitService()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

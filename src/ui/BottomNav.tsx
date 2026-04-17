@@ -5,6 +5,7 @@ import type { MenuType } from '../game/gameState'
 import { navAnim, triggerBtnAnim, BTN_BASE } from './navAnimSystem'
 import { playSound } from '../systems/sfxSystem'
 import { tutorialNavState } from '../game/tutorialState'
+import { isVisiting } from '../services/visitService'
 
 type NavBtn = { src: string; menu: MenuType }
 
@@ -29,9 +30,10 @@ export const BottomNav = () => (
     }}
   >
     {BUTTONS.map((btn) => {
-      const isActive  = playerState.activeMenu === btn.menu
-      const size      = navAnim[btn.menu as AnimKey]?.size ?? BTN_BASE
-      const isDimmed  = tutorialNavState.highlightQuests && btn.menu !== 'quests'
+      const isActive     = playerState.activeMenu === btn.menu
+      const size         = navAnim[btn.menu as AnimKey]?.size ?? BTN_BASE
+      const visitBlocked = isVisiting() && btn.menu !== 'farm'
+      const isDimmed     = visitBlocked || (tutorialNavState.highlightQuests && btn.menu !== 'quests')
       return (
         <UiEntity
           key={btn.menu}
@@ -42,6 +44,7 @@ export const BottomNav = () => (
             opacity: isDimmed ? 0.25 : 1,
           }}
           onMouseDown={() => {
+            if (visitBlocked) return
             triggerBtnAnim(btn.menu as AnimKey)
             if (playerState.activeMenu !== btn.menu) playSound('menu')
             else playSound('buttonclick')

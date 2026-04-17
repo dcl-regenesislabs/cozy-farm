@@ -1,6 +1,9 @@
 import { engine, AvatarBase, PlayerIdentityData } from '@dcl/sdk/ecs'
 import { room } from '../shared/farmMessages'
-import { createFarmProgressStore, farmSaveToPayload } from './storage/playerFarm'
+import {
+  createFarmProgressStore, farmSaveToPayload,
+  updatePlayerRegistry, loadPlayerRegistryPage,
+} from './storage/playerFarm'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval (seconds) — same cadence as reference project
@@ -36,6 +39,9 @@ async function loadAndSend(address: string): Promise<void> {
 
   loadedAddresses.add(normalized)
   console.log(`[FarmServer] Loaded farm for ${getDisplayName(normalized)} (${normalized}) — coins: ${farm.coins}`)
+
+  // Register in directory on every connect so returning players appear immediately
+  void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized))
 }
 
 // ---------------------------------------------------------------------------
@@ -72,6 +78,41 @@ export function setupFarmServer(): void {
 
     store.applyPayload(normalized, _data)
     console.log(`[FarmServer] Save received for ${normalized} — coins: ${_data.coins}`)
+
+    const saved = store.get(normalized)
+    if (saved) void updatePlayerRegistry(normalized, saved.level, getDisplayName(normalized))
+  })
+
+  // Serve the paginated player registry
+  room.onMessage('loadPlayerRegistry', async (_data, context) => {
+    if (!context) return
+    const page = typeof _data.page === 'number' ? _data.page : 0
+    console.log(`[FarmServer] loadPlayerRegistry page=${page} from ${context.from}`)
+    try {
+      const { players, totalPages } = await loadPlayerRegistryPage(page)
+      console.log(`[FarmServer] registry: ${players.length} players, ${totalPages} pages`)
+      void room.send('playerRegistryLoaded', { players, totalPages, page })
+    } catch (err) {
+      console.error('[FarmServer] loadPlayerRegistry error:', err)
+      // Always respond so the client doesn't hang
+      void room.send('playerRegistryLoaded', { players: [], totalPages: 1, page })
+    }
+  })
+
+  // Load another player's farm for viewing
+  room.onMessage('loadOtherFarm', async (_data, context) => {
+    if (!context) return
+    const target    = ((_data.address as string) ?? '').toLowerCase()
+    const requester = context.from.toLowerCase()
+    if (!target) return
+    try {
+      const farm    = await store.load(target)
+      const payload = farmSaveToPayload(farm)
+      void room.send('otherFarmLoaded', { requester, address: target, payload })
+    } catch (err) {
+      console.error('[FarmServer] loadOtherFarm error:', err)
+      void room.send('otherFarmError', { requester, address: target, reason: 'server_error' })
+    }
   })
 
   // Register the auto-save ECS system

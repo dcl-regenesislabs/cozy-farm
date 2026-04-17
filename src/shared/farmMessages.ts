@@ -91,6 +91,15 @@ const FarmStateSchema = Schemas.Map({
 })
 
 // ---------------------------------------------------------------------------
+// Player registry entry — used in the Farmers Directory
+// ---------------------------------------------------------------------------
+const PlayerEntrySchema = Schemas.Map({
+  address:     Schemas.String,
+  level:       Schemas.Int,
+  displayName: Schemas.String,
+})
+
+// ---------------------------------------------------------------------------
 // Message registry
 // ---------------------------------------------------------------------------
 const FarmMessages = {
@@ -102,6 +111,33 @@ const FarmMessages = {
 
   /** Client → Server: persist current farm state */
   playerSaveFarm: FarmStateSchema,
+
+  /** Client → Server: fetch a page of known players */
+  loadPlayerRegistry: Schemas.Map({ page: Schemas.Int }),
+
+  /** Server → Client: paginated player list */
+  playerRegistryLoaded: Schemas.Map({
+    players:    Schemas.Array(PlayerEntrySchema),
+    totalPages: Schemas.Int,
+    page:       Schemas.Int,
+  }),
+
+  /** Client → Server: load another player's farm for viewing */
+  loadOtherFarm: Schemas.Map({ address: Schemas.String }),
+
+  /** Server → Client: another player's farm payload */
+  otherFarmLoaded: Schemas.Map({
+    requester: Schemas.String,
+    address:   Schemas.String,
+    payload:   FarmStateSchema,
+  }),
+
+  /** Server → Client: error loading another player's farm */
+  otherFarmError: Schemas.Map({
+    requester: Schemas.String,
+    address:   Schemas.String,
+    reason:    Schemas.String,
+  }),
 }
 
 export const room = registerMessages(FarmMessages)
@@ -129,6 +165,18 @@ export type QuestProgressSave = {
   id:      string
   current: number
   status:  string
+}
+
+export type PlayerEntry = {
+  address:     string
+  level:       number
+  displayName: string
+}
+
+export type PlayerRegistryResponse = {
+  players:    PlayerEntry[]
+  totalPages: number
+  page:       number
 }
 
 export type FarmStatePayload = {

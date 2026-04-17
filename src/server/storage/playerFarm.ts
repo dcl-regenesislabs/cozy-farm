@@ -1,5 +1,5 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave } from '../../shared/farmMessages'
+import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry } from '../../shared/farmMessages'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
@@ -261,4 +261,37 @@ export class FarmProgressStore {
 
 export function createFarmProgressStore(): FarmProgressStore {
   return new FarmProgressStore()
+}
+
+// ---------------------------------------------------------------------------
+// Scene-scoped (global) player registry — list of all players who have saved
+// ---------------------------------------------------------------------------
+const REGISTRY_KEY       = 'player_registry'
+const REGISTRY_PAGE_SIZE = 10
+const REGISTRY_MAX       = 1000
+
+type RegistryEntry = { address: string; level: number; displayName: string; updatedAt: number }
+
+export async function updatePlayerRegistry(address: string, level: number, displayName: string): Promise<void> {
+  const normalized = address.toLowerCase()
+  const raw = (await Storage.get<RegistryEntry[]>(REGISTRY_KEY)) ?? []
+  const filtered = Array.isArray(raw) ? raw.filter((e) => e.address !== normalized) : []
+  filtered.unshift({ address: normalized, level, displayName, updatedAt: Date.now() })
+  if (filtered.length > REGISTRY_MAX) filtered.length = REGISTRY_MAX
+  await Storage.set(REGISTRY_KEY, filtered)
+}
+
+export async function loadPlayerRegistryPage(
+  page: number
+): Promise<{ players: PlayerEntry[]; totalPages: number }> {
+  const fetched = await Storage.get<RegistryEntry[]>(REGISTRY_KEY)
+  const raw = Array.isArray(fetched) ? fetched : []
+  console.log(`[PlayerFarm] registry raw length: ${raw.length}`)
+  const totalPages = Math.max(1, Math.ceil(raw.length / REGISTRY_PAGE_SIZE))
+  const safePage   = Math.max(0, Math.min(page, totalPages - 1))
+  const slice      = raw.slice(safePage * REGISTRY_PAGE_SIZE, (safePage + 1) * REGISTRY_PAGE_SIZE)
+  return {
+    players: slice.map(({ address, level, displayName }) => ({ address, level, displayName: displayName ?? '' })),
+    totalPages,
+  }
 }

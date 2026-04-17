@@ -9,6 +9,7 @@ import { playSound } from './sfxSystem'
 import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
 import { tutorialState } from '../game/tutorialState'
+import { isVisiting } from '../services/visitService'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -79,7 +80,7 @@ export function setupEntities() {
     enablePointerOnGltf(computer)
     pointerEventsSystem.onPointerDown(
       { entity: computer, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Shop', maxDistance: 8 } },
-      () => { playSound('menu'); playerState.activeMenu = 'shop' }
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'shop' }
     )
   }
 
@@ -92,7 +93,7 @@ export function setupEntities() {
     enablePointerOnGltf(truck)
     pointerEventsSystem.onPointerDown(
       { entity: truck, opts: { button: InputAction.IA_POINTER, hoverText: 'Sell Crops', maxDistance: 10 } },
-      () => { playSound('truck'); playerState.activeMenu = 'sell' }
+      () => { if (isVisiting()) return; playSound('truck'); playerState.activeMenu = 'sell' }
     )
   }
 
@@ -104,7 +105,7 @@ export function setupEntities() {
         entity: forSaleSignEntity,
         opts: { button: InputAction.IA_POINTER, hoverText: 'Expand Farm (10000 coins)', maxDistance: 8 },
       },
-      () => { playSound('menu'); playerState.activeMenu = 'unlock' }
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'unlock' }
     )
   }
 
@@ -115,7 +116,7 @@ export function setupEntities() {
         entity: forSaleSign2Entity,
         opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
       },
-      () => { playSound('menu'); playerState.activeMenu = 'expansion1' }
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'expansion1' }
     )
   }
 
@@ -126,7 +127,7 @@ export function setupEntities() {
         entity: forSaleSign3Entity,
         opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
       },
-      () => { playSound('menu'); playerState.activeMenu = 'expansion2' }
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'expansion2' }
     )
   }
 
@@ -166,7 +167,7 @@ export function setupEntities() {
     enablePointerOnGltf(boombox)
     pointerEventsSystem.onPointerDown(
       { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: 'Change Music', maxDistance: 8 } },
-      () => { playSound('menu'); playerState.activeMenu = 'jukebox' }
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'jukebox' }
     )
   }
 
@@ -178,13 +179,24 @@ export function setupEntities() {
     pointerEventsSystem.onPointerDown(
       { entity: bed, opts: { button: InputAction.IA_POINTER, hoverText: 'Sleep', maxDistance: 8 } },
       () => {
+        if (isVisiting()) return
         bedClickCount++
         if (bedClickCount >= 3) skipTutorial()
       },
     )
   }
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}`)
+  // ── Mailbox (Farmers Directory) ───────────────────────────────────────────
+  const mailbox = engine.getEntityOrNullByName('Mailbox')
+  if (mailbox) {
+    enablePointerOnGltf(mailbox)
+    pointerEventsSystem.onPointerDown(
+      { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: 'Farmers Directory', maxDistance: 8 } },
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'mailbox' }
+    )
+  }
+
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}, mailbox=${!!mailbox}`)
 }
 
 export function removeForSaleSign() {
@@ -319,7 +331,7 @@ export function registerPlotPointerEvent(entity: Entity) {
 
   pointerEventsSystem.onPointerDown(
     { entity, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
-    () => handlePlotClick(entity)
+    () => { if (isVisiting()) return; handlePlotClick(entity) }
   )
 }
 

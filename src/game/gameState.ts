@@ -1,7 +1,7 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
 
-export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2'
+export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox'
 
 export const playerState = {
   coins: 0,
@@ -33,4 +33,6 @@ export const playerState = {
   totalCoinsEarned: 0,
   // Level rewards — stores level numbers the player has manually claimed
   claimedRewards: [] as number[],
+  // Visit mode — null means viewing own farm, address means visiting someone else
+  viewingFarm: null as string | null,
 }

@@ -14,6 +14,8 @@ import { StatsPanel }    from './ui/StatsPanel'
 import { QuestPanel }    from './ui/QuestPanel'
 import { FarmPanel }     from './ui/FarmPanel'
 import { JukeboxMenu }  from './ui/JukeboxMenu'
+import { MailboxMenu }  from './ui/MailboxMenu'
+import { VisitHud }     from './ui/VisitHud'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -29,6 +31,7 @@ const MainUi = () => (
   >
     {/* Always-visible chrome */}
     <TopHud />
+    <VisitHud />
     <BottomNav />
 
     {/* World-interaction menus (triggered by clicking scene objects) */}
@@ -42,6 +45,7 @@ const MainUi = () => (
 
     {/* World-object menus (continued) */}
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
+    {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
 
     {/* Bottom-nav panels */}
     {playerState.activeMenu === 'inventory' && <InventoryPanel />}

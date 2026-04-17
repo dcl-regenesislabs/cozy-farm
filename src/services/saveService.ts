@@ -4,7 +4,7 @@ import { CropType, CROP_DATA } from '../data/cropData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, PlotSaveState } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, PlotSaveState, PlayerRegistryResponse } from '../shared/farmMessages'
 import { setCropModel, setSoilIconDisplay } from '../game/actions'
 import {
   unlockExpansion1Plots, unlockExpansion2Plots,
@@ -175,7 +175,7 @@ function applyPayload(payload: FarmStatePayload): void {
 // ---------------------------------------------------------------------------
 // Restore PlotState ECS components from saved data
 // ---------------------------------------------------------------------------
-function restorePlotStates(savedPlots: PlotSaveState[]): void {
+export function restorePlotStates(savedPlots: PlotSaveState[]): void {
   // Build an index: plotIndex → soil entity
   const entityByIndex = new Map<number, ReturnType<typeof engine.addEntity>>()
   for (const [entity] of engine.getEntitiesWith(PlotState)) {
@@ -266,6 +266,32 @@ function scheduleAutoSave(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Pause / resume auto-save (used by visitService during farm visits)
+// ---------------------------------------------------------------------------
+export function pauseAutoSave(): void {
+  if (autoSaveTimer !== null) {
+    clearTimeout(autoSaveTimer)
+    autoSaveTimer = null
+  }
+}
+
+export function resumeAutoSave(): void {
+  if (autoSaveTimer === null) scheduleAutoSave()
+}
+
+// ---------------------------------------------------------------------------
+// Callbacks for visit mode — wired by visitService after initSaveService
+// ---------------------------------------------------------------------------
+export const visitCallbacks = {
+  onOtherFarmLoaded: null as ((requester: string, address: string, payload: FarmStatePayload) => void) | null,
+  onOtherFarmError:  null as ((requester: string, address: string, reason: string) => void) | null,
+}
+
+export const registryCallbacks = {
+  onRegistryLoaded: null as ((data: PlayerRegistryResponse) => void) | null,
+}
+
+// ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
 // onLoaded is called after the first farm state is applied (use it to start
 // systems that depend on restored state, e.g. initTutorialSystem)
@@ -277,6 +303,17 @@ export function initSaveService(onLoaded?: () => void): void {
     if (payload.wallet !== playerState.wallet) return
     applyPayload(payload)
     onLoaded?.()
+  })
+
+  // Visit mode — other farm loaded
+  room.onMessage('otherFarmLoaded', (data) => {
+    visitCallbacks.onOtherFarmLoaded?.(data.requester, data.address, data.payload)
+  })
+  room.onMessage('otherFarmError', (data) => {
+    visitCallbacks.onOtherFarmError?.(data.requester, data.address, data.reason)
+  })
+  room.onMessage('playerRegistryLoaded', (data) => {
+    registryCallbacks.onRegistryLoaded?.(data)
   })
 
   // Ask server to load our farm (wallet must already be set in playerState)

@@ -25,6 +25,7 @@ import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from 
 import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
 import { tutorialState, TutorialStep } from '../game/tutorialState'
 import { playSound } from './sfxSystem'
+import { isVisiting } from '../services/visitService'
 
 // ---------------------------------------------------------------------------
 // Mayor tutorial chit-chat — shown when player clicks Mayor during tutorial
@@ -423,6 +424,7 @@ export function initNpcSystem(def: NpcDefinition, onDespawned?: () => void) {
 // ---------------------------------------------------------------------------
 
 function onNpcClick(entity: Entity) {
+  if (isVisiting()) return
   const npc = activeNpcs.find((n) => n.entity === entity)
   if (!npc) return
   if (npc.state === 'talking') return
@@ -501,8 +503,17 @@ function onNpcClick(entity: Entity) {
 
 function npcUpdateSystem(dt: number) {
   const toRemove: NpcInstance[] = []
+  const visiting = isVisiting()
 
   for (const npc of activeNpcs) {
+    // Hide NPCs during farm visits — scale to zero and skip AI
+    const t = Transform.getMutable(npc.entity)
+    if (visiting) {
+      if (t.scale.x !== 0) t.scale = Vector3.create(0, 0, 0)
+      continue
+    }
+    if (t.scale.x === 0) t.scale = Vector3.create(1.2, 1.2, 1.2)
+
     updateBlend(npc, dt)
 
     switch (npc.state) {
