@@ -283,23 +283,72 @@ export function onTutorialAction(action: TutorialActionType) {
 export function initTutorialSystem() {
   if (!tutorialState.active) return
 
-  // Initialise the guide arrow (creates the entity, registers bob system)
   initTutorialArrow()
-
-  // Register the per-frame watcher
   engine.addSystem(tutorialWatcherSystem, 5, 'tutorialWatcherSystem')
 
-  // Step 1: Welcome dialog — Mayor is already walking into the scene
-  showTutorialDialog(
-    "Welcome to CozyFarm! I'm Mayor Chen, and I'll guide you through the basics.\n\nHere are 15 coins to get you started — go inside your house and log into your computer to buy 5 Onion seeds on El Amazonas!",
-    "Thanks, Mayor!",
-    () => {
-      playerState.coins += STARTER_COINS
-      tutorialState.step = 'buy_seeds'
-      // Point arrow at the shop Computer once the player dismisses the welcome dialog
+  // VFX steps are transient — if player disconnected mid-animation, roll back
+  // to the step that triggers them so the dialog shows again on resume.
+  if (tutorialState.step === 'plant_vfx') tutorialState.step = 'plant_first'
+  if (tutorialState.step === 'water_vfx') tutorialState.step = 'water_first'
+
+  // Resume from saved step — only show welcome dialog on a genuine first session
+  switch (tutorialState.step) {
+    case 'welcome':
+      showTutorialDialog(
+        "Welcome to CozyFarm! I'm Mayor Chen, and I'll guide you through the basics.\n\nHere are 15 coins to get you started — go inside your house and log into your computer to buy 5 Onion seeds on El Amazonas!",
+        "Thanks, Mayor!",
+        () => {
+          playerState.coins += STARTER_COINS
+          tutorialState.step = 'buy_seeds'
+          setArrowTarget((tutorialCallbacks.getComputerEntity() as import('@dcl/sdk/ecs').Entity | null))
+        },
+      )
+      break
+
+    case 'buy_seeds':
       setArrowTarget((tutorialCallbacks.getComputerEntity() as import('@dcl/sdk/ecs').Entity | null))
-    },
-  )
+      break
+
+    case 'plant_first':
+      walkMayorToSoil(0, -1.2)
+      setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
+      break
+
+    case 'water_first':
+      setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
+      break
+
+    case 'wait_grow':
+      setArrowTarget(null)
+      break
+
+    case 'harvest_first':
+      walkMayorToSoil(0, -1.2)
+      setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
+      break
+
+    case 'harvest_more':
+      setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
+      break
+
+    case 'open_quests':
+      tutorialNavState.highlightQuests = true
+      setArrowTarget(null)
+      break
+
+    case 'close_quests':
+      tutorialNavState.highlightQuests = true
+      setArrowTarget(null)
+      break
+
+    case 'talk_mayor':
+    case 'sell_quest':
+      goToTalkMayor()
+      break
+
+    default:
+      break
+  }
 }
 
 // ---------------------------------------------------------------------------

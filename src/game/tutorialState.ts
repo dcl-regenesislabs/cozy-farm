@@ -17,7 +17,7 @@ export type TutorialStep =
 export type TutorialActionType = 'buy_seeds' | 'plant' | 'water' | 'harvest' | 'sell'
 
 export const tutorialState = {
-  active:            true,
+  active:            false,   // set to true by saveService after load (first-time players only)
   step:              'welcome' as TutorialStep,
   seedsBought:       0,    // accumulator for buy_seeds (target: 5)
   harvestMoreCount:  0,    // accumulator for harvest_more (target: 3)

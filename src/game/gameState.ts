@@ -17,7 +17,9 @@ export const playerState = {
   xp: 0,
   level: 1,
   // Player identity (populated async from getUserData)
-  userId: '',
+  wallet: '',         // lowercase wallet address — used as server-side key
+  userId: '',         // DCL userId (for avatar texture)
+  avatarUrl: '',
   displayName: '',
   // Dog companion
   dogOwned: false,

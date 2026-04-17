@@ -16,7 +16,7 @@ import { onTutorialAction } from '../systems/tutorialSystem'
 import { playSound } from '../systems/sfxSystem'
 
 /** Create or update the crop child entity on a soil plot */
-function setCropModel(soilEntity: Entity, modelSrc: string) {
+export function setCropModel(soilEntity: Entity, modelSrc: string) {
   let child = cropChildEntities.get(soilEntity)
   if (!child) {
     child = engine.addEntity()
@@ -391,8 +391,6 @@ export function sellCrop(cropType: CropType, quantity: number): boolean {
   return true
 }
 
-/** Exported for growth system to swap models */
-export { setCropModel }
 
 /** Purchase the dog companion for 500 coins. No-op if already owned or insufficient coins. */
 export function buyDog() {
