@@ -151,7 +151,7 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.totalCoinsEarned    = payload.totalCoinsEarned
   playerState.totalLikesReceived  = payload.totalLikesReceived ?? 0
   playerState.mailbox             = payload.mailbox ?? []
-  playerState.mailboxSeenCount    = 0
+  playerState.mailboxSeenCount    = playerState.mailbox.length
 
   // ── Tutorial state ────────────────────────────────────────────────────────
   // Restore progress so players resume mid-tutorial after disconnect.

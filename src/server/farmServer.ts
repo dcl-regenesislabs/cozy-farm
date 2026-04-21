@@ -162,7 +162,7 @@ export function setupFarmServer(): void {
         reason:       result.reason,
         likeCount:    result.likeCount,
         rewardCoins:  result.rewardCoins,
-      })
+      }, { to: [requester] })
       if (result.success) {
         const targetFarm = store.get(target)
         const reward = targetFarm?.mailbox[0]
@@ -184,7 +184,7 @@ export function setupFarmServer(): void {
         reason:       'server_error',
         likeCount:    0,
         rewardCoins:  0,
-      })
+      }, { to: [requester] })
     }
   })
 
@@ -199,7 +199,7 @@ export function setupFarmServer(): void {
         coins:   result.coins,
         seeds:   result.seeds,
         rewards: result.rewards,
-      })
+      }, { to: [requester] })
     } catch (err) {
       console.error('[FarmServer] collectMailbox error:', err)
       void room.send('mailboxCollected', {
@@ -208,7 +208,7 @@ export function setupFarmServer(): void {
         coins:   0,
         seeds:   [],
         rewards: [],
-      })
+      }, { to: [requester] })
     }
   })
 

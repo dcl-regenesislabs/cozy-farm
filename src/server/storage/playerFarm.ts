@@ -352,6 +352,13 @@ export class FarmProgressStore {
       }
     }
 
+    // Apply rewards server-side immediately so they survive a client disconnect
+    farm.coins = Math.max(0, farm.coins + coins)
+    for (const [cropType, count] of seedTotals) {
+      const existing = farm.seeds.find((s) => s.cropType === cropType)
+      if (existing) existing.count += count
+      else farm.seeds.push({ cropType, count })
+    }
     farm.mailbox = []
     farm.updatedAt = Date.now()
     this.dirty.add(key)
