@@ -2,7 +2,7 @@ import { engine, AvatarBase, PlayerIdentityData } from '@dcl/sdk/ecs'
 import { room } from '../shared/farmMessages'
 import {
   createFarmProgressStore, farmSaveToPayload,
-  updatePlayerRegistry, loadPlayerRegistryPage,
+  updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
 } from './storage/playerFarm'
 
 // ---------------------------------------------------------------------------
@@ -13,6 +13,13 @@ const AUTOSAVE_INTERVAL_SECONDS = 20
 const store = createFarmProgressStore()
 const loadedAddresses = new Set<string>()
 let autosaveAccumulator = 0
+
+// ---------------------------------------------------------------------------
+// Beauty leaderboard cache — avoids hammering Storage on every open
+// ---------------------------------------------------------------------------
+const LEADERBOARD_CACHE_TTL_MS = 60_000
+let leaderboardCache: Awaited<ReturnType<typeof loadBeautyLeaderboard>> | null = null
+let leaderboardCachedAt = 0
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,7 +87,9 @@ export function setupFarmServer(): void {
     console.log(`[FarmServer] Save received for ${normalized} — coins: ${_data.coins}`)
 
     const saved = store.get(normalized)
-    if (saved) void updatePlayerRegistry(normalized, saved.level, getDisplayName(normalized))
+    if (saved) void updatePlayerRegistry(normalized, saved.level, getDisplayName(normalized), saved.beautyScore)
+    // Bust leaderboard cache on every save so rankings stay fresh
+    leaderboardCache = null
   })
 
   // Serve the paginated player registry
@@ -96,6 +105,31 @@ export function setupFarmServer(): void {
       console.error('[FarmServer] loadPlayerRegistry error:', err)
       // Always respond so the client doesn't hang
       void room.send('playerRegistryLoaded', { players: [], totalPages: 1, page })
+    }
+  })
+
+  // Serve the beauty leaderboard (cached 60s)
+  room.onMessage('loadBeautyLeaderboard', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    try {
+      const now = Date.now()
+      if (!leaderboardCache || now - leaderboardCachedAt > LEADERBOARD_CACHE_TTL_MS) {
+        leaderboardCache   = await loadBeautyLeaderboard(requester)
+        leaderboardCachedAt = now
+      }
+      // currentRank/currentScore must be personalized even when using cached list
+      const { entries } = leaderboardCache
+      const myEntry = entries.find((e) => e.address === requester)
+      void room.send('beautyLeaderboardLoaded', {
+        requester:    requester,
+        entries,
+        currentRank:  myEntry?.rank  ?? 0,
+        currentScore: myEntry?.beautyScore ?? 0,
+      })
+    } catch (err) {
+      console.error('[FarmServer] loadBeautyLeaderboard error:', err)
+      void room.send('beautyLeaderboardLoaded', { requester, entries: [], currentRank: 0, currentScore: 0 })
     }
   })
 

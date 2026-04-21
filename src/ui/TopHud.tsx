@@ -4,12 +4,39 @@ import { getXpProgress } from '../systems/levelingSystem'
 import { COINS_IMAGE } from '../data/imagePaths'
 import { triggerBtnAnim } from './navAnimSystem'
 
+const C_GOLD = { r: 1, g: 0.88, b: 0.2, a: 1 }
+
+const LEADERBOARD_BTN_RIGHT = 10
+const LEADERBOARD_BTN_TOP   = 10
+
 export const TopHud = () => {
   const xp       = getXpProgress()
   const xpPct    = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
   const isMaxLvl = playerState.level >= 20
 
   return (
+    <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { top: 0, left: 0 }, pointerFilter: 'none' }}>
+    {/* ── Leaderboard button (top-right, small) ── */}
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: LEADERBOARD_BTN_TOP, right: LEADERBOARD_BTN_RIGHT },
+        width: 110, height: 50,
+        alignItems: 'center', justifyContent: 'center',
+        pointerFilter: 'block',
+      }}
+      uiBackground={{
+        color: playerState.activeMenu === 'leaderboard'
+          ? { r: 0.55, g: 0.42, b: 0.04, a: 1 }
+          : { r: 0.09, g: 0.07, b: 0.03, a: 0.92 },
+      }}
+      onMouseDown={() => {
+        playerState.activeMenu = playerState.activeMenu === 'leaderboard' ? 'none' : 'leaderboard'
+      }}
+    >
+      <Label value="✦ Ranks" fontSize={18} color={C_GOLD} textAlign="middle-center" />
+    </UiEntity>
+
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
@@ -131,6 +158,7 @@ export const TopHud = () => {
           uiTransform={{ width: 400, height: 22, margin: { top: 4 } }}
         />
       </UiEntity>
+    </UiEntity>
     </UiEntity>
   )
 }

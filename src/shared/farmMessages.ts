@@ -88,6 +88,9 @@ const FarmStateSchema = Schemas.Map({
   musicSongId: Schemas.String,
   musicMuted:  Schemas.Boolean,
   musicVolume: Schemas.Number,
+
+  // Beauty score — calculated on save, stored for leaderboard
+  beautyScore: Schemas.Int,
 })
 
 // ---------------------------------------------------------------------------
@@ -97,6 +100,16 @@ const PlayerEntrySchema = Schemas.Map({
   address:     Schemas.String,
   level:       Schemas.Int,
   displayName: Schemas.String,
+})
+
+// ---------------------------------------------------------------------------
+// Leaderboard entry — used in the Beauty Leaderboard
+// ---------------------------------------------------------------------------
+const LeaderboardEntrySchema = Schemas.Map({
+  rank:         Schemas.Int,
+  address:      Schemas.String,
+  displayName:  Schemas.String,
+  beautyScore:  Schemas.Int,
 })
 
 // ---------------------------------------------------------------------------
@@ -120,6 +133,17 @@ const FarmMessages = {
     players:    Schemas.Array(PlayerEntrySchema),
     totalPages: Schemas.Int,
     page:       Schemas.Int,
+  }),
+
+  /** Client → Server: request the beauty leaderboard (top N farms) */
+  loadBeautyLeaderboard: Schemas.Map({}),
+
+  /** Server → Client: beauty leaderboard response */
+  beautyLeaderboardLoaded: Schemas.Map({
+    requester:      Schemas.String, // filter on client — same pattern as farmStateLoaded
+    entries:        Schemas.Array(LeaderboardEntrySchema),
+    currentRank:    Schemas.Int,   // 0 = not ranked
+    currentScore:   Schemas.Int,
   }),
 
   /** Client → Server: load another player's farm for viewing */
@@ -173,6 +197,20 @@ export type PlayerEntry = {
   displayName: string
 }
 
+export type LeaderboardEntry = {
+  rank:        number
+  address:     string
+  displayName: string
+  beautyScore: number
+}
+
+export type BeautyLeaderboardResponse = {
+  requester:    string
+  entries:      LeaderboardEntry[]
+  currentRank:  number
+  currentScore: number
+}
+
 export type PlayerRegistryResponse = {
   players:    PlayerEntry[]
   totalPages: number
@@ -208,4 +246,5 @@ export type FarmStatePayload = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  beautyScore:    number
 }
