@@ -4,7 +4,8 @@ import { CropType, CROP_DATA } from '../data/cropData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, PlotSaveState, PlayerRegistryResponse } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
+import { calculateBeautyScore } from '../game/beautyScore'
 import { setCropModel, setSoilIconDisplay } from '../game/actions'
 import {
   unlockExpansion1Plots, unlockExpansion2Plots,
@@ -66,7 +67,8 @@ function collectPlotStates(): PlotSaveState[] {
 // Build the full payload from current playerState + ECS
 // ---------------------------------------------------------------------------
 export function buildSavePayload(): FarmStatePayload {
-  return {
+  const plotStates = collectPlotStates()
+  const payload: FarmStatePayload = {
     wallet:   playerState.wallet,
     coins:    playerState.coins,
     seeds:    mapToArray(playerState.seeds),
@@ -90,14 +92,17 @@ export function buildSavePayload(): FarmStatePayload {
     tutorialSeedsBought: tutorialState.seedsBought,
     tutorialHarvestMore: tutorialState.harvestMoreCount,
     claimedRewards:      playerState.claimedRewards,
-    plotStates:          collectPlotStates(),
+    plotStates,
     questProgress:       Array.from(questProgressMap.values()).map((qp) => ({
       id: qp.id, current: qp.current, status: qp.status,
     })),
     musicSongId:         musicState.currentSongId,
     musicMuted:          musicState.muted,
     musicVolume:         musicState.volume,
+    beautyScore:         0,
   }
+  payload.beautyScore = calculateBeautyScore(payload)
+  return payload
 }
 
 // ---------------------------------------------------------------------------
@@ -291,6 +296,10 @@ export const registryCallbacks = {
   onRegistryLoaded: null as ((data: PlayerRegistryResponse) => void) | null,
 }
 
+export const leaderboardCallbacks = {
+  onBeautyLeaderboardLoaded: null as ((data: BeautyLeaderboardResponse) => void) | null,
+}
+
 // ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
 // onLoaded is called after the first farm state is applied (use it to start
@@ -314,6 +323,9 @@ export function initSaveService(onLoaded?: () => void): void {
   })
   room.onMessage('playerRegistryLoaded', (data) => {
     registryCallbacks.onRegistryLoaded?.(data)
+  })
+  room.onMessage('beautyLeaderboardLoaded', (data) => {
+    leaderboardCallbacks.onBeautyLeaderboardLoaded?.(data)
   })
 
   // Ask server to load our farm (wallet must already be set in playerState)

@@ -1,5 +1,6 @@
 import { Storage } from '@dcl/sdk/server'
 import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry } from '../../shared/farmMessages'
+import { calculateBeautyScore } from '../../game/beautyScore'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
@@ -40,6 +41,7 @@ export type FarmSaveV1 = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  beautyScore:    number
   updatedAt:      number
 }
 
@@ -77,6 +79,7 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     musicSongId:    'a_la_fresca',
     musicMuted:     false,
     musicVolume:    0.42,
+    beautyScore:    0,
     updatedAt:      Date.now(),
   }
 }
@@ -126,6 +129,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     musicSongId:         safeStr(maybe.musicSongId, 'a_la_fresca'),
     musicMuted:          safeBool(maybe.musicMuted),
     musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
+    beautyScore:         safeInt(maybe.beautyScore, 0),
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
 }
@@ -163,6 +167,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     musicSongId:         save.musicSongId,
     musicMuted:          save.musicMuted,
     musicVolume:         save.musicVolume,
+    beautyScore:         save.beautyScore,
   }
 }
 
@@ -224,6 +229,8 @@ export class FarmProgressStore {
       musicSongId:         payload.musicSongId,
       musicMuted:          payload.musicMuted,
       musicVolume:         payload.musicVolume,
+      // Always recalculate on server — client value is advisory, server is authoritative
+      beautyScore:         calculateBeautyScore(payload),
       updatedAt:           Date.now(),
     }
 
@@ -270,15 +277,48 @@ const REGISTRY_KEY       = 'player_registry'
 const REGISTRY_PAGE_SIZE = 10
 const REGISTRY_MAX       = 1000
 
-type RegistryEntry = { address: string; level: number; displayName: string; updatedAt: number }
+type RegistryEntry = { address: string; level: number; displayName: string; beautyScore: number; updatedAt: number }
 
-export async function updatePlayerRegistry(address: string, level: number, displayName: string): Promise<void> {
+export async function updatePlayerRegistry(address: string, level: number, displayName: string, beautyScore = 0): Promise<void> {
   const normalized = address.toLowerCase()
   const raw = (await Storage.get<RegistryEntry[]>(REGISTRY_KEY)) ?? []
   const filtered = Array.isArray(raw) ? raw.filter((e) => e.address !== normalized) : []
-  filtered.unshift({ address: normalized, level, displayName, updatedAt: Date.now() })
+  filtered.unshift({ address: normalized, level, displayName, beautyScore, updatedAt: Date.now() })
   if (filtered.length > REGISTRY_MAX) filtered.length = REGISTRY_MAX
   await Storage.set(REGISTRY_KEY, filtered)
+}
+
+export async function loadBeautyLeaderboard(
+  requesterAddress: string,
+  topN = 20,
+): Promise<{ entries: { rank: number; address: string; displayName: string; beautyScore: number }[]; currentRank: number; currentScore: number }> {
+  const fetched = await Storage.get<RegistryEntry[]>(REGISTRY_KEY)
+  const raw = Array.isArray(fetched) ? fetched : []
+
+  // Sort by beauty score descending, then by updatedAt as tiebreaker
+  const sorted = [...raw].sort((a, b) => {
+    const diff = (b.beautyScore ?? 0) - (a.beautyScore ?? 0)
+    return diff !== 0 ? diff : b.updatedAt - a.updatedAt
+  })
+
+  const normalized = requesterAddress.toLowerCase()
+  let currentRank  = 0
+  let currentScore = 0
+
+  const allRanked = sorted.map((entry, idx) => {
+    if (entry.address === normalized) {
+      currentRank  = idx + 1
+      currentScore = entry.beautyScore ?? 0
+    }
+    return {
+      rank:        idx + 1,
+      address:     entry.address,
+      displayName: entry.displayName ?? '',
+      beautyScore: entry.beautyScore ?? 0,
+    }
+  })
+
+  return { entries: allRanked.slice(0, topN), currentRank, currentScore }
 }
 
 export async function loadPlayerRegistryPage(

@@ -5,8 +5,11 @@ import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
+import { calculateBeautyScore } from '../game/beautyScore'
+import { LeaderboardContent } from './LeaderboardPanel'
+import { buildSavePayload } from '../services/saveService'
 
-const tabState = { value: 'stats' as 'stats' | 'rewards' }
+const tabState = { value: 'stats' as 'stats' | 'rewards' | 'ranking' }
 
 function claimReward(level: number): void {
   if (playerState.claimedRewards.includes(level)) return
@@ -65,6 +68,7 @@ const StatsTab = () => {
           { label: 'Times Watered',   value: playerState.totalWaterCount,     color: C.blue   },
           { label: 'Crops Sold',      value: playerState.totalSellCount,      color: C.orange },
           { label: 'Coins Earned',    value: playerState.totalCoinsEarned,    color: C.gold   },
+          { label: 'Beauty Score ✦',  value: calculateBeautyScore(buildSavePayload()), color: { r: 1, g: 0.72, b: 0.9, a: 1 } },
         ].map((s) => (
           <UiEntity
             key={s.label}
@@ -141,21 +145,28 @@ const RewardsTab = () => (
   </UiEntity>
 )
 
+const TAB_LABELS: Record<'stats' | 'rewards' | 'ranking', string> = {
+  stats:   'Stats',
+  rewards: 'Rewards',
+  ranking: '✦ Leaderboard',
+}
+
 export const StatsPanel = () => (
   <PanelShell title="Profile" onClose={() => { playerState.activeMenu = 'none' }}>
     <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 24 } }}>
-      {(['stats', 'rewards'] as const).map((tab) => (
+      {(['stats', 'rewards', 'ranking'] as const).map((tab) => (
         <Button
           key={tab}
-          value={tab === 'stats' ? 'Stats' : 'Rewards'}
+          value={TAB_LABELS[tab]}
           variant={tabState.value === tab ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 240, height: 65, margin: { right: 15 } }}
+          fontSize={22}
+          uiTransform={{ width: 220, height: 65, margin: { right: 15 } }}
           onMouseDown={() => { playSound('buttonclick'); tabState.value = tab }}
         />
       ))}
     </UiEntity>
     {tabState.value === 'stats'   && <StatsTab />}
     {tabState.value === 'rewards' && <RewardsTab />}
+    {tabState.value === 'ranking' && <LeaderboardContent />}
   </PanelShell>
 )
