@@ -44,4 +44,6 @@ export const playerState = {
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
   viewingFarmDisplayName: '',
+  // Tracks how many plots this visitor has watered in the current visit session (max 5)
+  visitorSessionWaterCount: 0,
 }

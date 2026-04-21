@@ -10,9 +10,27 @@ import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
 import { tutorialState } from '../game/tutorialState'
 import { isVisiting } from '../services/visitService'
+import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/socialService'
+import { playWateringVfx } from './wateringVfxSystem'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
+
+// Tracks which plot indices were watered in the current visitor session
+const visitSessionWateredPlots = new Set<number>()
+export function clearVisitSessionWater(): void { visitSessionWateredPlots.clear() }
+
+export function initVisitorWaterFeedback(): void {
+  visitorWaterCallbacks.onWaterResult = (data) => {
+    const entity = soilEntities.find(
+      (e) => PlotState.get(e).plotIndex === data.plotIndex
+    )
+    if (!data.success) {
+      visitSessionWateredPlots.delete(data.plotIndex)
+    }
+    if (entity) updatePlotHoverText(entity)
+  }
+}
 
 // Icon position/size constants — tune here
 const COMPUTER_ICON_Y    = 3.2   // height above Computer entity origin
@@ -298,11 +316,38 @@ export function unlockSoilsAll6(): void {
   console.log('CozyFarm Tutorial: unlocked all 6 soil plots (skip)')
 }
 
+function handleVisitorPlotClick(entity: Entity): void {
+  const plot = PlotState.get(entity)
+  if (plot.cropType === -1 || plot.isReady || plot.isWatering || plot.isPlanting) return
+
+  const targetFarm = playerState.viewingFarm
+  if (!targetFarm) return
+
+  if (playerState.visitorSessionWaterCount >= 5) return
+  if (visitSessionWateredPlots.has(plot.plotIndex)) return
+
+  visitSessionWateredPlots.add(plot.plotIndex)
+  PlotState.getMutable(entity).isWatering = true
+  playWateringVfx(entity)
+  playSound('wateringcan')
+  requestVisitorWaterPlot(targetFarm, plot.plotIndex)
+}
+
 export function registerPlotPointerEvent(entity: Entity) {
   const plot = PlotState.get(entity)
+  const visiting = isVisiting()
 
   let hoverText = 'Plant'
-  if (!plot.isUnlocked) {
+
+  if (visiting) {
+    if (!plot.isUnlocked) {
+      hoverText = 'Locked'
+    } else if (plot.cropType !== -1 && !plot.isReady) {
+      hoverText = visitSessionWateredPlots.has(plot.plotIndex) ? 'Watered' : 'Water Crop'
+    } else {
+      hoverText = 'Visiting'
+    }
+  } else if (!plot.isUnlocked) {
     hoverText = 'Locked'
   } else if (plot.cropType !== -1) {
     if (plot.isReady) {
@@ -331,8 +376,17 @@ export function registerPlotPointerEvent(entity: Entity) {
 
   pointerEventsSystem.onPointerDown(
     { entity, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
-    () => { if (isVisiting()) return; handlePlotClick(entity) }
+    () => {
+      if (isVisiting()) { handleVisitorPlotClick(entity); return }
+      handlePlotClick(entity)
+    }
   )
+}
+
+export function refreshAllPlotHoverTexts(): void {
+  for (const entity of soilEntities) {
+    updatePlotHoverText(entity)
+  }
 }
 
 export function updatePlotHoverText(entity: Entity) {

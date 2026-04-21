@@ -15,6 +15,7 @@ const likeUiState = {
 
 const VISIT_HUD_W = 700
 const VISIT_INFO_W = 360
+const VISITOR_WATER_LIMIT = 5
 
 function syncLikeUi(targetFarm: string): void {
   if (likeUiState.farm === targetFarm) return
@@ -47,13 +48,19 @@ export const VisitHud = () => {
       : 'Could not register like'
   }
 
-  const payload    = getVisitedPayload()
-  const likeCount  = payload?.wallet === targetFarm ? payload.totalLikesReceived : 0
-  const farmLabel  = formatPlayerLabel(playerState.viewingFarmDisplayName, targetFarm)
-  const likeLabel  = likeUiState.pending ? 'Liking...' : likeUiState.liked ? 'Liked Today' : 'Like Farm'
-  const likeBg     = likeUiState.liked
+  const payload      = getVisitedPayload()
+  const likeCount    = payload?.wallet === targetFarm ? payload.totalLikesReceived : 0
+  const farmLabel    = formatPlayerLabel(playerState.viewingFarmDisplayName, targetFarm)
+  const likeLabel    = likeUiState.pending ? 'Liking...' : likeUiState.liked ? 'Liked Today' : 'Like Farm'
+  const likeBg       = likeUiState.liked
     ? { r: 0.35, g: 0.18, b: 0.18, a: 1 }
     : { r: 0.58, g: 0.22, b: 0.22, a: 1 }
+  const waterCount   = playerState.visitorSessionWaterCount
+  const waterLeft    = VISITOR_WATER_LIMIT - waterCount
+  const waterLabel   = `Water ${waterCount}/${VISITOR_WATER_LIMIT}`
+  const waterBg      = waterLeft > 0
+    ? { r: 0.12, g: 0.35, b: 0.55, a: 1 }
+    : { r: 0.2, g: 0.2, b: 0.2, a: 1 }
 
   return (
     <UiEntity
@@ -112,6 +119,13 @@ export const VisitHud = () => {
           } : undefined}
         >
           <Label value={likeLabel} fontSize={18} color={C.textMain} textAlign="middle-center" />
+        </UiEntity>
+
+        <UiEntity
+          uiTransform={{ width: 130, height: 44, alignItems: 'center', justifyContent: 'center', margin: { right: 10 } }}
+          uiBackground={{ color: waterBg }}
+        >
+          <Label value={waterLabel} fontSize={17} color={C.textMain} textAlign="middle-center" />
         </UiEntity>
 
         <UiEntity

@@ -20,12 +20,25 @@ export const socialUiCallbacks = {
   }) => void) | null,
 }
 
+export const visitorWaterCallbacks = {
+  onWaterResult: null as ((data: {
+    targetWallet: string
+    plotIndex: number
+    success: boolean
+    reason: string
+  }) => void) | null,
+}
+
 export function requestLikeFarm(targetWallet: string): void {
   void room.send('socialLikeFarm', { targetWallet: targetWallet.toLowerCase() })
 }
 
 export function requestCollectMailbox(): void {
   void room.send('collectMailbox', {})
+}
+
+export function requestVisitorWaterPlot(targetWallet: string, plotIndex: number): void {
+  void room.send('visitorWaterPlot', { targetWallet: targetWallet.toLowerCase(), plotIndex })
 }
 
 function pushSocialToast(text: string): void {
@@ -83,6 +96,27 @@ export function initSocialService(): void {
       playerState.mailbox.unshift(data.reward)
     }
     playerState.totalLikesReceived = data.totalLikesReceived
+    pushSocialToast(data.notificationText)
+  })
+
+  room.onMessage('visitorWaterResult', (data) => {
+    if (data.requester !== playerState.wallet) return
+    if (data.success) {
+      playerState.visitorSessionWaterCount += 1
+    }
+    visitorWaterCallbacks.onWaterResult?.({
+      targetWallet: data.targetWallet,
+      plotIndex:    data.plotIndex,
+      success:      data.success,
+      reason:       data.reason,
+    })
+  })
+
+  room.onMessage('socialOwnerWaterReceived', (data) => {
+    if (data.ownerWallet !== playerState.wallet) return
+    if (!playerState.mailbox.find((r) => r.id === data.reward.id)) {
+      playerState.mailbox.unshift(data.reward)
+    }
     pushSocialToast(data.notificationText)
   })
 }
