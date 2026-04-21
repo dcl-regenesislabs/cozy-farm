@@ -102,6 +102,7 @@ export function buildSavePayload(): FarmStatePayload {
     beautyScore:         0,
   }
   payload.beautyScore = calculateBeautyScore(payload)
+  playerState.beautyScore = payload.beautyScore
   return payload
 }
 
@@ -172,6 +173,8 @@ function applyPayload(payload: FarmStatePayload): void {
 
   // ── Restore in-progress plots ─────────────────────────────────────────────
   restorePlotStates(payload.plotStates)
+
+  playerState.beautyScore = payload.beautyScore ?? 0
 
   farmLoaded = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
@@ -325,6 +328,7 @@ export function initSaveService(onLoaded?: () => void): void {
     registryCallbacks.onRegistryLoaded?.(data)
   })
   room.onMessage('beautyLeaderboardLoaded', (data) => {
+    if (data.requester !== playerState.wallet) return
     leaderboardCallbacks.onBeautyLeaderboardLoaded?.(data)
   })
 

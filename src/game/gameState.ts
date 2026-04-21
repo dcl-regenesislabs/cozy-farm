@@ -33,6 +33,8 @@ export const playerState = {
   totalCoinsEarned: 0,
   // Level rewards — stores level numbers the player has manually claimed
   claimedRewards: [] as number[],
+  // Beauty score — cached after each save/load, read by StatsPanel
+  beautyScore: 0,
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
 }

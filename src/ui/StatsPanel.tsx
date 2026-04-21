@@ -5,9 +5,7 @@ import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
-import { calculateBeautyScore } from '../game/beautyScore'
 import { LeaderboardContent } from './LeaderboardPanel'
-import { buildSavePayload } from '../services/saveService'
 
 const tabState = { value: 'stats' as 'stats' | 'rewards' | 'ranking' }
 
@@ -68,7 +66,7 @@ const StatsTab = () => {
           { label: 'Times Watered',   value: playerState.totalWaterCount,     color: C.blue   },
           { label: 'Crops Sold',      value: playerState.totalSellCount,      color: C.orange },
           { label: 'Coins Earned',    value: playerState.totalCoinsEarned,    color: C.gold   },
-          { label: 'Beauty Score ✦',  value: calculateBeautyScore(buildSavePayload()), color: { r: 1, g: 0.72, b: 0.9, a: 1 } },
+          { label: 'Beauty Score ✦',  value: playerState.beautyScore, color: { r: 1, g: 0.72, b: 0.9, a: 1 } },
         ].map((s) => (
           <UiEntity
             key={s.label}

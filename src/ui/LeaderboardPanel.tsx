@@ -143,7 +143,9 @@ export const LeaderboardContent = () => {
             textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 60 } }} />
         )}
         {!lbState.loading && lbState.entries.map((entry) => (
-          <EntryRow entry={entry} />
+          <UiEntity key={entry.address} uiTransform={{ width: '100%' }}>
+            <EntryRow entry={entry} />
+          </UiEntity>
         ))}
       </UiEntity>
     </UiEntity>

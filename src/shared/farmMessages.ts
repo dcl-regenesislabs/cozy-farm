@@ -140,6 +140,7 @@ const FarmMessages = {
 
   /** Server → Client: beauty leaderboard response */
   beautyLeaderboardLoaded: Schemas.Map({
+    requester:      Schemas.String, // filter on client — same pattern as farmStateLoaded
     entries:        Schemas.Array(LeaderboardEntrySchema),
     currentRank:    Schemas.Int,   // 0 = not ranked
     currentScore:   Schemas.Int,
@@ -204,6 +205,7 @@ export type LeaderboardEntry = {
 }
 
 export type BeautyLeaderboardResponse = {
+  requester:    string
   entries:      LeaderboardEntry[]
   currentRank:  number
   currentScore: number

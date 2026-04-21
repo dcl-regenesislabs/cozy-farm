@@ -122,13 +122,14 @@ export function setupFarmServer(): void {
       const { entries } = leaderboardCache
       const myEntry = entries.find((e) => e.address === requester)
       void room.send('beautyLeaderboardLoaded', {
+        requester:    requester,
         entries,
         currentRank:  myEntry?.rank  ?? 0,
         currentScore: myEntry?.beautyScore ?? 0,
       })
     } catch (err) {
       console.error('[FarmServer] loadBeautyLeaderboard error:', err)
-      void room.send('beautyLeaderboardLoaded', { entries: [], currentRank: 0, currentScore: 0 })
+      void room.send('beautyLeaderboardLoaded', { requester, entries: [], currentRank: 0, currentScore: 0 })
     }
   })
 
