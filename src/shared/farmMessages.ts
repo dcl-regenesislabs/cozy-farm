@@ -32,6 +32,17 @@ const CropCountSchema = Schemas.Map({
   count:    Schemas.Int,
 })
 
+const MailboxRewardSchema = Schemas.Map({
+  id:          Schemas.String,
+  type:        Schemas.String,
+  reason:      Schemas.String,
+  amount:      Schemas.Int,
+  cropType:    Schemas.Int,
+  fromAddress: Schemas.String,
+  fromName:    Schemas.String,
+  createdAt:   Schemas.Int64,
+})
+
 // ---------------------------------------------------------------------------
 // Full farm state payload — sent server → client on load, client → server on save
 // ---------------------------------------------------------------------------
@@ -91,6 +102,8 @@ const FarmStateSchema = Schemas.Map({
 
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
+  totalLikesReceived: Schemas.Int,
+  mailbox: Schemas.Array(MailboxRewardSchema),
 })
 
 // ---------------------------------------------------------------------------
@@ -162,6 +175,29 @@ const FarmMessages = {
     address:   Schemas.String,
     reason:    Schemas.String,
   }),
+
+  socialLikeFarm: Schemas.Map({
+    targetWallet: Schemas.String,
+  }),
+
+  socialLikeResult: Schemas.Map({
+    requester:    Schemas.String,
+    targetWallet: Schemas.String,
+    success:      Schemas.Boolean,
+    reason:       Schemas.String,
+    likeCount:    Schemas.Int,
+    rewardCoins:  Schemas.Int,
+  }),
+
+  collectMailbox: Schemas.Map({}),
+
+  mailboxCollected: Schemas.Map({
+    requester: Schemas.String,
+    success:   Schemas.Boolean,
+    coins:     Schemas.Int,
+    seeds:     Schemas.Array(CropCountSchema),
+    rewards:   Schemas.Array(MailboxRewardSchema),
+  }),
 }
 
 export const room = registerMessages(FarmMessages)
@@ -183,6 +219,17 @@ export type PlotSaveState = {
 export type CropCount = {
   cropType: number
   count:    number
+}
+
+export type MailboxReward = {
+  id:          string
+  type:        string
+  reason:      string
+  amount:      number
+  cropType:    number
+  fromAddress: string
+  fromName:    string
+  createdAt:   number
 }
 
 export type QuestProgressSave = {
@@ -247,4 +294,6 @@ export type FarmStatePayload = {
   musicMuted:     boolean
   musicVolume:    number
   beautyScore:    number
+  totalLikesReceived: number
+  mailbox: MailboxReward[]
 }

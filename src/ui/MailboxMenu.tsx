@@ -1,21 +1,24 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { CropType, CROP_NAMES } from '../data/cropData'
+import { CROP_SEED_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { playerState } from '../game/gameState'
-import { PanelShell, C } from './PanelShell'
-import { playSound } from '../systems/sfxSystem'
 import { requestPlayerRegistry, requestOtherFarm, visitUiCallbacks } from '../services/visitService'
 import { registryCallbacks } from '../services/saveService'
-import { PlayerEntry, PlayerRegistryResponse } from '../shared/farmMessages'
+import { requestCollectMailbox, socialUiCallbacks } from '../services/socialService'
+import { PlayerEntry, PlayerRegistryResponse, type MailboxReward } from '../shared/farmMessages'
+import { playSound } from '../systems/sfxSystem'
+import { PanelShell, C } from './PanelShell'
 
-// ---------------------------------------------------------------------------
-// Module-level mutable state
-// ---------------------------------------------------------------------------
 const state = {
+  tab:          'directory' as 'directory' | 'mailbox',
   page:         0,
   players:      [] as PlayerEntry[],
   totalPages:   1,
   loading:      false,
   visitingAddr: '',
   errorAddr:    '',
+  collecting:   false,
+  mailboxHint:  '',
   initialized:  false,
 }
 
@@ -25,11 +28,13 @@ export function resetMailboxState(): void {
   state.players      = []
   state.errorAddr    = ''
   state.visitingAddr = ''
+  state.collecting   = false
+  state.mailboxHint  = ''
 }
 
 function shortenAddr(addr: string): string {
   if (addr.length < 12) return addr
-  return `${addr.slice(0, 6)}…${addr.slice(-4)}`
+  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
 }
 
 function displayLabel(entry: PlayerEntry): string {
@@ -51,143 +56,30 @@ function onVisitError(address: string): void {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Component
-// ---------------------------------------------------------------------------
-export const MailboxMenu = () => {
-  registryCallbacks.onRegistryLoaded = onRegistryLoaded
-  visitUiCallbacks.onOtherFarmError  = onVisitError
-
-  if (!state.initialized) {
-    state.initialized = true
-    state.loading     = true
-    requestPlayerRegistry(0)
-    setTimeout(() => {
-      if (state.loading) {
-        state.loading   = false
-        state.errorAddr = '__timeout__'
-      }
-    }, 6000)
-  }
-
-  const close = () => {
-    playSound('buttonclick')
-    playerState.activeMenu = 'none'
-    resetMailboxState()
-  }
-
-  return (
-    <PanelShell title="Farmers Directory" onClose={close}>
-
-      {/* Loading */}
-      {state.loading && (
-        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <Label value="Loading…" fontSize={30} color={C.textMute} textAlign="middle-center" />
-        </UiEntity>
-      )}
-
-      {/* Empty / timeout */}
-      {!state.loading && state.players.length === 0 && (
-        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-          <Label
-            value={state.errorAddr === '__timeout__'
-              ? 'Could not reach the server.\nThis feature requires a deployed scene.'
-              : 'No farmers found yet.\nSave your farm to appear here!'}
-            fontSize={26}
-            color={state.errorAddr === '__timeout__' ? C.orange : C.textMute}
-            textAlign="middle-center"
-          />
-        </UiEntity>
-      )}
-
-      {/* Card grid — 3 per row */}
-      {!state.loading && state.players.length > 0 && (
-        <UiEntity
-          uiTransform={{
-            flex: 1,
-            flexDirection: 'row',
-            flexWrap: 'wrap',
-            alignContent: 'flex-start',
-            width: '100%',
-          }}
-        >
-          {state.players.map((entry) => (
-            <FarmerCard
-              entry={entry}
-              isVisiting={state.visitingAddr === entry.address}
-              isError={state.errorAddr === entry.address}
-            />
-          ))}
-        </UiEntity>
-      )}
-
-      {/* Visit error hint */}
-      {state.errorAddr !== '' && state.errorAddr !== '__timeout__' && !state.loading && (
-        <Label
-          value={`Could not load ${displayLabel({ address: state.errorAddr, level: 0, displayName: '' })}'s farm.`}
-          fontSize={22}
-          color={C.orange}
-          textAlign="middle-center"
-          uiTransform={{ width: '100%', margin: { top: 6 } }}
-        />
-      )}
-
-      {/* Pagination */}
-      {!state.loading && (
-        <UiEntity
-          uiTransform={{
-            width: '100%',
-            height: 60,
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'center',
-            margin: { top: 8 },
-          }}
-        >
-          <UiEntity
-            uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { right: 20 } }}
-            uiBackground={{ color: state.page > 0 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
-            onMouseDown={state.page > 0 ? () => {
-              playSound('buttonclick')
-              state.loading = true
-              state.errorAddr = ''
-              requestPlayerRegistry(state.page - 1)
-            } : undefined}
-          >
-            <Label value="<" fontSize={26} color={state.page > 0 ? C.textMain : C.textMute} textAlign="middle-center" />
-          </UiEntity>
-
-          <Label
-            value={`${state.page + 1} / ${state.totalPages}`}
-            fontSize={24}
-            color={C.textMute}
-            textAlign="middle-center"
-            uiTransform={{ width: 110 }}
-          />
-
-          <UiEntity
-            uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { left: 20 } }}
-            uiBackground={{ color: state.page < state.totalPages - 1 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
-            onMouseDown={state.page < state.totalPages - 1 ? () => {
-              playSound('buttonclick')
-              state.loading = true
-              state.errorAddr = ''
-              requestPlayerRegistry(state.page + 1)
-            } : undefined}
-          >
-            <Label value=">" fontSize={26} color={state.page < state.totalPages - 1 ? C.textMain : C.textMute} textAlign="middle-center" />
-          </UiEntity>
-        </UiEntity>
-      )}
-    </PanelShell>
-  )
+function seedRewardLabel(reward: MailboxReward): string {
+  if (reward.cropType < 0) return `${reward.amount} Seeds`
+  const cropName = CROP_NAMES[reward.cropType as CropType]
+  return `${reward.amount} ${cropName} Seeds`
 }
 
-// ---------------------------------------------------------------------------
-// Farmer card — box layout, 3 per row
-// ---------------------------------------------------------------------------
-type CardProps = { entry: PlayerEntry; isVisiting: boolean; isError: boolean }
+function rewardDescription(reward: MailboxReward): string {
+  const actor = reward.fromName || shortenAddr(reward.fromAddress)
+  if (reward.reason === 'like') return `${actor} liked your farm`
+  if (reward.reason === 'visit_water') return `${actor} watered your crops`
+  return `${actor} sent you a reward`
+}
 
+function rewardAmountLabel(reward: MailboxReward): string {
+  return reward.type === 'coins' ? `+${reward.amount} Coins` : `+${seedRewardLabel(reward)}`
+}
+
+function rewardIcon(reward: MailboxReward): string {
+  if (reward.type === 'coins') return COINS_IMAGE
+  if (reward.cropType >= 0) return CROP_SEED_IMAGES[reward.cropType as CropType]
+  return COINS_IMAGE
+}
+
+const TAB_BUTTON_W = 220
 const AVATAR_COLORS = [
   { r: 0.55, g: 0.25, b: 0.10, a: 1 },
   { r: 0.15, g: 0.40, b: 0.55, a: 1 },
@@ -202,11 +94,11 @@ function avatarColor(address: string) {
 }
 
 function initials(entry: PlayerEntry): string {
-  if (entry.displayName && entry.displayName.length > 0) {
-    return entry.displayName.slice(0, 2).toUpperCase()
-  }
+  if (entry.displayName && entry.displayName.length > 0) return entry.displayName.slice(0, 2).toUpperCase()
   return entry.address.slice(2, 4).toUpperCase()
 }
+
+type CardProps = { entry: PlayerEntry; isVisiting: boolean; isError: boolean }
 
 const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
   <UiEntity
@@ -221,7 +113,6 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
     }}
     uiBackground={{ color: C.rowBg }}
   >
-    {/* Avatar circle — colored placeholder with initials */}
     <UiEntity
       uiTransform={{
         width: 72,
@@ -232,15 +123,9 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
       }}
       uiBackground={{ color: avatarColor(entry.address) }}
     >
-      <Label
-        value={initials(entry)}
-        fontSize={28}
-        color={C.textMain}
-        textAlign="middle-center"
-      />
+      <Label value={initials(entry)} fontSize={28} color={C.textMain} textAlign="middle-center" />
     </UiEntity>
 
-    {/* Name + address */}
     <UiEntity uiTransform={{ width: '100%', alignItems: 'center', flexDirection: 'column' }}>
       <Label
         value={entry.displayName || shortenAddr(entry.address)}
@@ -260,7 +145,6 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
       )}
     </UiEntity>
 
-    {/* Level + Visit button row */}
     <UiEntity
       uiTransform={{
         width: '100%',
@@ -279,19 +163,21 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
 
       <UiEntity
         uiTransform={{ width: 150, height: 46, alignItems: 'center', justifyContent: 'center' }}
-        uiBackground={{ color: isVisiting
-          ? { r: 0.18, g: 0.40, b: 0.18, a: 1 }
-          : { r: 0.20, g: 0.55, b: 0.20, a: 1 } }}
+        uiBackground={{
+          color: isVisiting
+            ? { r: 0.18, g: 0.40, b: 0.18, a: 1 }
+            : { r: 0.20, g: 0.55, b: 0.20, a: 1 },
+        }}
         onMouseDown={!isVisiting ? () => {
           playSound('buttonclick')
-          state.visitingAddr = entry.address
-          state.errorAddr    = ''
-          playerState.activeMenu = 'none'
+          state.visitingAddr      = entry.address
+          state.errorAddr         = ''
+          playerState.activeMenu  = 'none'
           requestOtherFarm(entry.address)
         } : undefined}
       >
         <Label
-          value={isVisiting ? '…' : 'Visit'}
+          value={isVisiting ? '...' : 'Visit'}
           fontSize={22}
           color={C.textMain}
           textAlign="middle-center"
@@ -300,3 +186,282 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
     </UiEntity>
   </UiEntity>
 )
+
+type RewardRowProps = { reward: MailboxReward }
+
+const RewardRow = ({ reward }: RewardRowProps) => (
+  <UiEntity
+    uiTransform={{
+      width: '100%',
+      height: 96,
+      flexDirection: 'row',
+      alignItems: 'center',
+      padding: { left: 16, right: 16, top: 12, bottom: 12 },
+      margin: { bottom: 12 },
+    }}
+    uiBackground={{ color: C.rowBg }}
+  >
+    <UiEntity
+      uiTransform={{ width: 62, height: 62, margin: { right: 18 } }}
+      uiBackground={{ texture: { src: rewardIcon(reward), wrapMode: 'clamp' }, textureMode: 'stretch' }}
+    />
+
+    <UiEntity uiTransform={{ flex: 1, height: 62, justifyContent: 'center' }}>
+      <Label
+        value={rewardDescription(reward)}
+        fontSize={22}
+        color={C.textMain}
+        textAlign="middle-left"
+        uiTransform={{ width: '100%', height: 26 }}
+      />
+      <Label
+        value={rewardAmountLabel(reward)}
+        fontSize={18}
+        color={reward.type === 'coins' ? C.gold : C.green}
+        textAlign="middle-left"
+        uiTransform={{ width: '100%', height: 22, margin: { top: 4 } }}
+      />
+    </UiEntity>
+  </UiEntity>
+)
+
+const DirectoryTab = () => (
+  <UiEntity uiTransform={{ flex: 1, width: '100%', flexDirection: 'column' }}>
+    {state.loading && (
+      <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        <Label value="Loading..." fontSize={30} color={C.textMute} textAlign="middle-center" />
+      </UiEntity>
+    )}
+
+    {!state.loading && state.players.length === 0 && (
+      <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+        <Label
+          value={state.errorAddr === '__timeout__'
+            ? 'Could not reach the server.\nThis feature requires a deployed scene.'
+            : 'No farmers found yet.\nSave your farm to appear here!'}
+          fontSize={26}
+          color={state.errorAddr === '__timeout__' ? C.orange : C.textMute}
+          textAlign="middle-center"
+        />
+      </UiEntity>
+    )}
+
+    {!state.loading && state.players.length > 0 && (
+      <UiEntity
+        uiTransform={{
+          flex: 1,
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          alignContent: 'flex-start',
+          width: '100%',
+        }}
+      >
+        {state.players.map((entry) => (
+          <FarmerCard
+            entry={entry}
+            isVisiting={state.visitingAddr === entry.address}
+            isError={state.errorAddr === entry.address}
+          />
+        ))}
+      </UiEntity>
+    )}
+
+    {state.errorAddr !== '' && state.errorAddr !== '__timeout__' && !state.loading && (
+      <Label
+        value={`Could not load ${displayLabel({ address: state.errorAddr, level: 0, displayName: '' })}'s farm.`}
+        fontSize={22}
+        color={C.orange}
+        textAlign="middle-center"
+        uiTransform={{ width: '100%', margin: { top: 6 } }}
+      />
+    )}
+
+    {!state.loading && (
+      <UiEntity
+        uiTransform={{
+          width: '100%',
+          height: 60,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: { top: 8 },
+        }}
+      >
+        <UiEntity
+          uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { right: 20 } }}
+          uiBackground={{ color: state.page > 0 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
+          onMouseDown={state.page > 0 ? () => {
+            playSound('buttonclick')
+            state.loading = true
+            state.errorAddr = ''
+            requestPlayerRegistry(state.page - 1)
+          } : undefined}
+        >
+          <Label value="<" fontSize={26} color={state.page > 0 ? C.textMain : C.textMute} textAlign="middle-center" />
+        </UiEntity>
+
+        <Label
+          value={`${state.page + 1} / ${state.totalPages}`}
+          fontSize={24}
+          color={C.textMute}
+          textAlign="middle-center"
+          uiTransform={{ width: 110 }}
+        />
+
+        <UiEntity
+          uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { left: 20 } }}
+          uiBackground={{ color: state.page < state.totalPages - 1 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
+          onMouseDown={state.page < state.totalPages - 1 ? () => {
+            playSound('buttonclick')
+            state.loading = true
+            state.errorAddr = ''
+            requestPlayerRegistry(state.page + 1)
+          } : undefined}
+        >
+          <Label value=">" fontSize={26} color={state.page < state.totalPages - 1 ? C.textMain : C.textMute} textAlign="middle-center" />
+        </UiEntity>
+      </UiEntity>
+    )}
+  </UiEntity>
+)
+
+const MailboxTab = () => {
+  const rewards = playerState.mailbox
+  const canCollect = rewards.length > 0 && !state.collecting
+
+  return (
+    <UiEntity uiTransform={{ flex: 1, width: '100%', flexDirection: 'column' }}>
+      <UiEntity
+        uiTransform={{
+          width: '100%',
+          height: 48,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          margin: { bottom: 18 },
+        }}
+      >
+        <Label
+          value={`Pending rewards: ${rewards.length}`}
+          fontSize={24}
+          color={C.textMute}
+          textAlign="middle-left"
+          uiTransform={{ width: 320 }}
+        />
+        <UiEntity
+          uiTransform={{ width: 190, height: 48, alignItems: 'center', justifyContent: 'center' }}
+          uiBackground={{ color: canCollect ? { r: 0.20, g: 0.55, b: 0.20, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
+          onMouseDown={canCollect ? () => {
+            playSound('buttonclick')
+            state.collecting  = true
+            state.mailboxHint = ''
+            requestCollectMailbox()
+          } : undefined}
+        >
+          <Label
+            value={state.collecting ? 'Collecting...' : 'Collect All'}
+            fontSize={22}
+            color={canCollect ? C.textMain : C.textMute}
+            textAlign="middle-center"
+          />
+        </UiEntity>
+      </UiEntity>
+
+      {rewards.length === 0 && (
+        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
+          <Label
+            value="Your mailbox is empty.\nLikes and visitor rewards will appear here."
+            fontSize={28}
+            color={C.textMute}
+            textAlign="middle-center"
+          />
+        </UiEntity>
+      )}
+
+      {rewards.length > 0 && (
+        <UiEntity uiTransform={{ flex: 1, width: '100%', flexDirection: 'column', overflow: 'hidden' }}>
+          {rewards.map((reward) => (
+            <RewardRow reward={reward} />
+          ))}
+        </UiEntity>
+      )}
+
+      {state.mailboxHint !== '' && (
+        <Label
+          value={state.mailboxHint}
+          fontSize={22}
+          color={C.green}
+          textAlign="middle-center"
+          uiTransform={{ width: '100%', margin: { top: 10 } }}
+        />
+      )}
+    </UiEntity>
+  )
+}
+
+export const MailboxMenu = () => {
+  registryCallbacks.onRegistryLoaded = onRegistryLoaded
+  visitUiCallbacks.onOtherFarmError  = onVisitError
+  socialUiCallbacks.onMailboxCollected = (data) => {
+    state.collecting = false
+    if (!data.success) {
+      state.mailboxHint = 'Could not collect mailbox rewards'
+      return
+    }
+
+    state.mailboxHint = data.rewardCount > 0
+      ? `Collected ${data.rewardCount} rewards`
+      : 'Mailbox already empty'
+  }
+
+  if (!state.initialized) {
+    state.initialized = true
+    state.tab         = playerState.mailbox.length > 0 ? 'mailbox' : 'directory'
+    state.loading     = true
+    requestPlayerRegistry(0)
+    setTimeout(() => {
+      if (state.loading) {
+        state.loading   = false
+        state.errorAddr = '__timeout__'
+      }
+    }, 6000)
+  }
+
+  const close = () => {
+    playSound('buttonclick')
+    playerState.activeMenu = 'none'
+    resetMailboxState()
+  }
+
+  return (
+    <PanelShell title="Neighbours & Mailbox" onClose={close}>
+      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 20 } }}>
+        {([
+          ['directory', 'Neighbours'],
+          ['mailbox', `Mailbox (${playerState.mailbox.length})`],
+        ] as const).map(([tab, label]) => (
+          <UiEntity
+            key={tab}
+            uiTransform={{
+              width: TAB_BUTTON_W,
+              height: 58,
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: { right: 14 },
+            }}
+            uiBackground={{ color: state.tab === tab ? { r: 0.34, g: 0.24, b: 0.08, a: 1 } : C.rowBg }}
+            onMouseDown={() => {
+              playSound('buttonclick')
+              state.tab = tab
+              state.mailboxHint = ''
+            }}
+          >
+            <Label value={label} fontSize={24} color={state.tab === tab ? C.header : C.textMain} textAlign="middle-center" />
+          </UiEntity>
+        ))}
+      </UiEntity>
+
+      {state.tab === 'directory' ? <DirectoryTab /> : <MailboxTab />}
+    </PanelShell>
+  )
+}

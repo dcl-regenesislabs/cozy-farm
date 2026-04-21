@@ -1,5 +1,6 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
+import type { MailboxReward } from '../shared/farmMessages'
 
 export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'leaderboard'
 
@@ -35,6 +36,8 @@ export const playerState = {
   claimedRewards: [] as number[],
   // Beauty score — cached after each save/load, read by StatsPanel
   beautyScore: 0,
+  totalLikesReceived: 0,
+  mailbox: [] as MailboxReward[],
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
 }

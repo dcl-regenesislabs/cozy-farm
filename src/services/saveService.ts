@@ -100,6 +100,8 @@ export function buildSavePayload(): FarmStatePayload {
     musicMuted:          musicState.muted,
     musicVolume:         musicState.volume,
     beautyScore:         0,
+    totalLikesReceived:  playerState.totalLikesReceived,
+    mailbox:             playerState.mailbox,
   }
   payload.beautyScore = calculateBeautyScore(payload)
   playerState.beautyScore = payload.beautyScore
@@ -147,6 +149,8 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.totalSeedPlanted    = payload.totalSeedPlanted
   playerState.totalSellCount      = payload.totalSellCount
   playerState.totalCoinsEarned    = payload.totalCoinsEarned
+  playerState.totalLikesReceived  = payload.totalLikesReceived ?? 0
+  playerState.mailbox             = payload.mailbox ?? []
 
   // ── Tutorial state ────────────────────────────────────────────────────────
   // Restore progress so players resume mid-tutorial after disconnect.

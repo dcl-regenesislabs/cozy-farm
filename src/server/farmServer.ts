@@ -149,6 +149,57 @@ export function setupFarmServer(): void {
     }
   })
 
+  room.onMessage('socialLikeFarm', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    const target    = ((_data.targetWallet as string) ?? '').toLowerCase()
+    try {
+      const result = await store.likeFarm(target, requester, getDisplayName(requester))
+      void room.send('socialLikeResult', {
+        requester,
+        targetWallet: target,
+        success:      result.success,
+        reason:       result.reason,
+        likeCount:    result.likeCount,
+        rewardCoins:  result.rewardCoins,
+      })
+    } catch (err) {
+      console.error('[FarmServer] socialLikeFarm error:', err)
+      void room.send('socialLikeResult', {
+        requester,
+        targetWallet: target,
+        success:      false,
+        reason:       'server_error',
+        likeCount:    0,
+        rewardCoins:  0,
+      })
+    }
+  })
+
+  room.onMessage('collectMailbox', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    try {
+      const result = await store.collectMailbox(requester)
+      void room.send('mailboxCollected', {
+        requester,
+        success: true,
+        coins:   result.coins,
+        seeds:   result.seeds,
+        rewards: result.rewards,
+      })
+    } catch (err) {
+      console.error('[FarmServer] collectMailbox error:', err)
+      void room.send('mailboxCollected', {
+        requester,
+        success: false,
+        coins:   0,
+        seeds:   [],
+        rewards: [],
+      })
+    }
+  })
+
   // Register the auto-save ECS system
   engine.addSystem(farmAutosaveSystem, undefined, 'farm-autosave-system')
 
