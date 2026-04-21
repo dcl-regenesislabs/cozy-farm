@@ -7,6 +7,7 @@ import { registryCallbacks } from '../services/saveService'
 import { requestCollectMailbox, socialUiCallbacks } from '../services/socialService'
 import { PlayerEntry, PlayerRegistryResponse, type MailboxReward } from '../shared/farmMessages'
 import { playSound } from '../systems/sfxSystem'
+import { formatPlayerLabel } from '../utils/playerLabel'
 import { PanelShell, C } from './PanelShell'
 
 const state = {
@@ -32,14 +33,8 @@ export function resetMailboxState(): void {
   state.mailboxHint  = ''
 }
 
-function shortenAddr(addr: string): string {
-  if (addr.length < 12) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
-
 function displayLabel(entry: PlayerEntry): string {
-  if (entry.displayName && entry.displayName.length > 0) return entry.displayName
-  return shortenAddr(entry.address)
+  return formatPlayerLabel(entry.displayName, entry.address)
 }
 
 function onRegistryLoaded(data: PlayerRegistryResponse): void {
@@ -63,7 +58,7 @@ function seedRewardLabel(reward: MailboxReward): string {
 }
 
 function rewardDescription(reward: MailboxReward): string {
-  const actor = reward.fromName || shortenAddr(reward.fromAddress)
+  const actor = formatPlayerLabel(reward.fromName, reward.fromAddress)
   if (reward.reason === 'like') return `${actor} liked your farm`
   if (reward.reason === 'visit_water') return `${actor} watered your crops`
   return `${actor} sent you a reward`
@@ -80,6 +75,8 @@ function rewardIcon(reward: MailboxReward): string {
 }
 
 const TAB_BUTTON_W = 220
+const MAILBOX_ROW_W = 1160
+const MAILBOX_TEXT_W = 1040
 const AVATAR_COLORS = [
   { r: 0.55, g: 0.25, b: 0.10, a: 1 },
   { r: 0.15, g: 0.40, b: 0.55, a: 1 },
@@ -128,21 +125,12 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
 
     <UiEntity uiTransform={{ width: '100%', alignItems: 'center', flexDirection: 'column' }}>
       <Label
-        value={entry.displayName || shortenAddr(entry.address)}
+        value={displayLabel(entry)}
         fontSize={24}
         color={isError ? C.orange : C.header}
         textAlign="middle-center"
         uiTransform={{ width: '100%' }}
       />
-      {entry.displayName && entry.displayName.length > 0 && (
-        <Label
-          value={shortenAddr(entry.address)}
-          fontSize={18}
-          color={C.textMute}
-          textAlign="middle-center"
-          uiTransform={{ width: '100%', margin: { top: 2 } }}
-        />
-      )}
     </UiEntity>
 
     <UiEntity
@@ -173,7 +161,7 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
           state.visitingAddr      = entry.address
           state.errorAddr         = ''
           playerState.activeMenu  = 'none'
-          requestOtherFarm(entry.address)
+          requestOtherFarm(entry.address, entry.displayName)
         } : undefined}
       >
         <Label
@@ -192,12 +180,13 @@ type RewardRowProps = { reward: MailboxReward }
 const RewardRow = ({ reward }: RewardRowProps) => (
   <UiEntity
     uiTransform={{
-      width: '100%',
-      height: 96,
+      width: MAILBOX_ROW_W,
+      height: 104,
       flexDirection: 'row',
       alignItems: 'center',
       padding: { left: 16, right: 16, top: 12, bottom: 12 },
       margin: { bottom: 12 },
+      flexShrink: 0,
     }}
     uiBackground={{ color: C.rowBg }}
   >
@@ -206,20 +195,29 @@ const RewardRow = ({ reward }: RewardRowProps) => (
       uiBackground={{ texture: { src: rewardIcon(reward), wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
 
-    <UiEntity uiTransform={{ flex: 1, height: 62, justifyContent: 'center' }}>
+    <UiEntity
+      uiTransform={{
+        width: MAILBOX_TEXT_W,
+        height: 64,
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        justifyContent: 'center',
+        flexShrink: 0,
+      }}
+    >
       <Label
         value={rewardDescription(reward)}
-        fontSize={22}
+        fontSize={20}
         color={C.textMain}
         textAlign="middle-left"
-        uiTransform={{ width: '100%', height: 26 }}
+        uiTransform={{ width: MAILBOX_TEXT_W, height: 26 }}
       />
       <Label
         value={rewardAmountLabel(reward)}
         fontSize={18}
         color={reward.type === 'coins' ? C.gold : C.green}
         textAlign="middle-left"
-        uiTransform={{ width: '100%', height: 22, margin: { top: 4 } }}
+        uiTransform={{ width: MAILBOX_TEXT_W, height: 22, margin: { top: 4 } }}
       />
     </UiEntity>
   </UiEntity>
@@ -379,9 +377,20 @@ const MailboxTab = () => {
       )}
 
       {rewards.length > 0 && (
-        <UiEntity uiTransform={{ flex: 1, width: '100%', flexDirection: 'column', overflow: 'hidden' }}>
+        <UiEntity
+          uiTransform={{
+            flex: 1,
+            width: '100%',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'flex-start',
+            overflow: 'scroll',
+          }}
+        >
           {rewards.map((reward) => (
-            <RewardRow reward={reward} />
+            <UiEntity key={reward.id} uiTransform={{ width: MAILBOX_ROW_W, height: 116, flexShrink: 0 }}>
+              <RewardRow reward={reward} />
+            </UiEntity>
           ))}
         </UiEntity>
       )}
@@ -418,6 +427,7 @@ export const MailboxMenu = () => {
     state.initialized = true
     state.tab         = playerState.mailbox.length > 0 ? 'mailbox' : 'directory'
     state.loading     = true
+    playerState.mailboxSeenCount = playerState.mailbox.length
     requestPlayerRegistry(0)
     setTimeout(() => {
       if (state.loading) {
@@ -450,10 +460,11 @@ export const MailboxMenu = () => {
               margin: { right: 14 },
             }}
             uiBackground={{ color: state.tab === tab ? { r: 0.34, g: 0.24, b: 0.08, a: 1 } : C.rowBg }}
-            onMouseDown={() => {
+              onMouseDown={() => {
               playSound('buttonclick')
               state.tab = tab
               state.mailboxHint = ''
+              if (tab === 'mailbox') playerState.mailboxSeenCount = playerState.mailbox.length
             }}
           >
             <Label value={label} fontSize={24} color={state.tab === tab ? C.header : C.textMain} textAlign="middle-center" />

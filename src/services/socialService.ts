@@ -28,6 +28,11 @@ export function requestCollectMailbox(): void {
   void room.send('collectMailbox', {})
 }
 
+function pushSocialToast(text: string): void {
+  playerState.socialToastText = text
+  playerState.socialToastExpiresAt = Date.now() + 5000
+}
+
 function addCollectedSeeds(seeds: CropCount[]): void {
   for (const { cropType, count } of seeds) {
     const current = playerState.seeds.get(cropType as CropType) ?? 0
@@ -60,6 +65,7 @@ export function initSocialService(): void {
       playerState.coins += data.coins
       addCollectedSeeds(data.seeds)
       playerState.mailbox = []
+      playerState.mailboxSeenCount = 0
       saveFarm()
     }
 
@@ -69,5 +75,14 @@ export function initSocialService(): void {
       seeds: data.seeds,
       rewardCount: data.rewards.length,
     })
+  })
+
+  room.onMessage('socialOwnerRewardReceived', (data) => {
+    if (data.ownerWallet !== playerState.wallet) return
+    if (!playerState.mailbox.find((reward) => reward.id === data.reward.id)) {
+      playerState.mailbox.unshift(data.reward)
+    }
+    playerState.totalLikesReceived = data.totalLikesReceived
+    pushSocialToast(data.notificationText)
   })
 }

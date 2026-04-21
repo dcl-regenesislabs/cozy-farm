@@ -38,6 +38,10 @@ export const playerState = {
   beautyScore: 0,
   totalLikesReceived: 0,
   mailbox: [] as MailboxReward[],
+  mailboxSeenCount: 0,
+  socialToastText: '',
+  socialToastExpiresAt: 0,
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
+  viewingFarmDisplayName: '',
 }

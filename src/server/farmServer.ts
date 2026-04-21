@@ -163,6 +163,18 @@ export function setupFarmServer(): void {
         likeCount:    result.likeCount,
         rewardCoins:  result.rewardCoins,
       })
+      if (result.success) {
+        const targetFarm = store.get(target)
+        const reward = targetFarm?.mailbox[0]
+        if (targetFarm && reward) {
+          void room.send('socialOwnerRewardReceived', {
+            ownerWallet: target,
+            reward,
+            totalLikesReceived: targetFarm.totalLikesReceived,
+            notificationText: `${reward.fromName} liked your farm!`,
+          }, { to: [target] })
+        }
+      }
     } catch (err) {
       console.error('[FarmServer] socialLikeFarm error:', err)
       void room.send('socialLikeResult', {

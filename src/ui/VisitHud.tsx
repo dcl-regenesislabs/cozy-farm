@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { requestLikeFarm, socialUiCallbacks } from '../services/socialService'
 import { exitVisitMode, getVisitedPayload } from '../services/visitService'
 import { playSound } from '../systems/sfxSystem'
+import { formatPlayerLabel } from '../utils/playerLabel'
 import { C } from './PanelShell'
 
 const likeUiState = {
@@ -12,10 +13,8 @@ const likeUiState = {
   status:  '',
 }
 
-function shortenAddr(addr: string): string {
-  if (addr.length < 12) return addr
-  return `${addr.slice(0, 6)}...${addr.slice(-4)}`
-}
+const VISIT_HUD_W = 700
+const VISIT_INFO_W = 360
 
 function syncLikeUi(targetFarm: string): void {
   if (likeUiState.farm === targetFarm) return
@@ -50,7 +49,7 @@ export const VisitHud = () => {
 
   const payload    = getVisitedPayload()
   const likeCount  = payload?.wallet === targetFarm ? payload.totalLikesReceived : 0
-  const farmLabel  = shortenAddr(targetFarm)
+  const farmLabel  = formatPlayerLabel(playerState.viewingFarmDisplayName, targetFarm)
   const likeLabel  = likeUiState.pending ? 'Liking...' : likeUiState.liked ? 'Liked Today' : 'Like Farm'
   const likeBg     = likeUiState.liked
     ? { r: 0.35, g: 0.18, b: 0.18, a: 1 }
@@ -60,8 +59,8 @@ export const VisitHud = () => {
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { top: 138, left: 720 },
-        width: 540,
+        position: { top: 138, left: 640 },
+        width: VISIT_HUD_W,
         height: 104,
         flexDirection: 'column',
         justifyContent: 'center',
@@ -70,26 +69,35 @@ export const VisitHud = () => {
       }}
       uiBackground={{ color: { r: 0.06, g: 0.04, b: 0.02, a: 0.92 } }}
     >
-      <UiEntity uiTransform={{ width: '100%', flexDirection: 'row', alignItems: 'center' }}>
+      <UiEntity uiTransform={{ width: VISIT_HUD_W - 28, flexDirection: 'row', alignItems: 'center' }}>
         <UiEntity
           uiTransform={{ width: 4, height: 36, margin: { right: 12 } }}
           uiBackground={{ color: C.gold }}
         />
 
-        <UiEntity uiTransform={{ flex: 1, height: 52, justifyContent: 'center' }}>
+        <UiEntity
+          uiTransform={{
+            width: VISIT_INFO_W,
+            height: 52,
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            justifyContent: 'center',
+            flexShrink: 0,
+          }}
+        >
           <Label
             value={`Visiting ${farmLabel}`}
-            fontSize={22}
+            fontSize={20}
             color={C.header}
             textAlign="middle-left"
-            uiTransform={{ width: '100%', height: 24 }}
+            uiTransform={{ width: VISIT_INFO_W, height: 24 }}
           />
           <Label
             value={`Likes ${likeCount}`}
             fontSize={17}
             color={C.textMute}
             textAlign="middle-left"
-            uiTransform={{ width: '100%', height: 22, margin: { top: 2 } }}
+            uiTransform={{ width: VISIT_INFO_W, height: 22, margin: { top: 2 } }}
           />
         </UiEntity>
 

@@ -198,6 +198,22 @@ const FarmMessages = {
     seeds:     Schemas.Array(CropCountSchema),
     rewards:   Schemas.Array(MailboxRewardSchema),
   }),
+
+  socialOwnerRewardReceived: Schemas.Map({
+    ownerWallet: Schemas.String,
+    reward: Schemas.Map({
+      id:          Schemas.String,
+      type:        Schemas.String,
+      reason:      Schemas.String,
+      amount:      Schemas.Int,
+      cropType:    Schemas.Int,
+      fromAddress: Schemas.String,
+      fromName:    Schemas.String,
+      createdAt:   Schemas.Int64,
+    }),
+    totalLikesReceived: Schemas.Int,
+    notificationText:   Schemas.String,
+  }),
 }
 
 export const room = registerMessages(FarmMessages)

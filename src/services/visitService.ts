@@ -33,8 +33,9 @@ export function isVisiting(): boolean {
   return playerState.viewingFarm !== null
 }
 
-export function requestOtherFarm(address: string): void {
+export function requestOtherFarm(address: string, displayName = ''): void {
   pendingVisitAddress = address.toLowerCase()
+  playerState.viewingFarmDisplayName = displayName
   void room.send('loadOtherFarm', { address: pendingVisitAddress })
 }
 
@@ -69,6 +70,7 @@ export function exitVisitMode(): void {
   restorePlotStates(ownPlotSnapshot)
 
   playerState.viewingFarm = null
+  playerState.viewingFarmDisplayName = ''
   resumeAutoSave()
   ownPlotSnapshot = null
   pendingVisitAddress = null
