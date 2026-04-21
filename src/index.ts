@@ -3,7 +3,7 @@ import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -44,6 +44,7 @@ export function main() {
   setupInputModifierSystem()
   initVisitService()
   initSocialService()
+  initVisitorWaterFeedback()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

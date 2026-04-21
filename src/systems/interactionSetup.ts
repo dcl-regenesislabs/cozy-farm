@@ -10,7 +10,7 @@ import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
 import { tutorialState } from '../game/tutorialState'
 import { isVisiting } from '../services/visitService'
-import { requestVisitorWaterPlot } from '../services/socialService'
+import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/socialService'
 import { playWateringVfx } from './wateringVfxSystem'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
@@ -19,6 +19,18 @@ const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Tras
 // Tracks which plot indices were watered in the current visitor session
 const visitSessionWateredPlots = new Set<number>()
 export function clearVisitSessionWater(): void { visitSessionWateredPlots.clear() }
+
+export function initVisitorWaterFeedback(): void {
+  visitorWaterCallbacks.onWaterResult = (data) => {
+    const entity = soilEntities.find(
+      (e) => PlotState.get(e).plotIndex === data.plotIndex
+    )
+    if (!data.success) {
+      visitSessionWateredPlots.delete(data.plotIndex)
+    }
+    if (entity) updatePlotHoverText(entity)
+  }
+}
 
 // Icon position/size constants — tune here
 const COMPUTER_ICON_Y    = 3.2   // height above Computer entity origin
@@ -331,7 +343,7 @@ export function registerPlotPointerEvent(entity: Entity) {
     if (!plot.isUnlocked) {
       hoverText = 'Locked'
     } else if (plot.cropType !== -1 && !plot.isReady) {
-      hoverText = 'Water Crop'
+      hoverText = visitSessionWateredPlots.has(plot.plotIndex) ? 'Watered' : 'Water Crop'
     } else {
       hoverText = 'Visiting'
     }
