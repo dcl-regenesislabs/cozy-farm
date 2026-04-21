@@ -214,6 +214,37 @@ const FarmMessages = {
     totalLikesReceived: Schemas.Int,
     notificationText:   Schemas.String,
   }),
+
+  /** Client → Server: visitor requests to water a plot on the farm they are visiting */
+  visitorWaterPlot: Schemas.Map({
+    targetWallet: Schemas.String,
+    plotIndex:    Schemas.Int,
+  }),
+
+  /** Server → Client (visitor): result of a visitor water attempt */
+  visitorWaterResult: Schemas.Map({
+    requester:    Schemas.String,
+    targetWallet: Schemas.String,
+    plotIndex:    Schemas.Int,
+    success:      Schemas.Boolean,
+    reason:       Schemas.String,
+  }),
+
+  /** Server → Client (owner): notification that a visitor watered a crop */
+  socialOwnerWaterReceived: Schemas.Map({
+    ownerWallet:      Schemas.String,
+    reward: Schemas.Map({
+      id:          Schemas.String,
+      type:        Schemas.String,
+      reason:      Schemas.String,
+      amount:      Schemas.Int,
+      cropType:    Schemas.Int,
+      fromAddress: Schemas.String,
+      fromName:    Schemas.String,
+      createdAt:   Schemas.Int64,
+    }),
+    notificationText: Schemas.String,
+  }),
 }
 
 export const room = registerMessages(FarmMessages)

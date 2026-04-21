@@ -188,6 +188,43 @@ export function setupFarmServer(): void {
     }
   })
 
+  room.onMessage('visitorWaterPlot', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    const target    = ((_data.targetWallet as string) ?? '').toLowerCase()
+    const plotIndex = typeof _data.plotIndex === 'number' ? _data.plotIndex : -1
+    if (!target || plotIndex < 0) return
+    try {
+      const result = await store.waterFarmByVisitor(target, requester, getDisplayName(requester), plotIndex)
+      void room.send('visitorWaterResult', {
+        requester,
+        targetWallet: target,
+        plotIndex,
+        success:      result.success,
+        reason:       result.reason,
+      }, { to: [requester] })
+      if (result.success && result.reward) {
+        const targetFarm = store.get(target)
+        if (targetFarm) {
+          void room.send('socialOwnerWaterReceived', {
+            ownerWallet:      target,
+            reward:           result.reward,
+            notificationText: `${result.reward.fromName} watered your crops!`,
+          }, { to: [target] })
+        }
+      }
+    } catch (err) {
+      console.error('[FarmServer] visitorWaterPlot error:', err)
+      void room.send('visitorWaterResult', {
+        requester,
+        targetWallet: target,
+        plotIndex,
+        success:      false,
+        reason:       'server_error',
+      }, { to: [requester] })
+    }
+  })
+
   room.onMessage('collectMailbox', async (_data, context) => {
     if (!context) return
     const requester = context.from.toLowerCase()

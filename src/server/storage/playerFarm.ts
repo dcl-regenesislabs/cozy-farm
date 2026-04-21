@@ -9,10 +9,19 @@ const FARM_KEY = 'farm_v1'
 const SCHEMA_VERSION = 2
 const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
+const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
+const VISITOR_WATER_DAILY_LIMIT = 5
 
 type LikeLedgerEntry = {
   visitorAddress: string
   lastLikedAt:    number
+}
+
+type VisitorWaterLedgerEntry = {
+  visitorAddress: string
+  plotIndex:      number
+  cropPlantedAt:  number
+  wateredAt:      number
 }
 
 // ---------------------------------------------------------------------------
@@ -52,6 +61,7 @@ export type FarmSaveV1 = {
   totalLikesReceived: number
   mailbox:        MailboxReward[]
   likeLedger:     LikeLedgerEntry[]
+  waterLedger:    VisitorWaterLedgerEntry[]
   updatedAt:      number
 }
 
@@ -93,6 +103,7 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     totalLikesReceived: 0,
     mailbox:        [],
     likeLedger:     [],
+    waterLedger:    [],
     updatedAt:      Date.now(),
   }
 }
@@ -150,6 +161,14 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
       .map((entry) => ({
         visitorAddress: entry.visitorAddress.toLowerCase(),
         lastLikedAt:    safeInt(entry.lastLikedAt, 0),
+      })),
+    waterLedger:         safeArray<VisitorWaterLedgerEntry>(maybe.waterLedger)
+      .filter((entry) => typeof entry?.visitorAddress === 'string')
+      .map((entry) => ({
+        visitorAddress: entry.visitorAddress.toLowerCase(),
+        plotIndex:      safeInt(entry.plotIndex, 0),
+        cropPlantedAt:  safeInt(entry.cropPlantedAt, 0),
+        wateredAt:      safeInt(entry.wateredAt, 0),
       })),
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
@@ -257,6 +276,7 @@ export class FarmProgressStore {
       totalLikesReceived:  existing.totalLikesReceived,
       mailbox:             existing.mailbox,
       likeLedger:          existing.likeLedger,
+      waterLedger:         existing.waterLedger,
       updatedAt:           Date.now(),
     }
 
@@ -329,6 +349,69 @@ export class FarmProgressStore {
       likeCount: farm.totalLikesReceived,
       rewardCoins,
     }
+  }
+
+  async waterFarmByVisitor(
+    targetAddress: string,
+    visitorAddress: string,
+    visitorName: string,
+    plotIndex: number,
+  ): Promise<{ success: boolean; reason: string; reward: MailboxReward | null }> {
+    const target  = targetAddress.toLowerCase()
+    const visitor = visitorAddress.toLowerCase()
+
+    if (!target || !visitor || target === visitor) {
+      return { success: false, reason: 'invalid_request', reward: null }
+    }
+
+    const farm = await this.load(target)
+    const now  = Date.now()
+
+    farm.waterLedger = farm.waterLedger.filter((e) => now - e.wateredAt <= WATER_LEDGER_TTL_MS)
+
+    const plotState = farm.plotStates.find((p) => p.plotIndex === plotIndex)
+    if (!plotState || plotState.cropType === -1) {
+      return { success: false, reason: 'no_crop', reward: null }
+    }
+    if (plotState.isReady) {
+      return { success: false, reason: 'crop_ready', reward: null }
+    }
+
+    const cropPlantedAt = plotState.plantedAt
+
+    const alreadyWatered = farm.waterLedger.some(
+      (e) => e.visitorAddress === visitor && e.plotIndex === plotIndex && e.cropPlantedAt === cropPlantedAt,
+    )
+    if (alreadyWatered) {
+      return { success: false, reason: 'already_watered_this_cycle', reward: null }
+    }
+
+    const DAY_MS = 24 * 60 * 60 * 1000
+    const dailyCount = farm.waterLedger.filter(
+      (e) => e.visitorAddress === visitor && now - e.wateredAt < DAY_MS,
+    ).length
+    if (dailyCount >= VISITOR_WATER_DAILY_LIMIT) {
+      return { success: false, reason: 'daily_limit_reached', reward: null }
+    }
+
+    const rewardAmount = 1 + Math.floor(Math.random() * 2)
+    const reward: MailboxReward = {
+      id:          `water:${now}:${visitor.slice(2, 10)}:${plotIndex}`,
+      type:        'seeds',
+      reason:      'visit_water',
+      amount:      rewardAmount,
+      cropType:    plotState.cropType,
+      fromAddress: visitor,
+      fromName:    visitorName || visitor.slice(0, 8),
+      createdAt:   now,
+    }
+
+    farm.waterLedger.push({ visitorAddress: visitor, plotIndex, cropPlantedAt, wateredAt: now })
+    farm.mailbox.unshift(reward)
+    farm.updatedAt = now
+    this.dirty.add(target)
+
+    return { success: true, reason: 'ok', reward }
   }
 
   async collectMailbox(address: string): Promise<{
