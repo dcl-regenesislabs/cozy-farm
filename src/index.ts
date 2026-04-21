@@ -12,6 +12,7 @@ import './systems/farmerSystem'
 import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
+import './systems/mailboxIndicatorSystem'
 import { initNpcSystem, getNpcEntity } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER } from './data/npcData'
 import { playerState } from './game/gameState'
@@ -20,6 +21,7 @@ import { tutorialCallbacks, tutorialState } from './game/tutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { initVisitService } from './services/visitService'
+import { initSocialService } from './services/socialService'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
@@ -41,6 +43,7 @@ export function main() {
   setupMusicSystem()
   setupInputModifierSystem()
   initVisitService()
+  initSocialService()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

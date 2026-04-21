@@ -191,7 +191,7 @@ export function setupEntities() {
   if (mailbox) {
     enablePointerOnGltf(mailbox)
     pointerEventsSystem.onPointerDown(
-      { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: 'Farmers Directory', maxDistance: 8 } },
+      { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: 'Mailbox & Neighbours', maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'mailbox' }
     )
   }

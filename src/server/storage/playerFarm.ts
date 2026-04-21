@@ -1,5 +1,5 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry } from '../../shared/farmMessages'
+import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
 import { calculateBeautyScore } from '../../game/beautyScore'
 
 // ---------------------------------------------------------------------------
@@ -7,6 +7,13 @@ import { calculateBeautyScore } from '../../game/beautyScore'
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
 const SCHEMA_VERSION = 2
+const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
+const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
+
+type LikeLedgerEntry = {
+  visitorAddress: string
+  lastLikedAt:    number
+}
 
 // ---------------------------------------------------------------------------
 // Persisted type — what actually goes into Storage
@@ -42,6 +49,9 @@ export type FarmSaveV1 = {
   musicMuted:     boolean
   musicVolume:    number
   beautyScore:    number
+  totalLikesReceived: number
+  mailbox:        MailboxReward[]
+  likeLedger:     LikeLedgerEntry[]
   updatedAt:      number
 }
 
@@ -80,6 +90,9 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     musicMuted:     false,
     musicVolume:    0.42,
     beautyScore:    0,
+    totalLikesReceived: 0,
+    mailbox:        [],
+    likeLedger:     [],
     updatedAt:      Date.now(),
   }
 }
@@ -130,6 +143,14 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     musicMuted:          safeBool(maybe.musicMuted),
     musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
     beautyScore:         safeInt(maybe.beautyScore, 0),
+    totalLikesReceived:  safeInt(maybe.totalLikesReceived, 0),
+    mailbox:             safeArray<MailboxReward>(maybe.mailbox),
+    likeLedger:          safeArray<LikeLedgerEntry>(maybe.likeLedger)
+      .filter((entry) => typeof entry?.visitorAddress === 'string')
+      .map((entry) => ({
+        visitorAddress: entry.visitorAddress.toLowerCase(),
+        lastLikedAt:    safeInt(entry.lastLikedAt, 0),
+      })),
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
 }
@@ -168,6 +189,8 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     musicMuted:          save.musicMuted,
     musicVolume:         save.musicVolume,
     beautyScore:         save.beautyScore,
+    totalLikesReceived:  save.totalLikesReceived,
+    mailbox:             save.mailbox,
   }
 }
 
@@ -231,6 +254,9 @@ export class FarmProgressStore {
       musicVolume:         payload.musicVolume,
       // Always recalculate on server — client value is advisory, server is authoritative
       beautyScore:         calculateBeautyScore(payload),
+      totalLikesReceived:  existing.totalLikesReceived,
+      mailbox:             existing.mailbox,
+      likeLedger:          existing.likeLedger,
       updatedAt:           Date.now(),
     }
 
@@ -242,6 +268,106 @@ export class FarmProgressStore {
 
     // Keep existing reference up-to-date for any in-flight code that holds it
     Object.assign(existing, updated)
+  }
+
+  async likeFarm(targetAddress: string, visitorAddress: string, visitorName: string): Promise<{
+    success: boolean
+    reason: string
+    likeCount: number
+    rewardCoins: number
+  }> {
+    const target  = targetAddress.toLowerCase()
+    const visitor = visitorAddress.toLowerCase()
+    if (!target || !visitor) {
+      return { success: false, reason: 'invalid_request', likeCount: 0, rewardCoins: 0 }
+    }
+    if (target === visitor) {
+      const ownFarm = await this.load(target)
+      return {
+        success: false,
+        reason: 'cannot_like_own_farm',
+        likeCount: ownFarm.totalLikesReceived,
+        rewardCoins: 0,
+      }
+    }
+
+    const farm = await this.load(target)
+    const now  = Date.now()
+    farm.likeLedger = farm.likeLedger.filter((entry) => now - entry.lastLikedAt <= LIKE_LEDGER_TTL_MS)
+
+    const existing = farm.likeLedger.find((entry) => entry.visitorAddress === visitor)
+    if (existing && now - existing.lastLikedAt < LIKE_COOLDOWN_MS) {
+      return {
+        success: false,
+        reason: 'already_liked_today',
+        likeCount: farm.totalLikesReceived,
+        rewardCoins: 0,
+      }
+    }
+
+    const rewardCoins = 10 + Math.floor(Math.random() * 16)
+    if (existing) existing.lastLikedAt = now
+    else farm.likeLedger.push({ visitorAddress: visitor, lastLikedAt: now })
+
+    farm.totalLikesReceived += 1
+    farm.mailbox.unshift({
+      id:          `like:${now}:${visitor.slice(2, 10)}`,
+      type:        'coins',
+      reason:      'like',
+      amount:      rewardCoins,
+      cropType:    -1,
+      fromAddress: visitor,
+      fromName:    visitorName || visitor.slice(0, 8),
+      createdAt:   now,
+    })
+    farm.updatedAt = now
+    this.dirty.add(target)
+
+    return {
+      success: true,
+      reason: 'ok',
+      likeCount: farm.totalLikesReceived,
+      rewardCoins,
+    }
+  }
+
+  async collectMailbox(address: string): Promise<{
+    rewards: MailboxReward[]
+    coins: number
+    seeds: CropCount[]
+  }> {
+    const key = address.toLowerCase()
+    const farm = await this.load(key)
+    const rewards = [...farm.mailbox]
+    const seedTotals = new Map<number, number>()
+    let coins = 0
+
+    for (const reward of rewards) {
+      if (reward.type === 'coins') {
+        coins += reward.amount
+        continue
+      }
+      if (reward.type === 'seeds' && reward.cropType >= 0) {
+        seedTotals.set(reward.cropType, (seedTotals.get(reward.cropType) ?? 0) + reward.amount)
+      }
+    }
+
+    // Apply rewards server-side immediately so they survive a client disconnect
+    farm.coins = Math.max(0, farm.coins + coins)
+    for (const [cropType, count] of seedTotals) {
+      const existing = farm.seeds.find((s) => s.cropType === cropType)
+      if (existing) existing.count += count
+      else farm.seeds.push({ cropType, count })
+    }
+    farm.mailbox = []
+    farm.updatedAt = Date.now()
+    this.dirty.add(key)
+
+    return {
+      rewards,
+      coins,
+      seeds: [...seedTotals.entries()].map(([cropType, count]) => ({ cropType, count })),
+    }
   }
 
   async save(address: string): Promise<void> {

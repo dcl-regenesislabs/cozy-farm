@@ -5,6 +5,7 @@ import { leaderboardCallbacks } from '../services/saveService'
 import { PanelShell, C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import type { LeaderboardEntry } from '../shared/farmMessages'
+import { formatPlayerLabel } from '../utils/playerLabel'
 
 // ---------------------------------------------------------------------------
 // Module-level state — survives re-renders, shared between panel and tab
@@ -76,7 +77,7 @@ const EntryRow = ({ entry }: { entry: LeaderboardEntry }) => {
     >
       <RankBadge rank={entry.rank} />
       <Label
-        value={isMe ? `${entry.displayName || entry.address.slice(0, 8)} (you)` : (entry.displayName || entry.address.slice(0, 8))}
+        value={isMe ? `${formatPlayerLabel(entry.displayName, entry.address)} (you)` : formatPlayerLabel(entry.displayName, entry.address)}
         fontSize={20}
         color={isMe ? C.green : C.textMain}
         uiTransform={{ flex: 1 }}

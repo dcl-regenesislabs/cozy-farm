@@ -149,6 +149,69 @@ export function setupFarmServer(): void {
     }
   })
 
+  room.onMessage('socialLikeFarm', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    const target    = ((_data.targetWallet as string) ?? '').toLowerCase()
+    try {
+      const result = await store.likeFarm(target, requester, getDisplayName(requester))
+      void room.send('socialLikeResult', {
+        requester,
+        targetWallet: target,
+        success:      result.success,
+        reason:       result.reason,
+        likeCount:    result.likeCount,
+        rewardCoins:  result.rewardCoins,
+      }, { to: [requester] })
+      if (result.success) {
+        const targetFarm = store.get(target)
+        const reward = targetFarm?.mailbox[0]
+        if (targetFarm && reward) {
+          void room.send('socialOwnerRewardReceived', {
+            ownerWallet: target,
+            reward,
+            totalLikesReceived: targetFarm.totalLikesReceived,
+            notificationText: `${reward.fromName} liked your farm!`,
+          }, { to: [target] })
+        }
+      }
+    } catch (err) {
+      console.error('[FarmServer] socialLikeFarm error:', err)
+      void room.send('socialLikeResult', {
+        requester,
+        targetWallet: target,
+        success:      false,
+        reason:       'server_error',
+        likeCount:    0,
+        rewardCoins:  0,
+      }, { to: [requester] })
+    }
+  })
+
+  room.onMessage('collectMailbox', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    try {
+      const result = await store.collectMailbox(requester)
+      void room.send('mailboxCollected', {
+        requester,
+        success: true,
+        coins:   result.coins,
+        seeds:   result.seeds,
+        rewards: result.rewards,
+      }, { to: [requester] })
+    } catch (err) {
+      console.error('[FarmServer] collectMailbox error:', err)
+      void room.send('mailboxCollected', {
+        requester,
+        success: false,
+        coins:   0,
+        seeds:   [],
+        rewards: [],
+      }, { to: [requester] })
+    }
+  })
+
   // Register the auto-save ECS system
   engine.addSystem(farmAutosaveSystem, undefined, 'farm-autosave-system')
 

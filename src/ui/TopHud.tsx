@@ -8,14 +8,46 @@ const C_GOLD = { r: 1, g: 0.88, b: 0.2, a: 1 }
 
 const LEADERBOARD_BTN_RIGHT = 10
 const LEADERBOARD_BTN_TOP   = 10
+const DEBUG_SOCIAL_TOAST = false
+const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 
 export const TopHud = () => {
   const xp       = getXpProgress()
   const xpPct    = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
   const isMaxLvl = playerState.level >= 20
+  const liveSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
+  const showSocialToast = DEBUG_SOCIAL_TOAST || liveSocialToast
+  const socialToastText = DEBUG_SOCIAL_TOAST ? DEBUG_SOCIAL_TOAST_TEXT : playerState.socialToastText
+
+  if (!DEBUG_SOCIAL_TOAST && !showSocialToast && playerState.socialToastText !== '') {
+    playerState.socialToastText = ''
+    playerState.socialToastExpiresAt = 0
+  }
 
   return (
     <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { top: 0, left: 0 }, pointerFilter: 'none' }}>
+    {showSocialToast && (
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 140, left: 18 },
+          width: 420,
+          height: 54,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { left: 14, right: 14 },
+        }}
+        uiBackground={{ color: { r: 0.10, g: 0.17, b: 0.08, a: 0.95 } }}
+      >
+        <Label
+          value={socialToastText}
+          fontSize={18}
+          color={{ r: 0.88, g: 1, b: 0.84, a: 1 }}
+          textAlign="middle-center"
+          uiTransform={{ width: 390, height: 24 }}
+        />
+      </UiEntity>
+    )}
     {/* ── Leaderboard button (top-right, small) ── */}
     <UiEntity
       uiTransform={{
