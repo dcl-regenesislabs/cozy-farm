@@ -2,7 +2,9 @@ import { Storage } from '@dcl/sdk/server'
 import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
 import { calculateBeautyScore } from '../../game/beautyScore'
 import { WORKER_DAILY_WAGE, WORKER_DAY_MS } from '../../shared/worker'
-import { CropType } from '../../data/cropData'
+import { CROP_DATA, CropType } from '../../data/cropData'
+import { QUEST_DEFINITIONS } from '../../data/questData'
+import { XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3, XP_PLANT, XP_TABLE, XP_WATER } from '../../shared/leveling'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
@@ -13,6 +15,8 @@ const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
 const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const VISITOR_WATER_DAILY_LIMIT = 5
+const WORKER_OFFLINE_ACTION_MS = 8_000
+const WORKER_OFFLINE_MAX_ACTIONS = 500_000
 
 type LikeLedgerEntry = {
   visitorAddress: string
@@ -46,6 +50,7 @@ export type FarmSaveV1 = {
   workerOutstandingWages: number
   workerUnpaidDays:       number
   workerLastWageProcessedAt: number
+  workerLastSimulatedAt: number
   dogOwned:         boolean
   totalCropsHarvested: number
   totalWaterCount:     number
@@ -91,6 +96,7 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     workerOutstandingWages: 0,
     workerUnpaidDays: 0,
     workerLastWageProcessedAt: 0,
+    workerLastSimulatedAt: 0,
     dogOwned: false,
     totalCropsHarvested: 0,
     totalWaterCount: 0,
@@ -148,6 +154,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     workerOutstandingWages: safeInt(maybe.workerOutstandingWages, 0),
     workerUnpaidDays:       safeInt(maybe.workerUnpaidDays, 0),
     workerLastWageProcessedAt: safeInt(maybe.workerLastWageProcessedAt, 0),
+    workerLastSimulatedAt: safeInt(maybe.workerLastSimulatedAt, safeInt(maybe.updatedAt, Date.now())),
     dogOwned:         safeBool(maybe.dogOwned),
     totalCropsHarvested: safeInt(maybe.totalCropsHarvested),
     totalWaterCount:     safeInt(maybe.totalWaterCount),
@@ -227,6 +234,142 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
   }
 }
 
+function addCropCount(counts: CropCount[], cropType: CropType, amount: number): void {
+  if (amount <= 0) return
+  const existing = counts.find((entry) => entry.cropType === cropType)
+  if (existing) existing.count += amount
+  else counts.push({ cropType, count: amount })
+}
+
+function consumeWorkerSeed(farm: FarmSaveV1): CropType | null {
+  const seed = farm.farmerSeeds.find((entry) => entry.count > 0)
+  if (!seed) return null
+  seed.count -= 1
+  if (seed.count <= 0) {
+    farm.farmerSeeds = farm.farmerSeeds.filter((entry) => entry.count > 0)
+  }
+  return seed.cropType as CropType
+}
+
+function addFarmXp(farm: FarmSaveV1, amount: number): void {
+  if (amount <= 0) return
+  farm.xp += amount
+  while (farm.level < XP_TABLE.length && farm.xp >= XP_TABLE[farm.level]) {
+    farm.level += 1
+  }
+}
+
+function updateQuestWaterProgress(farm: FarmSaveV1): void {
+  for (const def of QUEST_DEFINITIONS) {
+    const progress = farm.questProgress.find((entry) => entry.id === def.id)
+    if (!progress || progress.status !== 'active' || def.type !== 'water_total') continue
+    progress.current = Math.min(progress.current + 1, def.target)
+    if (progress.current >= def.target) progress.status = 'claimable'
+  }
+}
+
+function updateQuestPlantProgress(farm: FarmSaveV1): void {
+  for (const def of QUEST_DEFINITIONS) {
+    const progress = farm.questProgress.find((entry) => entry.id === def.id)
+    if (!progress || progress.status !== 'active' || def.type !== 'plant_total') continue
+    progress.current = Math.min(progress.current + 1, def.target)
+    if (progress.current >= def.target) progress.status = 'claimable'
+  }
+}
+
+function updateQuestHarvestProgress(farm: FarmSaveV1, cropType: CropType, amount: number): void {
+  for (const def of QUEST_DEFINITIONS) {
+    const progress = farm.questProgress.find((entry) => entry.id === def.id)
+    if (!progress || progress.status !== 'active') continue
+
+    if (def.type === 'harvest_total') {
+      progress.current = Math.min(progress.current + amount, def.target)
+    } else if (def.type === 'harvest_crop' && def.cropType === cropType) {
+      progress.current = Math.min(progress.current + amount, def.target)
+    } else {
+      continue
+    }
+
+    if (progress.current >= def.target) progress.status = 'claimable'
+  }
+}
+
+function syncOfflinePlotState(plot: PlotSaveState, at: number): void {
+  if (plot.cropType === -1) {
+    plot.growthStage = 0
+    plot.isReady = false
+    return
+  }
+
+  const def = CROP_DATA.get(plot.cropType as CropType)
+  if (!def) {
+    plot.cropType = -1
+    plot.plantedAt = 0
+    plot.waterCount = 0
+    plot.growthStarted = false
+    plot.growthStage = 0
+    plot.isReady = false
+    return
+  }
+
+  if (!plot.growthStarted || plot.plantedAt <= 0) {
+    plot.growthStage = 0
+    plot.isReady = false
+    return
+  }
+
+  const elapsed = Math.max(0, at - plot.plantedAt)
+  const progress = elapsed / def.growTimeMs
+  plot.growthStage =
+    progress >= 0.75 ? 3 :
+    progress >= 0.5 ? 2 :
+    progress >= 0.25 ? 1 : 0
+  plot.isReady = progress >= 1
+  if (plot.isReady) plot.growthStage = 3
+}
+
+function getOfflineWateringStatus(
+  plot: PlotSaveState,
+  at: number
+): { canWater: boolean; nextWindowInMs: number | null } {
+  if (plot.cropType === -1 || plot.isReady) {
+    return { canWater: false, nextWindowInMs: null }
+  }
+
+  if (!plot.growthStarted) {
+    return { canWater: plot.waterCount === 0, nextWindowInMs: null }
+  }
+
+  const def = CROP_DATA.get(plot.cropType as CropType)
+  if (!def) return { canWater: false, nextWindowInMs: null }
+
+  if (def.wateringsRequired <= 1) {
+    return { canWater: false, nextWindowInMs: null }
+  }
+
+  const elapsed = at - plot.plantedAt
+  let windowsOpened = 0
+  let inOpenWindow = false
+  let nextWindowInMs: number | null = null
+
+  for (let k = 1; k < def.wateringsRequired; k++) {
+    const windowStart = (k / def.wateringsRequired) * def.growTimeMs
+    const windowEnd = ((k + 1) / def.wateringsRequired) * def.growTimeMs
+
+    if (elapsed >= windowStart) {
+      windowsOpened += 1
+      if (elapsed < windowEnd) inOpenWindow = true
+    } else if (nextWindowInMs === null) {
+      nextWindowInMs = windowStart - elapsed
+    }
+  }
+
+  return {
+    canWater: inOpenWindow && plot.waterCount < 1 + windowsOpened,
+    nextWindowInMs,
+  }
+}
+
 // ---------------------------------------------------------------------------
 // FarmProgressStore — cache + dirty-set pattern
 // ---------------------------------------------------------------------------
@@ -234,12 +377,214 @@ export class FarmProgressStore {
   private cache = new Map<string, FarmSaveV1>()
   private dirty = new Set<string>()
 
+  private getOfflineWorkerActiveUntil(farm: FarmSaveV1, now: number): number {
+    if (!farm.farmerHired || farm.workerUnpaidDays >= 2) return farm.workerLastSimulatedAt
+    if (farm.workerLastWageProcessedAt <= 0 || farm.workerLastWageProcessedAt > now) return farm.workerLastSimulatedAt
+
+    let simulatedCoins = farm.coins
+    let simulatedUnpaidDays = farm.workerUnpaidDays
+    let checkpoint = farm.workerLastWageProcessedAt
+    const elapsedDays = Math.floor((now - checkpoint) / WORKER_DAY_MS)
+
+    for (let day = 0; day < elapsedDays; day++) {
+      checkpoint += WORKER_DAY_MS
+      if (simulatedCoins >= WORKER_DAILY_WAGE) {
+        simulatedCoins -= WORKER_DAILY_WAGE
+      } else {
+        simulatedUnpaidDays += 1
+        if (simulatedUnpaidDays >= 2) return checkpoint
+      }
+    }
+
+    return now
+  }
+
+  private pickOfflineWorkerTask(
+    farm: FarmSaveV1,
+    workerPlots: PlotSaveState[],
+    at: number
+  ): { action: 'harvest' | 'water' | 'plant'; plot: PlotSaveState } | null {
+    for (const plot of workerPlots) {
+      if (plot.isReady) return { action: 'harvest', plot }
+    }
+
+    for (const plot of workerPlots) {
+      if (getOfflineWateringStatus(plot, at).canWater) return { action: 'water', plot }
+    }
+
+    if (!farm.farmerSeeds.some((entry) => entry.count > 0)) return null
+    for (const plot of workerPlots) {
+      if (plot.cropType === -1) return { action: 'plant', plot }
+    }
+
+    return null
+  }
+
+  private getNextOfflineWorkerEventAt(workerPlots: PlotSaveState[], at: number): number | null {
+    let nextAt: number | null = null
+
+    for (const plot of workerPlots) {
+      if (plot.cropType === -1 || !plot.growthStarted || plot.plantedAt <= 0) continue
+
+      const def = CROP_DATA.get(plot.cropType as CropType)
+      if (!def) continue
+
+      const readyAt = plot.plantedAt + def.growTimeMs
+      if (!plot.isReady && readyAt > at) {
+        nextAt = nextAt === null ? readyAt : Math.min(nextAt, readyAt)
+      }
+
+      const { nextWindowInMs } = getOfflineWateringStatus(plot, at)
+      if (nextWindowInMs !== null && nextWindowInMs > 0) {
+        const waterAt = at + nextWindowInMs
+        nextAt = nextAt === null ? waterAt : Math.min(nextAt, waterAt)
+      }
+    }
+
+    return nextAt
+  }
+
+  private applyOfflineWorkerTask(
+    farm: FarmSaveV1,
+    task: { action: 'harvest' | 'water' | 'plant'; plot: PlotSaveState },
+    at: number
+  ): boolean {
+    const plot = task.plot
+
+    if (task.action === 'harvest') {
+      if (!plot.isReady || plot.cropType === -1) return false
+      const cropType = plot.cropType as CropType
+      const def = CROP_DATA.get(cropType)
+      if (!def) return false
+
+      const waterRatio = plot.waterCount / def.wateringsRequired
+      const yieldMultiplier = waterRatio >= 1 ? 1 : waterRatio >= 0.5 ? 0.75 : 0.5
+      const baseYield = Math.floor(Math.random() * (def.yieldMax - def.yieldMin + 1)) + def.yieldMin
+      const finalYield = Math.max(1, Math.floor(baseYield * yieldMultiplier))
+
+      addCropCount(farm.farmerInventory, cropType, finalYield)
+      farm.totalCropsHarvested += finalYield
+      addFarmXp(
+        farm,
+        def.tier === 1 ? XP_HARVEST_TIER1 : def.tier === 2 ? XP_HARVEST_TIER2 : XP_HARVEST_TIER3
+      )
+      updateQuestHarvestProgress(farm, cropType, finalYield)
+
+      plot.cropType = -1
+      plot.plantedAt = 0
+      plot.waterCount = 0
+      plot.growthStarted = false
+      plot.growthStage = 0
+      plot.isReady = false
+      return true
+    }
+
+    if (task.action === 'water') {
+      if (plot.cropType === -1 || plot.isReady) return false
+      if (!getOfflineWateringStatus(plot, at).canWater) return false
+
+      plot.waterCount += 1
+      if (!plot.growthStarted) {
+        plot.growthStarted = true
+        plot.plantedAt = at
+      }
+
+      farm.totalWaterCount += 1
+      addFarmXp(farm, XP_WATER)
+      updateQuestWaterProgress(farm)
+      syncOfflinePlotState(plot, at)
+      return true
+    }
+
+    if (plot.cropType !== -1) return false
+    const cropType = consumeWorkerSeed(farm)
+    if (cropType === null) return false
+
+    plot.cropType = cropType
+    plot.plantedAt = 0
+    plot.waterCount = 0
+    plot.growthStarted = false
+    plot.growthStage = 0
+    plot.isReady = false
+    farm.totalSeedPlanted += 1
+    addFarmXp(farm, XP_PLANT)
+    updateQuestPlantProgress(farm)
+    return true
+  }
+
+  private reconcileOfflineWorker(farm: FarmSaveV1, now = Date.now()): boolean {
+    if (!farm.farmerHired) {
+      if (farm.workerLastSimulatedAt !== 0) {
+        farm.workerLastSimulatedAt = 0
+        farm.updatedAt = now
+        return true
+      }
+      return false
+    }
+
+    const start = Math.max(0, Math.min(farm.workerLastSimulatedAt, now))
+    if (start <= 0) {
+      farm.workerLastSimulatedAt = now
+      farm.updatedAt = now
+      return true
+    }
+
+    if (farm.workerLastWageProcessedAt <= 0 || farm.workerLastWageProcessedAt > now) {
+      if (farm.workerLastSimulatedAt !== now) {
+        farm.workerLastSimulatedAt = now
+        farm.updatedAt = now
+        return true
+      }
+      return false
+    }
+
+    const activeUntil = Math.min(now, this.getOfflineWorkerActiveUntil(farm, now))
+    const workerPlots = farm.plotStates
+      .filter((plot) => plot.isUnlocked && plot.plotIndex >= 12)
+      .sort((a, b) => a.plotIndex - b.plotIndex)
+
+    let changed = false
+    let cursor = start
+    let actions = 0
+
+    while (cursor < activeUntil && actions < WORKER_OFFLINE_MAX_ACTIONS) {
+      for (const plot of workerPlots) syncOfflinePlotState(plot, cursor)
+
+      const task = this.pickOfflineWorkerTask(farm, workerPlots, cursor)
+      if (task) {
+        changed = this.applyOfflineWorkerTask(farm, task, cursor) || changed
+        cursor = Math.min(activeUntil, cursor + WORKER_OFFLINE_ACTION_MS)
+        actions += 1
+        continue
+      }
+
+      const nextEventAt = this.getNextOfflineWorkerEventAt(workerPlots, cursor)
+      if (nextEventAt === null || nextEventAt > activeUntil) break
+      cursor = nextEventAt
+    }
+
+    for (const plot of workerPlots) syncOfflinePlotState(plot, activeUntil)
+
+    if (actions >= WORKER_OFFLINE_MAX_ACTIONS) {
+      console.log(`[Server] Worker offline reconcile hit action cap for ${farm.wallet}`)
+    }
+
+    if (farm.workerLastSimulatedAt !== now) {
+      farm.workerLastSimulatedAt = now
+      changed = true
+    }
+
+    if (changed) farm.updatedAt = now
+    return changed
+  }
+
   private settleWorkerWages(farm: FarmSaveV1, now = Date.now()): boolean {
     if (!farm.farmerHired) {
       let changed = false
       if (farm.workerOutstandingWages !== 0) { farm.workerOutstandingWages = 0; changed = true }
       if (farm.workerUnpaidDays !== 0) { farm.workerUnpaidDays = 0; changed = true }
       if (farm.workerLastWageProcessedAt !== 0) { farm.workerLastWageProcessedAt = 0; changed = true }
+      if (farm.workerLastSimulatedAt !== 0) { farm.workerLastSimulatedAt = 0; changed = true }
       if (changed) farm.updatedAt = now
       return changed
     }
@@ -276,6 +621,7 @@ export class FarmProgressStore {
       this.cache.set(key, farm)
       // Always write canonical format on first load
       this.dirty.add(key)
+      if (this.reconcileOfflineWorker(farm)) this.dirty.add(key)
     }
 
     if (this.settleWorkerWages(farm)) this.dirty.add(key)
@@ -294,6 +640,7 @@ export class FarmProgressStore {
     const workerLastWageProcessedAt = hiredNow
       ? Math.max(0, payload.workerLastWageProcessedAt || Date.now())
       : existing.workerLastWageProcessedAt
+    const workerLastSimulatedAt = farmerHired ? Date.now() : 0
     const workerOutstandingWages = hiredNow ? 0 : existing.workerOutstandingWages
     const workerUnpaidDays = hiredNow ? 0 : existing.workerUnpaidDays
 
@@ -314,6 +661,7 @@ export class FarmProgressStore {
       workerOutstandingWages,
       workerUnpaidDays,
       workerLastWageProcessedAt: farmerHired ? workerLastWageProcessedAt : 0,
+      workerLastSimulatedAt,
       dogOwned:            payload.dogOwned,
       totalCropsHarvested: payload.totalCropsHarvested,
       totalWaterCount:     payload.totalWaterCount,
@@ -434,6 +782,7 @@ export class FarmProgressStore {
         farm.workerOutstandingWages = 0
         farm.workerUnpaidDays = 0
         farm.workerLastWageProcessedAt = now
+        farm.workerLastSimulatedAt = now
         farm.farmerSeeds = [{ cropType: CropType.Onion, count: 20 }]
         break
       }
@@ -476,6 +825,15 @@ export class FarmProgressStore {
         farm.workerUnpaidDays = 0
         if (farm.farmerHired && farm.workerLastWageProcessedAt <= 0) {
           farm.workerLastWageProcessedAt = now
+        }
+        break
+      }
+
+      case 'simulate_offline': {
+        // Rewind workerLastSimulatedAt by `amount` hours so the next load triggers reconciliation
+        const hoursBack = Math.max(1, safeAmount || 4)
+        if (farm.farmerHired) {
+          farm.workerLastSimulatedAt = Math.max(0, now - hoursBack * 60 * 60 * 1000)
         }
         break
       }
