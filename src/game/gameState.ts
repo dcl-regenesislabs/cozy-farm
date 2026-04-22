@@ -16,6 +16,9 @@ export const playerState = {
   farmerHired: false,
   farmerSeeds: new Map<CropType, number>(),
   farmerInventory: new Map<CropType, number>(),
+  workerOutstandingWages: 0,
+  workerUnpaidDays: 0,
+  workerLastWageProcessedAt: 0,
   // Leveling
   xp: 0,
   level: 1,

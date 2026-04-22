@@ -28,6 +28,8 @@ import { playSeedVfx } from '../systems/seedVfxSystem'
 import { spawnHarvestVfx } from '../systems/harvestVfxSystem'
 import { DIALOG_ICON, BOX_CROPS_ICON } from '../data/imagePaths'
 import { playSound } from './sfxSystem'
+import { COINS_ICON, EXCLAMATION_ICON } from '../data/imagePaths'
+import { getWorkerStatus } from '../shared/worker'
 
 const FARMER_MODEL  = 'assets/scene/Models/Farmer01/Farmer01.glb'
 const HOME_POS       = Vector3.create(44.66, 0, 70.91)
@@ -359,9 +361,23 @@ const FARMER_HEAD_ICON_SIZE = 0.55              // local size (world = Ã—1.2) â€
 
 const inventoryDisplayEntities: Entity[] = []
 let farmerHeadIconEntity: Entity | null = null
+let lastFarmerDisplayKey = ''
 
 export function updateFarmerInventoryDisplay() {
   if (!farmer.entity) return
+
+  // Sum total crops in farmer inventory
+  let totalCount = 0
+  playerState.farmerInventory.forEach((count) => { if (count > 0) totalCount += count })
+
+  const workerStatus = getWorkerStatus({
+    farmerHired: playerState.farmerHired,
+    workerUnpaidDays: playerState.workerUnpaidDays,
+    farmerSeeds: playerState.farmerSeeds,
+  })
+  const displayKey = `${totalCount}|${workerStatus}`
+  if (displayKey === lastFarmerDisplayKey) return
+  lastFarmerDisplayKey = displayKey
 
   // Remove previous count label
   for (const e of inventoryDisplayEntities) {
@@ -369,13 +385,13 @@ export function updateFarmerInventoryDisplay() {
   }
   inventoryDisplayEntities.length = 0
 
-  // Sum total crops in farmer inventory
-  let totalCount = 0
-  playerState.farmerInventory.forEach((count) => { if (count > 0) totalCount += count })
-
-  // Swap head icon between DialogIcon (empty) and BoxCropsIcon (carrying crops)
+  // Swap the head icon to reflect carrying harvest, unpaid wages, or idle state.
   if (farmerHeadIconEntity) {
-    const iconSrc = totalCount > 0 ? BOX_CROPS_ICON : DIALOG_ICON
+    const iconSrc =
+      totalCount > 0 ? BOX_CROPS_ICON
+      : workerStatus === 'idle_unpaid' ? COINS_ICON
+      : workerStatus === 'idle_no_seeds' ? EXCLAMATION_ICON
+      : DIALOG_ICON
     Material.setPbrMaterial(farmerHeadIconEntity, {
       texture:           Material.Texture.Common({ src: iconSrc }),
       emissiveTexture:   Material.Texture.Common({ src: iconSrc }),
@@ -427,8 +443,29 @@ engine.addSystem((dt: number) => {
 
   if (!playerState.farmerHired) return
 
+  const workerStatus = getWorkerStatus({
+    farmerHired: playerState.farmerHired,
+    workerUnpaidDays: playerState.workerUnpaidDays,
+    farmerSeeds: playerState.farmerSeeds,
+  })
+  updateFarmerInventoryDisplay()
+
+  if (workerStatus === 'idle_unpaid') {
+    if (farmer.state !== 'idle' && farmer.state !== 'returning') {
+      farmer.targetPlot = null
+      farmer.actionType = ''
+      startWalkToTarget(HOME_POS)
+      farmer.state = 'returning'
+    }
+
+    if (farmer.state === 'idle') {
+      playAnim('Talk')
+    }
+  }
+
   switch (farmer.state) {
     case 'idle': {
+      if (workerStatus === 'idle_unpaid') return
       farmer.idleTimer -= dt
       if (farmer.idleTimer > 0) return
       const task = pickNextTask()
@@ -464,6 +501,11 @@ engine.addSystem((dt: number) => {
     }
 
     case 'acting': {
+      if (workerStatus === 'idle_unpaid') {
+        startWalkToTarget(HOME_POS)
+        farmer.state = 'returning'
+        return
+      }
       farmer.actionTimer -= dt
       if (farmer.actionTimer > 0) return
       const next = pickNextTask()
@@ -505,6 +547,7 @@ engine.addSystem((dt: number) => {
 
 export function spawnFarmer() {
   if (farmer.entity) return
+  lastFarmerDisplayKey = ''
 
   const farmerEntity = engine.addEntity()
   farmer.entity = farmerEntity
@@ -574,5 +617,6 @@ export function spawnFarmer() {
   })
 
   discoverWaypoints()
+  updateFarmerInventoryDisplay()
   console.log('CozyFarm: Farmer spawned')
 }

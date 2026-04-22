@@ -4,6 +4,7 @@ import {
   createFarmProgressStore, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
 } from './storage/playerFarm'
+import { WORKER_DEBUG_ENABLED } from '../shared/worker'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval (seconds) — same cadence as reference project
@@ -51,6 +52,20 @@ async function loadAndSend(address: string): Promise<void> {
   void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized))
 }
 
+function sendWorkerStatus(address: string): void {
+  const normalized = address.toLowerCase()
+  const farm = store.get(normalized)
+  if (!farm) return
+
+  void room.send('workerStatusUpdated', {
+    requester: normalized,
+    coinsDelta: 0,
+    workerOutstandingWages: farm.workerOutstandingWages,
+    workerUnpaidDays: farm.workerUnpaidDays,
+    workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+  }, { to: [normalized] })
+}
+
 // ---------------------------------------------------------------------------
 // Auto-save system — runs every frame, flushes dirty entries every N seconds
 // ---------------------------------------------------------------------------
@@ -58,6 +73,29 @@ function farmAutosaveSystem(dt: number): void {
   autosaveAccumulator += dt
   if (autosaveAccumulator < AUTOSAVE_INTERVAL_SECONDS) return
   autosaveAccumulator = 0
+  for (const address of loadedAddresses) {
+    const before = store.get(address)
+    const prevCoins = before?.coins ?? 0
+    const prevOutstanding = before?.workerOutstandingWages ?? 0
+    const prevUnpaidDays = before?.workerUnpaidDays ?? 0
+    const prevLastProcessedAt = before?.workerLastWageProcessedAt ?? 0
+    void store.load(address).then((farm) => {
+      const changed =
+        prevCoins !== farm.coins ||
+        prevOutstanding !== farm.workerOutstandingWages ||
+        prevUnpaidDays !== farm.workerUnpaidDays ||
+        prevLastProcessedAt !== farm.workerLastWageProcessedAt
+      if (!changed) return
+
+      void room.send('workerStatusUpdated', {
+        requester: address,
+        coinsDelta: farm.coins - prevCoins,
+        workerOutstandingWages: farm.workerOutstandingWages,
+        workerUnpaidDays: farm.workerUnpaidDays,
+        workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+      }, { to: [address] })
+    })
+  }
   void store.saveDirty()
 }
 
@@ -90,6 +128,90 @@ export function setupFarmServer(): void {
     if (saved) void updatePlayerRegistry(normalized, saved.level, getDisplayName(normalized), saved.beautyScore)
     // Bust leaderboard cache on every save so rankings stay fresh
     leaderboardCache = null
+  })
+
+  room.onMessage('payWorkerWages', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    try {
+      const result = await store.payWorkerWages(requester)
+      void room.send('workerWagePaymentResult', {
+        requester,
+        success: result.success,
+        reason: result.reason,
+        coinsDelta: result.coinsDelta,
+        workerOutstandingWages: result.workerOutstandingWages,
+        workerUnpaidDays: result.workerUnpaidDays,
+        workerLastWageProcessedAt: result.workerLastWageProcessedAt,
+      }, { to: [requester] })
+    } catch (err) {
+      console.error('[FarmServer] payWorkerWages error:', err)
+      sendWorkerStatus(requester)
+      void room.send('workerWagePaymentResult', {
+        requester,
+        success: false,
+        reason: 'server_error',
+        coinsDelta: 0,
+        workerOutstandingWages: store.get(requester)?.workerOutstandingWages ?? 0,
+        workerUnpaidDays: store.get(requester)?.workerUnpaidDays ?? 0,
+        workerLastWageProcessedAt: store.get(requester)?.workerLastWageProcessedAt ?? 0,
+      }, { to: [requester] })
+    }
+  })
+
+  room.onMessage('debugWorkerAction', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    if (!WORKER_DEBUG_ENABLED) {
+      const farm = store.get(requester)
+      void room.send('debugWorkerStateUpdated', {
+        requester,
+        success: false,
+        reason: 'debug_disabled',
+        coins: farm?.coins ?? 0,
+        cropsUnlocked: farm?.cropsUnlocked ?? false,
+        farmerHired: farm?.farmerHired ?? false,
+        farmerSeeds: farm?.farmerSeeds ?? [],
+        workerOutstandingWages: farm?.workerOutstandingWages ?? 0,
+        workerUnpaidDays: farm?.workerUnpaidDays ?? 0,
+        workerLastWageProcessedAt: farm?.workerLastWageProcessedAt ?? 0,
+      }, { to: [requester] })
+      return
+    }
+    try {
+      const result = await store.debugWorkerAction(
+        requester,
+        typeof _data.action === 'string' ? _data.action : '',
+        typeof _data.amount === 'number' ? _data.amount : 0,
+      )
+      void room.send('debugWorkerStateUpdated', {
+        requester,
+        success: result.success,
+        reason: result.reason,
+        coins: result.coins,
+        cropsUnlocked: result.cropsUnlocked,
+        farmerHired: result.farmerHired,
+        farmerSeeds: result.farmerSeeds,
+        workerOutstandingWages: result.workerOutstandingWages,
+        workerUnpaidDays: result.workerUnpaidDays,
+        workerLastWageProcessedAt: result.workerLastWageProcessedAt,
+      }, { to: [requester] })
+    } catch (err) {
+      console.error('[FarmServer] debugWorkerAction error:', err)
+      const farm = store.get(requester)
+      void room.send('debugWorkerStateUpdated', {
+        requester,
+        success: false,
+        reason: 'server_error',
+        coins: farm?.coins ?? 0,
+        cropsUnlocked: farm?.cropsUnlocked ?? false,
+        farmerHired: farm?.farmerHired ?? false,
+        farmerSeeds: farm?.farmerSeeds ?? [],
+        workerOutstandingWages: farm?.workerOutstandingWages ?? 0,
+        workerUnpaidDays: farm?.workerUnpaidDays ?? 0,
+        workerLastWageProcessedAt: farm?.workerLastWageProcessedAt ?? 0,
+      }, { to: [requester] })
+    }
   })
 
   // Serve the paginated player registry

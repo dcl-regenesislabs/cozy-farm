@@ -1,12 +1,14 @@
 import { Storage } from '@dcl/sdk/server'
 import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
 import { calculateBeautyScore } from '../../game/beautyScore'
+import { WORKER_DAILY_WAGE, WORKER_DAY_MS } from '../../shared/worker'
+import { CropType } from '../../data/cropData'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
 const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -41,6 +43,9 @@ export type FarmSaveV1 = {
   farmerHired:        boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
+  workerOutstandingWages: number
+  workerUnpaidDays:       number
+  workerLastWageProcessedAt: number
   dogOwned:         boolean
   totalCropsHarvested: number
   totalWaterCount:     number
@@ -83,6 +88,9 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     farmerHired: false,
     farmerSeeds: [],
     farmerInventory: [],
+    workerOutstandingWages: 0,
+    workerUnpaidDays: 0,
+    workerLastWageProcessedAt: 0,
     dogOwned: false,
     totalCropsHarvested: 0,
     totalWaterCount: 0,
@@ -137,6 +145,9 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     farmerHired:        safeBool(maybe.farmerHired),
     farmerSeeds:      safeArray<CropCount>(maybe.farmerSeeds),
     farmerInventory:  safeArray<CropCount>(maybe.farmerInventory),
+    workerOutstandingWages: safeInt(maybe.workerOutstandingWages, 0),
+    workerUnpaidDays:       safeInt(maybe.workerUnpaidDays, 0),
+    workerLastWageProcessedAt: safeInt(maybe.workerLastWageProcessedAt, 0),
     dogOwned:         safeBool(maybe.dogOwned),
     totalCropsHarvested: safeInt(maybe.totalCropsHarvested),
     totalWaterCount:     safeInt(maybe.totalWaterCount),
@@ -191,6 +202,9 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     farmerHired:         save.farmerHired,
     farmerSeeds:         save.farmerSeeds,
     farmerInventory:     save.farmerInventory,
+    workerOutstandingWages: save.workerOutstandingWages,
+    workerUnpaidDays:       save.workerUnpaidDays,
+    workerLastWageProcessedAt: save.workerLastWageProcessedAt,
     dogOwned:            save.dogOwned,
     totalCropsHarvested: save.totalCropsHarvested,
     totalWaterCount:     save.totalWaterCount,
@@ -220,16 +234,51 @@ export class FarmProgressStore {
   private cache = new Map<string, FarmSaveV1>()
   private dirty = new Set<string>()
 
+  private settleWorkerWages(farm: FarmSaveV1, now = Date.now()): boolean {
+    if (!farm.farmerHired) {
+      let changed = false
+      if (farm.workerOutstandingWages !== 0) { farm.workerOutstandingWages = 0; changed = true }
+      if (farm.workerUnpaidDays !== 0) { farm.workerUnpaidDays = 0; changed = true }
+      if (farm.workerLastWageProcessedAt !== 0) { farm.workerLastWageProcessedAt = 0; changed = true }
+      if (changed) farm.updatedAt = now
+      return changed
+    }
+
+    if (farm.workerLastWageProcessedAt <= 0 || farm.workerLastWageProcessedAt > now) {
+      farm.workerLastWageProcessedAt = now
+      farm.updatedAt = now
+      return true
+    }
+
+    const elapsedDays = Math.floor((now - farm.workerLastWageProcessedAt) / WORKER_DAY_MS)
+    if (elapsedDays <= 0) return false
+
+    for (let day = 0; day < elapsedDays; day++) {
+      if (farm.coins >= WORKER_DAILY_WAGE) {
+        farm.coins -= WORKER_DAILY_WAGE
+      } else {
+        farm.workerOutstandingWages += WORKER_DAILY_WAGE
+        farm.workerUnpaidDays += 1
+      }
+    }
+
+    farm.workerLastWageProcessedAt += elapsedDays * WORKER_DAY_MS
+    farm.updatedAt = now
+    return true
+  }
+
   async load(address: string): Promise<FarmSaveV1> {
     const key = address.toLowerCase()
-    const cached = this.cache.get(key)
-    if (cached) return cached
+    let farm = this.cache.get(key)
+    if (!farm) {
+      const raw = await Storage.player.get<unknown>(key, FARM_KEY)
+      farm = normalizeFarm(raw, key)
+      this.cache.set(key, farm)
+      // Always write canonical format on first load
+      this.dirty.add(key)
+    }
 
-    const raw = await Storage.player.get<unknown>(key, FARM_KEY)
-    const farm = normalizeFarm(raw, key)
-    this.cache.set(key, farm)
-    // Always write canonical format on first load
-    this.dirty.add(key)
+    if (this.settleWorkerWages(farm)) this.dirty.add(key)
     return farm
   }
 
@@ -240,6 +289,13 @@ export class FarmProgressStore {
   applyPayload(address: string, payload: FarmStatePayload): void {
     const key = address.toLowerCase()
     const existing = this.cache.get(key) ?? emptyFarm(key)
+    const farmerHired = existing.farmerHired || payload.farmerHired
+    const hiredNow = !existing.farmerHired && farmerHired
+    const workerLastWageProcessedAt = hiredNow
+      ? Math.max(0, payload.workerLastWageProcessedAt || Date.now())
+      : existing.workerLastWageProcessedAt
+    const workerOutstandingWages = hiredNow ? 0 : existing.workerOutstandingWages
+    const workerUnpaidDays = hiredNow ? 0 : existing.workerUnpaidDays
 
     const updated: FarmSaveV1 = {
       schemaVersion:       SCHEMA_VERSION,
@@ -249,12 +305,15 @@ export class FarmProgressStore {
       harvested:           payload.harvested,
       xp:                  payload.xp,
       level:               payload.level,
-      cropsUnlocked:       payload.cropsUnlocked,
-      expansion1Unlocked:  payload.expansion1Unlocked,
-      expansion2Unlocked:  payload.expansion2Unlocked,
-      farmerHired:         payload.farmerHired,
+      cropsUnlocked:       existing.cropsUnlocked || payload.cropsUnlocked,
+      expansion1Unlocked:  existing.expansion1Unlocked || payload.expansion1Unlocked,
+      expansion2Unlocked:  existing.expansion2Unlocked || payload.expansion2Unlocked,
+      farmerHired,
       farmerSeeds:         payload.farmerSeeds,
       farmerInventory:     payload.farmerInventory,
+      workerOutstandingWages,
+      workerUnpaidDays,
+      workerLastWageProcessedAt: farmerHired ? workerLastWageProcessedAt : 0,
       dogOwned:            payload.dogOwned,
       totalCropsHarvested: payload.totalCropsHarvested,
       totalWaterCount:     payload.totalWaterCount,
@@ -288,6 +347,168 @@ export class FarmProgressStore {
 
     // Keep existing reference up-to-date for any in-flight code that holds it
     Object.assign(existing, updated)
+  }
+
+  async payWorkerWages(address: string): Promise<{
+    success: boolean
+    reason: string
+    coinsDelta: number
+    workerOutstandingWages: number
+    workerUnpaidDays: number
+    workerLastWageProcessedAt: number
+  }> {
+    const key = address.toLowerCase()
+    const farm = await this.load(key)
+
+    if (!farm.farmerHired) {
+      return {
+        success: false,
+        reason: 'worker_not_hired',
+        coinsDelta: 0,
+        workerOutstandingWages: farm.workerOutstandingWages,
+        workerUnpaidDays: farm.workerUnpaidDays,
+        workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+      }
+    }
+
+    if (farm.workerOutstandingWages <= 0) {
+      return {
+        success: false,
+        reason: 'no_debt',
+        coinsDelta: 0,
+        workerOutstandingWages: 0,
+        workerUnpaidDays: farm.workerUnpaidDays,
+        workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+      }
+    }
+
+    if (farm.coins < farm.workerOutstandingWages) {
+      return {
+        success: false,
+        reason: 'insufficient_coins',
+        coinsDelta: 0,
+        workerOutstandingWages: farm.workerOutstandingWages,
+        workerUnpaidDays: farm.workerUnpaidDays,
+        workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+      }
+    }
+
+    const coinsDelta = -farm.workerOutstandingWages
+    farm.coins += coinsDelta
+    farm.workerOutstandingWages = 0
+    farm.workerUnpaidDays = 0
+    farm.updatedAt = Date.now()
+    this.dirty.add(key)
+
+    return {
+      success: true,
+      reason: 'ok',
+      coinsDelta,
+      workerOutstandingWages: farm.workerOutstandingWages,
+      workerUnpaidDays: farm.workerUnpaidDays,
+      workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+    }
+  }
+
+  async debugWorkerAction(address: string, action: string, amount: number): Promise<{
+    success: boolean
+    reason: string
+    coins: number
+    cropsUnlocked: boolean
+    farmerHired: boolean
+    farmerSeeds: CropCount[]
+    workerOutstandingWages: number
+    workerUnpaidDays: number
+    workerLastWageProcessedAt: number
+  }> {
+    const key = address.toLowerCase()
+    const farm = await this.load(key)
+    const now = Date.now()
+    const safeAmount = Number.isFinite(amount) ? Math.max(0, Math.floor(amount)) : 0
+
+    switch (action) {
+      case 'setup': {
+        farm.cropsUnlocked = true
+        farm.farmerHired = true
+        farm.coins = Math.max(farm.coins, 5000)
+        farm.workerOutstandingWages = 0
+        farm.workerUnpaidDays = 0
+        farm.workerLastWageProcessedAt = now
+        farm.farmerSeeds = [{ cropType: CropType.Onion, count: 20 }]
+        break
+      }
+
+      case 'add_coins': {
+        farm.coins += safeAmount
+        break
+      }
+
+      case 'set_coins': {
+        farm.coins = safeAmount
+        break
+      }
+
+      case 'load_seeds': {
+        const existing = farm.farmerSeeds.find((seed) => seed.cropType === CropType.Onion)
+        if (existing) existing.count += Math.max(1, safeAmount || 20)
+        else farm.farmerSeeds.push({ cropType: CropType.Onion, count: Math.max(1, safeAmount || 20) })
+        break
+      }
+
+      case 'clear_seeds': {
+        farm.farmerSeeds = []
+        break
+      }
+
+      case 'advance_days': {
+        if (!farm.farmerHired) {
+          farm.farmerHired = true
+          farm.workerLastWageProcessedAt = now
+        }
+        if (farm.workerLastWageProcessedAt <= 0) farm.workerLastWageProcessedAt = now
+        farm.workerLastWageProcessedAt -= Math.max(1, safeAmount || 1) * WORKER_DAY_MS
+        this.settleWorkerWages(farm, now)
+        break
+      }
+
+      case 'clear_debt': {
+        farm.workerOutstandingWages = 0
+        farm.workerUnpaidDays = 0
+        if (farm.farmerHired && farm.workerLastWageProcessedAt <= 0) {
+          farm.workerLastWageProcessedAt = now
+        }
+        break
+      }
+
+      default:
+        return {
+          success: false,
+          reason: 'unknown_action',
+          coins: farm.coins,
+          cropsUnlocked: farm.cropsUnlocked,
+          farmerHired: farm.farmerHired,
+          farmerSeeds: farm.farmerSeeds,
+          workerOutstandingWages: farm.workerOutstandingWages,
+          workerUnpaidDays: farm.workerUnpaidDays,
+          workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+        }
+    }
+
+    farm.coins = Math.max(0, farm.coins)
+    farm.updatedAt = now
+    this.dirty.add(key)
+
+    return {
+      success: true,
+      reason: action,
+      coins: farm.coins,
+      cropsUnlocked: farm.cropsUnlocked,
+      farmerHired: farm.farmerHired,
+      farmerSeeds: farm.farmerSeeds,
+      workerOutstandingWages: farm.workerOutstandingWages,
+      workerUnpaidDays: farm.workerUnpaidDays,
+      workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
+    }
   }
 
   async likeFarm(targetAddress: string, visitorAddress: string, visitorName: string): Promise<{

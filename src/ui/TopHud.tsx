@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { COINS_IMAGE } from '../data/imagePaths'
 import { triggerBtnAnim } from './navAnimSystem'
+import { getWorkerDebtDays } from '../shared/worker'
 
 const C_GOLD = { r: 1, g: 0.88, b: 0.2, a: 1 }
 
@@ -18,6 +19,8 @@ export const TopHud = () => {
   const liveSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
   const showSocialToast = DEBUG_SOCIAL_TOAST || liveSocialToast
   const socialToastText = DEBUG_SOCIAL_TOAST ? DEBUG_SOCIAL_TOAST_TEXT : playerState.socialToastText
+  const showWorkerAlert = playerState.farmerHired && playerState.workerOutstandingWages > 0
+  const workerDebtDays = getWorkerDebtDays(playerState.workerOutstandingWages)
 
   if (!DEBUG_SOCIAL_TOAST && !showSocialToast && playerState.socialToastText !== '') {
     playerState.socialToastText = ''
@@ -49,6 +52,32 @@ export const TopHud = () => {
       </UiEntity>
     )}
     {/* ── Leaderboard button (top-right, small) ── */}
+    {showWorkerAlert && (
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: showSocialToast ? 202 : 140, left: 18 },
+          width: 440,
+          height: 60,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { left: 14, right: 14 },
+        }}
+        uiBackground={{ color: playerState.workerUnpaidDays >= 2 ? { r: 0.28, g: 0.1, b: 0.08, a: 0.96 } : { r: 0.2, g: 0.13, b: 0.05, a: 0.96 } }}
+      >
+        <Label
+          value={
+            playerState.workerUnpaidDays >= 2
+              ? `Worker unpaid: ${playerState.workerOutstandingWages} coins due (${workerDebtDays} days).`
+              : `Worker wages due: ${playerState.workerOutstandingWages} coins.`
+          }
+          fontSize={18}
+          color={{ r: 1, g: 0.86, b: 0.78, a: 1 }}
+          textAlign="middle-center"
+          uiTransform={{ width: 400, height: 24 }}
+        />
+      </UiEntity>
+    )}
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
