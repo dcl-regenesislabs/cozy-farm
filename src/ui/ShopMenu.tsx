@@ -7,8 +7,10 @@ import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
+import { WORKER_DAILY_WAGE, WORKER_DEBUG_ENABLED, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
+import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/saveService'
 
-const shopTab  = { value: 'seeds' as 'seeds' | 'pets' }
+const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'workers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
 
 // 5 cards per row × 2 rows = 10 per page
@@ -139,6 +141,159 @@ const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastP
   </UiEntity>
 )
 
+const WorkerPanel = () => {
+  if (!playerState.cropsUnlocked) {
+    return (
+      <UiEntity
+        uiTransform={{ width: '100%', padding: { top: 22, bottom: 22, left: 22, right: 22 } }}
+        uiBackground={{ color: C.rowBg }}
+      >
+        <Label
+          value="Unlock the farm expansion first. The worker payroll terminal becomes available once the worker area is open."
+          fontSize={24}
+          color={C.textMain}
+          textAlign="middle-left"
+        />
+      </UiEntity>
+    )
+  }
+
+  if (!playerState.farmerHired) {
+    return (
+      <UiEntity
+        uiTransform={{ width: '100%', padding: { top: 22, bottom: 22, left: 22, right: 22 } }}
+        uiBackground={{ color: C.rowBg }}
+      >
+        <Label
+          value="No worker hired yet. Talk to the farm worker in the expansion and hire them there."
+          fontSize={24}
+          color={C.textMain}
+          textAlign="middle-left"
+        />
+      </UiEntity>
+    )
+  }
+
+  const workerState = getWorkerStatus({
+    farmerHired: playerState.farmerHired,
+    workerUnpaidDays: playerState.workerUnpaidDays,
+    farmerSeeds: playerState.farmerSeeds,
+  })
+  const outstanding = playerState.workerOutstandingWages
+  const outstandingDays = getWorkerDebtDays(outstanding)
+  const canPay = outstanding > 0 && playerState.coins >= outstanding
+  const statusLabel =
+    workerState === 'idle_unpaid'
+      ? 'Idle (unpaid)'
+      : workerState === 'idle_no_seeds'
+        ? 'Idle (no seeds)'
+        : 'Active'
+
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+      <UiEntity
+        uiTransform={{ width: '100%', padding: { top: 20, bottom: 20, left: 20, right: 20 }, margin: { bottom: 16 } }}
+        uiBackground={{ color: C.rowBg }}
+      >
+        <Label value="Worker Payroll" fontSize={30} color={C.header} textAlign="middle-left" uiTransform={{ margin: { bottom: 10 } }} />
+        <Label value={`Status: ${statusLabel}`} fontSize={24} color={workerState === 'idle_unpaid' ? C.orange : C.textMain} textAlign="middle-left" />
+        <Label value={`Daily wage: ${WORKER_DAILY_WAGE} coins`} fontSize={22} color={C.textMute} textAlign="middle-left" uiTransform={{ margin: { top: 8 } }} />
+        <Label value={`Outstanding wages: ${outstanding} coins`} fontSize={24} color={outstanding > 0 ? C.orange : C.green} textAlign="middle-left" uiTransform={{ margin: { top: 12 } }} />
+        <Label
+          value={`Missed wage days: ${playerState.workerUnpaidDays}`}
+          fontSize={22}
+          color={playerState.workerUnpaidDays >= 2 ? C.orange : C.textMute}
+          textAlign="middle-left"
+          uiTransform={{ margin: { top: 8 } }}
+        />
+        {outstanding > 0 && (
+          <Label
+            value={
+              playerState.workerUnpaidDays >= 2
+                ? `Worker stopped after ${outstandingDays} unpaid day${outstandingDays === 1 ? '' : 's'}. Clear all back-pay to reactivate them.`
+                : `Back-pay accrued for ${outstandingDays} day${outstandingDays === 1 ? '' : 's'}.`
+            }
+            fontSize={20}
+            color={C.textMute}
+            textAlign="middle-left"
+            uiTransform={{ margin: { top: 8 } }}
+          />
+        )}
+      </UiEntity>
+
+      <UiEntity
+        uiTransform={{ width: '100%', padding: { top: 18, bottom: 18, left: 20, right: 20 } }}
+        uiBackground={{ color: { r: 0.1, g: 0.08, b: 0.05, a: 1 } }}
+      >
+        <Label value={`Balance: ${playerState.coins} coins`} fontSize={24} color={C.gold} textAlign="middle-left" uiTransform={{ margin: { bottom: 12 } }} />
+        {outstanding > 0 && playerState.coins < outstanding && (
+          <Label
+            value="Insufficient balance. Sell crops or collect earnings before paying wages."
+            fontSize={20}
+            color={{ r: 1, g: 0.62, b: 0.52, a: 1 }}
+            textAlign="middle-left"
+            uiTransform={{ margin: { bottom: 14 } }}
+          />
+        )}
+        <Button
+          value={outstanding > 0 ? `Pay ${outstanding} coins` : 'No wages due'}
+          variant={canPay ? 'primary' : 'secondary'}
+          disabled={!canPay}
+          fontSize={26}
+          uiTransform={{ width: 340, height: 76 }}
+          onMouseDown={() => { if (!canPay) return; playSound('buttonclick'); requestPayWorkerWages() }}
+        />
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+const DebugActionButton = ({ label, onPress, disabled = false }: { label: string; onPress: () => void; disabled?: boolean }) => (
+  <Button
+    value={label}
+    variant={disabled ? 'secondary' : 'primary'}
+    disabled={disabled}
+    fontSize={22}
+    uiTransform={{ width: 260, height: 68, margin: { right: 12, bottom: 12 } }}
+    onMouseDown={() => { if (disabled) return; playSound('buttonclick'); onPress() }}
+  />
+)
+
+const DebugPanel = () => (
+  <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+    <UiEntity
+      uiTransform={{ width: '100%', padding: { top: 18, bottom: 18, left: 20, right: 20 }, margin: { bottom: 16 } }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <Label value="Worker Debug" fontSize={30} color={C.header} textAlign="middle-left" uiTransform={{ margin: { bottom: 10 } }} />
+      <Label
+        value="Use this panel to prepare the worker test scenario without editing storage files. It mutates your saved farm state directly on the authoritative server."
+        fontSize={21}
+        color={C.textMain}
+        textAlign="middle-left"
+      />
+      <Label
+        value={`Live snapshot: coins=${playerState.coins}, hired=${playerState.farmerHired ? 'yes' : 'no'}, worker seeds=${Array.from(playerState.farmerSeeds.values()).reduce((sum, count) => sum + count, 0)}, debt=${playerState.workerOutstandingWages}, unpaidDays=${playerState.workerUnpaidDays}`}
+        fontSize={19}
+        color={C.textMute}
+        textAlign="middle-left"
+        uiTransform={{ margin: { top: 10 } }}
+      />
+    </UiEntity>
+
+    <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+      <DebugActionButton label="Prepare Worker Test" onPress={() => { requestDebugWorkerAction('setup') }} />
+      <DebugActionButton label="+1000 Coins" onPress={() => { requestDebugWorkerAction('add_coins', 1000) }} />
+      <DebugActionButton label="Set Coins To 0" onPress={() => { requestDebugWorkerAction('set_coins', 0) }} />
+      <DebugActionButton label="Load 20 Worker Seeds" onPress={() => { requestDebugWorkerAction('load_seeds', 20) }} />
+      <DebugActionButton label="Clear Worker Seeds" onPress={() => { requestDebugWorkerAction('clear_seeds') }} />
+      <DebugActionButton label="Advance 1 Day" onPress={() => { requestDebugWorkerAction('advance_days', 1) }} />
+      <DebugActionButton label="Advance 2 Days" onPress={() => { requestDebugWorkerAction('advance_days', 2) }} />
+      <DebugActionButton label="Clear Wage Debt" onPress={() => { requestDebugWorkerAction('clear_debt') }} />
+    </UiEntity>
+  </UiEntity>
+)
+
 export const ShopMenu = () => {
   const tutorialActive = tutorialState.active
 
@@ -174,9 +329,25 @@ export const ShopMenu = () => {
           value="Pets"
           variant={tab === 'pets' ? 'primary' : 'secondary'}
           fontSize={28}
-          uiTransform={{ width: 240, height: 68 }}
+          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'pets' }}
         />
+        <Button
+          value="Workers"
+          variant={tab === 'workers' ? 'primary' : 'secondary'}
+          fontSize={28}
+          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
+          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'workers' }}
+        />
+        {WORKER_DEBUG_ENABLED && (
+          <Button
+            value="Debug"
+            variant={tab === 'debug' ? 'primary' : 'secondary'}
+            fontSize={28}
+            uiTransform={{ width: 240, height: 68 }}
+            onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'debug' }}
+          />
+        )}
       </UiEntity>
 
       {/* Seeds tab */}
@@ -217,6 +388,10 @@ export const ShopMenu = () => {
           <DogCard />
         </UiEntity>
       )}
+
+      {tab === 'workers' && <WorkerPanel />}
+
+      {WORKER_DEBUG_ENABLED && tab === 'debug' && <DebugPanel />}
 
     </PanelShell>
   )

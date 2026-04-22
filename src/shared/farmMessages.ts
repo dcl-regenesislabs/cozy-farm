@@ -69,6 +69,9 @@ const FarmStateSchema = Schemas.Map({
   farmerHired:      Schemas.Boolean,
   farmerSeeds:      Schemas.Array(CropCountSchema),
   farmerInventory:  Schemas.Array(CropCountSchema),
+  workerOutstandingWages: Schemas.Int,
+  workerUnpaidDays:       Schemas.Int,
+  workerLastWageProcessedAt: Schemas.Int64,
 
   // Dog
   dogOwned: Schemas.Boolean,
@@ -137,6 +140,14 @@ const FarmMessages = {
 
   /** Client → Server: persist current farm state */
   playerSaveFarm: FarmStateSchema,
+
+  /** Client → Server: clear any outstanding worker back-pay */
+  payWorkerWages: Schemas.Map({}),
+
+  debugWorkerAction: Schemas.Map({
+    action: Schemas.String,
+    amount: Schemas.Int,
+  }),
 
   /** Client → Server: fetch a page of known players */
   loadPlayerRegistry: Schemas.Map({ page: Schemas.Int }),
@@ -245,6 +256,37 @@ const FarmMessages = {
     }),
     notificationText: Schemas.String,
   }),
+
+  workerStatusUpdated: Schemas.Map({
+    requester: Schemas.String,
+    coinsDelta: Schemas.Int,
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
+  }),
+
+  workerWagePaymentResult: Schemas.Map({
+    requester: Schemas.String,
+    success: Schemas.Boolean,
+    reason: Schemas.String,
+    coinsDelta: Schemas.Int,
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
+  }),
+
+  debugWorkerStateUpdated: Schemas.Map({
+    requester: Schemas.String,
+    success: Schemas.Boolean,
+    reason: Schemas.String,
+    coins: Schemas.Int,
+    cropsUnlocked: Schemas.Boolean,
+    farmerHired: Schemas.Boolean,
+    farmerSeeds: Schemas.Array(CropCountSchema),
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
+  }),
 }
 
 export const room = registerMessages(FarmMessages)
@@ -324,6 +366,9 @@ export type FarmStatePayload = {
   farmerHired:        boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
+  workerOutstandingWages: number
+  workerUnpaidDays: number
+  workerLastWageProcessedAt: number
   dogOwned: boolean
   totalCropsHarvested: number
   totalWaterCount:     number

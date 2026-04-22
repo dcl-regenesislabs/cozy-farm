@@ -6,8 +6,8 @@ import { PanelShell, C } from './PanelShell'
 import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
-
-const HIRE_COST = 100
+import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
+import { saveFarm } from '../services/saveService'
 
 // 4 cards per row, 1 row per page
 const FARMER_SEED_PAGE_SIZE = 4
@@ -118,6 +118,12 @@ export const FarmerMenu = () => {
   const availableToGive  = ALL_CROP_TYPES.filter((ct) => (playerState.seeds.get(ct) ?? 0) > 0)
   const collectedEntries = ALL_CROP_TYPES.filter((ct) => (playerState.farmerInventory.get(ct) ?? 0) > 0)
   const hasCollected     = collectedEntries.length > 0
+  const workerState = getWorkerStatus({
+    farmerHired: playerState.farmerHired,
+    workerUnpaidDays: playerState.workerUnpaidDays,
+    farmerSeeds: playerState.farmerSeeds,
+  })
+  const outstandingDays = getWorkerDebtDays(playerState.workerOutstandingWages)
 
   const seedPage  = farmerSeedPage.value
   const seedLast  = Math.max(0, Math.ceil(availableToGive.length / FARMER_SEED_PAGE_SIZE) - 1)
@@ -138,7 +144,7 @@ export const FarmerMenu = () => {
             uiTransform={{ margin: { bottom: 10 } }}
           />
           <Label
-            value="Pay me 100 coins and give me seeds to get started."
+            value={`Pay me ${WORKER_HIRE_COST} coins and give me seeds to get started.`}
             fontSize={26}
             color={C.textMute}
             textAlign="middle-center"
@@ -150,23 +156,27 @@ export const FarmerMenu = () => {
               uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
             />
             <Label
-              value={`${playerState.coins} / ${HIRE_COST} coins`}
+              value={`${playerState.coins} / ${WORKER_HIRE_COST} coins`}
               fontSize={30}
-              color={playerState.coins >= HIRE_COST ? C.gold : { r: 1, g: 0.4, b: 0.4, a: 1 }}
+              color={playerState.coins >= WORKER_HIRE_COST ? C.gold : { r: 1, g: 0.4, b: 0.4, a: 1 }}
               textAlign="middle-left"
             />
           </UiEntity>
           <Button
-            value={`Hire for ${HIRE_COST} coins`}
-            variant={playerState.coins >= HIRE_COST ? 'primary' : 'secondary'}
-            disabled={playerState.coins < HIRE_COST}
+            value={`Hire for ${WORKER_HIRE_COST} coins`}
+            variant={playerState.coins >= WORKER_HIRE_COST ? 'primary' : 'secondary'}
+            disabled={playerState.coins < WORKER_HIRE_COST}
             fontSize={28}
             uiTransform={{ width: 400, height: 80 }}
             onMouseDown={() => {
-              if (playerState.coins < HIRE_COST) return
+              if (playerState.coins < WORKER_HIRE_COST) return
               playSound('buttonclick')
-              playerState.coins -= HIRE_COST
+              playerState.coins -= WORKER_HIRE_COST
               playerState.farmerHired = true
+              playerState.workerOutstandingWages = 0
+              playerState.workerUnpaidDays = 0
+              playerState.workerLastWageProcessedAt = Date.now()
+              saveFarm()
             }}
           />
         </UiEntity>
@@ -177,6 +187,30 @@ export const FarmerMenu = () => {
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%' }}>
 
           {/* ─ Collected Harvest ─ */}
+          <UiEntity
+            uiTransform={{ width: '100%', padding: { top: 12, bottom: 12, left: 16, right: 16 }, margin: { bottom: 16 } }}
+            uiBackground={{
+              color:
+                workerState === 'idle_unpaid'
+                  ? { r: 0.24, g: 0.1, b: 0.08, a: 1 }
+                  : workerState === 'idle_no_seeds'
+                    ? { r: 0.14, g: 0.12, b: 0.05, a: 1 }
+                    : { r: 0.08, g: 0.16, b: 0.09, a: 1 },
+            }}
+          >
+            <Label
+              value={
+                workerState === 'idle_unpaid'
+                  ? `Worker unpaid: ${playerState.workerOutstandingWages} coins due (${outstandingDays} day${outstandingDays === 1 ? '' : 's'}). Use the computer to clear wages.`
+                  : workerState === 'idle_no_seeds'
+                    ? `Worker idle: no seeds loaded. Daily wage is ${WORKER_DAILY_WAGE} coins.`
+                    : `Worker active. Daily wage: ${WORKER_DAILY_WAGE} coins.`
+              }
+              fontSize={22}
+              color={workerState === 'idle_unpaid' ? { r: 1, g: 0.72, b: 0.62, a: 1 } : C.textMain}
+              textAlign="middle-left"
+            />
+          </UiEntity>
           <Label value="Collected Harvest" fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
           {hasCollected ? (
             <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 10 } }}>
