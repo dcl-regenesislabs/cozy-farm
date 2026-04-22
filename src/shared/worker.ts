@@ -24,6 +24,9 @@ export function getWorkerStatus(args: {
   workerUnpaidDays: number
   farmerSeeds: Map<CropType, number>
 }): WorkerStatus {
+  // `workerUnpaidDays` is persisted separately from the derived debt-day count:
+  // outstanding wages drive UI/back-pay totals, while unpaidDays tracks consecutive
+  // missed daily deductions for the 2-day shutdown rule.
   if (!args.farmerHired) return 'inactive'
   if (args.workerUnpaidDays >= 2) return 'idle_unpaid'
   if (getTotalWorkerSeeds(args.farmerSeeds) <= 0) return 'idle_no_seeds'

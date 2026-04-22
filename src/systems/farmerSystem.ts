@@ -501,11 +501,6 @@ engine.addSystem((dt: number) => {
     }
 
     case 'acting': {
-      if (workerStatus === 'idle_unpaid') {
-        startWalkToTarget(HOME_POS)
-        farmer.state = 'returning'
-        return
-      }
       farmer.actionTimer -= dt
       if (farmer.actionTimer > 0) return
       const next = pickNextTask()

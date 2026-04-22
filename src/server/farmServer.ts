@@ -73,13 +73,15 @@ function farmAutosaveSystem(dt: number): void {
   autosaveAccumulator += dt
   if (autosaveAccumulator < AUTOSAVE_INTERVAL_SECONDS) return
   autosaveAccumulator = 0
-  for (const address of loadedAddresses) {
-    const before = store.get(address)
-    const prevCoins = before?.coins ?? 0
-    const prevOutstanding = before?.workerOutstandingWages ?? 0
-    const prevUnpaidDays = before?.workerUnpaidDays ?? 0
-    const prevLastProcessedAt = before?.workerLastWageProcessedAt ?? 0
-    void store.load(address).then((farm) => {
+  void (async () => {
+    await Promise.all([...loadedAddresses].map(async (address) => {
+      const before = store.get(address)
+      const prevCoins = before?.coins ?? 0
+      const prevOutstanding = before?.workerOutstandingWages ?? 0
+      const prevUnpaidDays = before?.workerUnpaidDays ?? 0
+      const prevLastProcessedAt = before?.workerLastWageProcessedAt ?? 0
+      const farm = await store.load(address)
+
       const changed =
         prevCoins !== farm.coins ||
         prevOutstanding !== farm.workerOutstandingWages ||
@@ -94,9 +96,10 @@ function farmAutosaveSystem(dt: number): void {
         workerUnpaidDays: farm.workerUnpaidDays,
         workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
       }, { to: [address] })
-    })
-  }
-  void store.saveDirty()
+    }))
+
+    await store.saveDirty()
+  })()
 }
 
 // ---------------------------------------------------------------------------
