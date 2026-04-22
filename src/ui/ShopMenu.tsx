@@ -290,6 +290,8 @@ const DebugPanel = () => (
       <DebugActionButton label="Advance 1 Day" onPress={() => { requestDebugWorkerAction('advance_days', 1) }} />
       <DebugActionButton label="Advance 2 Days" onPress={() => { requestDebugWorkerAction('advance_days', 2) }} />
       <DebugActionButton label="Clear Wage Debt" onPress={() => { requestDebugWorkerAction('clear_debt') }} />
+      <DebugActionButton label="Simulate 4h Offline" onPress={() => { requestDebugWorkerAction('simulate_offline', 4) }} />
+      <DebugActionButton label="Simulate 24h Offline" onPress={() => { requestDebugWorkerAction('simulate_offline', 24) }} />
     </UiEntity>
   </UiEntity>
 )
