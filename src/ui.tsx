@@ -3,6 +3,7 @@ import { playerState } from './game/gameState'
 import { TopHud }        from './ui/TopHud'
 import { BottomNav }     from './ui/BottomNav'
 import { PlantMenu }     from './ui/PlantMenu'
+import { FertilizeMenu } from './ui/FertilizeMenu'
 import { ShopMenu }      from './ui/ShopMenu'
 import { SellMenu }      from './ui/SellMenu'
 import { UnlockMenu }    from './ui/UnlockMenu'
@@ -14,8 +15,9 @@ import { StatsPanel }    from './ui/StatsPanel'
 import { QuestPanel }    from './ui/QuestPanel'
 import { FarmPanel }     from './ui/FarmPanel'
 import { JukeboxMenu }  from './ui/JukeboxMenu'
-import { MailboxMenu }  from './ui/MailboxMenu'
-import { VisitHud }     from './ui/VisitHud'
+import { MailboxMenu }     from './ui/MailboxMenu'
+import { CompostBinMenu } from './ui/CompostBinMenu'
+import { VisitHud }       from './ui/VisitHud'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -36,6 +38,7 @@ const MainUi = () => (
 
     {/* World-interaction menus (triggered by clicking scene objects) */}
     {playerState.activeMenu === 'plant'     && <PlantMenu />}
+    {playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
     {playerState.activeMenu === 'shop'      && <ShopMenu />}
     {playerState.activeMenu === 'sell'      && <SellMenu />}
     {playerState.activeMenu === 'unlock'    && <UnlockMenu />}
@@ -46,6 +49,7 @@ const MainUi = () => (
     {/* World-object menus (continued) */}
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
     {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
+    {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
 
     {/* Bottom-nav panels */}
     {playerState.activeMenu === 'inventory' && <InventoryPanel />}

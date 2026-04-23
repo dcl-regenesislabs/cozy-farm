@@ -1,7 +1,8 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
+import { FertilizerType } from '../data/fertilizerData'
 
-export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost'
 
 export const playerState = {
   coins: 0,
@@ -35,4 +36,9 @@ export const playerState = {
   claimedRewards: [] as number[],
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
+  // Fertilizer system
+  organicWaste: 0,
+  fertilizers: new Map<FertilizerType, number>(),
+  compostWasteCount: 0,
+  compostLastCollectedAt: 0,
 }

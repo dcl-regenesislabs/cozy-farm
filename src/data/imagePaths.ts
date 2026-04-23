@@ -33,6 +33,7 @@ export const BTN_PROFILE    = 'assets/scene/Images/ProfileButton.png'
 
 // World-space billboard icons
 export const SOIL_ICON        = 'assets/scene/Images/SoilIcon.png'
+export const ORGANIC_WASTE_ICON = 'assets/scene/Images/OrganicWasteIcon.png'
 export const WATERINGCAN_ICON = 'assets/scene/Images/WateringcanIcon.png'
 export const WATER_ICON       = 'assets/scene/Images/WaterIcon.png'
 export const WATER_DRY_ICON   = 'assets/scene/Images/WaterDryIcon.png'

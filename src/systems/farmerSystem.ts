@@ -308,7 +308,7 @@ function doFarmerAction() {
   if (actionType === 'harvest') {
     if (!plot.isReady) return
     harvestCrop(targetPlot, playerState.farmerInventory)
-    // Auto-clear — farmer doesn't need a second player click
+    // Auto-clear — farmer doesn't wait for the player's second click
     PlotState.getMutable(targetPlot).justHarvested = false
     removeSoilIcons(targetPlot)
     removeSoilTimerText(targetPlot)

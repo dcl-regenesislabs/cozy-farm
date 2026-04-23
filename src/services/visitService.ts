@@ -114,14 +114,16 @@ function snapshotOwnPlots(): PlotSaveState[] {
   for (const [entity] of engine.getEntitiesWith(PlotState)) {
     const plot = PlotState.get(entity)
     states.push({
-      plotIndex:     plot.plotIndex,
-      isUnlocked:    plot.isUnlocked,
-      cropType:      plot.cropType,
-      plantedAt:     plot.plantedAt,
-      waterCount:    plot.waterCount,
-      growthStarted: plot.growthStarted,
-      growthStage:   plot.growthStage,
-      isReady:       plot.isReady,
+      plotIndex:      plot.plotIndex,
+      isUnlocked:     plot.isUnlocked,
+      cropType:       plot.cropType,
+      plantedAt:      plot.plantedAt,
+      waterCount:     plot.waterCount,
+      growthStarted:  plot.growthStarted,
+      growthStage:    plot.growthStage,
+      isReady:        plot.isReady,
+      isRotten:       plot.isRotten,
+      fertilizerType: plot.fertilizerType,
     })
   }
   return states

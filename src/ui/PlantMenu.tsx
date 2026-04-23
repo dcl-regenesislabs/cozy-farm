@@ -26,10 +26,9 @@ const SeedCard = ({ cropType, count }: SeedCardProps) => {
       }}
       uiBackground={{ color: C.rowBg }}
       onMouseDown={() => {
-        if (playerState.activePlotEntity) {
-          triggerCardShake(shakeKey)
-          plantSeed(playerState.activePlotEntity, cropType)
-        }
+        if (!playerState.activePlotEntity) return
+        triggerCardShake(shakeKey)
+        plantSeed(playerState.activePlotEntity, cropType)
       }}
     >
       <UiEntity
@@ -54,11 +53,13 @@ const SeedCard = ({ cropType, count }: SeedCardProps) => {
 export const PlantMenu = () => {
   const availableSeeds = ALL_CROP_TYPES.filter((ct) => (playerState.seeds.get(ct) ?? 0) > 0)
 
+  const onClose = () => {
+    playerState.activeMenu       = 'none'
+    playerState.activePlotEntity = null
+  }
+
   return (
-    <PanelShell title="Plant Seeds" onClose={() => {
-      playerState.activeMenu       = 'none'
-      playerState.activePlotEntity = null
-    }}>
+    <PanelShell title="Plant Seeds" onClose={onClose}>
       {availableSeeds.length === 0 ? (
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
           <Label value="No seeds in inventory!" fontSize={32} color={C.textMute} textAlign="middle-center" />

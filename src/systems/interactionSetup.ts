@@ -10,6 +10,7 @@ import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
 import { tutorialState } from '../game/tutorialState'
 import { isVisiting } from '../services/visitService'
+import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -68,6 +69,7 @@ let forSaleSign2Entity: Entity | null = null
 let forSaleSign3Entity: Entity | null = null
 let computerEntity: Entity | null = null
 let truckEntity: Entity | null = null
+let compostBinEntity: Entity | null = null
 
 export function setupEntities() {
   // ── Computer ──────────────────────────────────────────────────────────────
@@ -148,6 +150,8 @@ export function setupEntities() {
       waterCount: 0,
       isUnlocked: index < 1,   // tutorial: only plot 0 unlocked at start
       plotIndex: index,
+      isRotten: false,
+      fertilizerType: -1,
     })
 
     // Plot 0:  leave the scene-editor GltfContainer untouched — the GLB already
@@ -196,7 +200,18 @@ export function setupEntities() {
     )
   }
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}, mailbox=${!!mailbox}`)
+  // ── Compost Bin ───────────────────────────────────────────────────────────
+  const compostBin = engine.getEntityOrNullByName('CompostBin')
+  compostBinEntity = compostBin
+  if (compostBin) {
+    enablePointerOnGltf(compostBin)
+    pointerEventsSystem.onPointerDown(
+      { entity: compostBin, opts: { button: InputAction.IA_POINTER, hoverText: 'Compost Bin', maxDistance: 8 } },
+      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'compost' }
+    )
+  }
+
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}, mailbox=${!!mailbox}, compostBin=${!!compostBin}`)
 }
 
 export function removeForSaleSign() {
@@ -306,7 +321,7 @@ export function registerPlotPointerEvent(entity: Entity) {
     hoverText = 'Locked'
   } else if (plot.cropType !== -1) {
     if (plot.isReady) {
-      hoverText = 'Harvest'
+      hoverText = plot.isRotten ? 'Harvest (Rotten — Organic Waste)' : 'Harvest'
     } else {
       const { canWater } = getWateringStatus(plot, Date.now())
       if (canWater) {
@@ -321,7 +336,11 @@ export function registerPlotPointerEvent(entity: Entity) {
               ? TUTORIAL_ONION_GROW_MS
               : def.growTimeMs
           const remaining = effectiveGrowTimeMs - (Date.now() - plot.plantedAt)
-          hoverText = `${cropName} - ${formatTime(remaining)}`
+          const hasFerts = plot.fertilizerType === -1 &&
+            ALL_FERTILIZER_TYPES.some((f) => (playerState.fertilizers.get(f) ?? 0) > 0)
+          hoverText = hasFerts
+            ? `${cropName} - ${formatTime(remaining)} (Click to Fertilize)`
+            : `${cropName} - ${formatTime(remaining)}`
         } else {
           hoverText = cropName
         }
@@ -363,4 +382,8 @@ export function getComputerEntity(): Entity | null {
 
 export function getTruckEntity(): Entity | null {
   return truckEntity
+}
+
+export function getCompostBinEntity(): Entity | null {
+  return compostBinEntity
 }

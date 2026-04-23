@@ -13,6 +13,8 @@ const PlotSaveSchema = Schemas.Map({
   growthStarted: Schemas.Boolean,
   growthStage:  Schemas.Int,
   isReady:      Schemas.Boolean,
+  isRotten:     Schemas.Boolean,
+  fertilizerType: Schemas.Int,     // FertilizerType | -1
 })
 
 // ---------------------------------------------------------------------------
@@ -30,6 +32,14 @@ const QuestProgressSaveSchema = Schemas.Map({
 const CropCountSchema = Schemas.Map({
   cropType: Schemas.Int,
   count:    Schemas.Int,
+})
+
+// ---------------------------------------------------------------------------
+// Fertilizer inventory pair
+// ---------------------------------------------------------------------------
+const FertilizerCountSchema = Schemas.Map({
+  fertilizerType: Schemas.Int,
+  count:          Schemas.Int,
 })
 
 // ---------------------------------------------------------------------------
@@ -88,6 +98,12 @@ const FarmStateSchema = Schemas.Map({
   musicSongId: Schemas.String,
   musicMuted:  Schemas.Boolean,
   musicVolume: Schemas.Number,
+
+  // Fertilizer system
+  organicWaste:            Schemas.Int,
+  fertilizers:             Schemas.Array(FertilizerCountSchema),
+  compostWasteCount:       Schemas.Int,
+  compostLastCollectedAt:  Schemas.Number,
 })
 
 // ---------------------------------------------------------------------------
@@ -146,19 +162,26 @@ export const room = registerMessages(FarmMessages)
 // Re-export types so other modules can use them without re-importing Schemas
 // ---------------------------------------------------------------------------
 export type PlotSaveState = {
-  plotIndex:     number
-  isUnlocked:    boolean
-  cropType:      number
-  plantedAt:     number
-  waterCount:    number
-  growthStarted: boolean
-  growthStage:   number
-  isReady:       boolean
+  plotIndex:      number
+  isUnlocked:     boolean
+  cropType:       number
+  plantedAt:      number
+  waterCount:     number
+  growthStarted:  boolean
+  growthStage:    number
+  isReady:        boolean
+  isRotten:       boolean
+  fertilizerType: number
 }
 
 export type CropCount = {
   cropType: number
   count:    number
+}
+
+export type FertilizerCount = {
+  fertilizerType: number
+  count:          number
 }
 
 export type QuestProgressSave = {
@@ -208,4 +231,8 @@ export type FarmStatePayload = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  organicWaste:            number
+  fertilizers:             FertilizerCount[]
+  compostWasteCount:       number
+  compostLastCollectedAt:  number
 }

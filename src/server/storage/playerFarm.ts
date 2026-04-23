@@ -1,11 +1,11 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, PlotSaveState, CropCount, QuestProgressSave, PlayerEntry } from '../../shared/farmMessages'
+import type { FarmStatePayload, PlotSaveState, CropCount, FertilizerCount, QuestProgressSave, PlayerEntry } from '../../shared/farmMessages'
 
 // ---------------------------------------------------------------------------
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 2
+const SCHEMA_VERSION = 3
 
 // ---------------------------------------------------------------------------
 // Persisted type — what actually goes into Storage
@@ -40,13 +40,17 @@ export type FarmSaveV1 = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  organicWaste:            number
+  fertilizers:             FertilizerCount[]
+  compostWasteCount:       number
+  compostLastCollectedAt:  number
   updatedAt:      number
 }
 
 // ---------------------------------------------------------------------------
 // Default state for a brand-new player (matches economy.md Phase 1)
 // ---------------------------------------------------------------------------
-function emptyFarm(wallet: string): FarmSaveV1 {
+export function emptyFarm(wallet: string): FarmSaveV1 {
   return {
     schemaVersion: SCHEMA_VERSION,
     wallet,
@@ -77,7 +81,33 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     musicSongId:    'a_la_fresca',
     musicMuted:     false,
     musicVolume:    0.42,
+    organicWaste:            0,
+    fertilizers:             [],
+    compostWasteCount:       0,
+    compostLastCollectedAt:  0,
     updatedAt:      Date.now(),
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Normalize a single PlotSaveState entry (handles missing fields from older saves)
+// ---------------------------------------------------------------------------
+function normalizePlotSave(raw: Partial<PlotSaveState>): PlotSaveState {
+  const safeInt  = (v: unknown, fallback = 0): number =>
+    typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : fallback
+  const safeBool = (v: unknown, fallback = false): boolean =>
+    typeof v === 'boolean' ? v : fallback
+  return {
+    plotIndex:      safeInt((raw as any).plotIndex),
+    isUnlocked:     safeBool((raw as any).isUnlocked),
+    cropType:       safeInt((raw as any).cropType, -1),
+    plantedAt:      safeInt((raw as any).plantedAt),
+    waterCount:     safeInt((raw as any).waterCount),
+    growthStarted:  safeBool((raw as any).growthStarted),
+    growthStage:    safeInt((raw as any).growthStage),
+    isReady:        safeBool((raw as any).isReady),
+    isRotten:       safeBool((raw as any).isRotten, false),
+    fertilizerType: safeInt((raw as any).fertilizerType, -1),
   }
 }
 
@@ -121,11 +151,15 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     tutorialSeedsBought: safeInt(maybe.tutorialSeedsBought),
     tutorialHarvestMore: safeInt(maybe.tutorialHarvestMore),
     claimedRewards:      safeArray<number>(maybe.claimedRewards),
-    plotStates:          safeArray<PlotSaveState>(maybe.plotStates),
+    plotStates:          safeArray<Partial<PlotSaveState>>(maybe.plotStates).map(normalizePlotSave),
     questProgress:       safeArray<QuestProgressSave>(maybe.questProgress),
     musicSongId:         safeStr(maybe.musicSongId, 'a_la_fresca'),
     musicMuted:          safeBool(maybe.musicMuted),
     musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
+    organicWaste:            safeInt((maybe as any).organicWaste, 0),
+    fertilizers:             safeArray<FertilizerCount>((maybe as any).fertilizers),
+    compostWasteCount:       safeInt((maybe as any).compostWasteCount, 0),
+    compostLastCollectedAt:  safeInt((maybe as any).compostLastCollectedAt, 0),
     updatedAt:           safeInt(maybe.updatedAt, Date.now()),
   }
 }
@@ -163,6 +197,10 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     musicSongId:         save.musicSongId,
     musicMuted:          save.musicMuted,
     musicVolume:         save.musicVolume,
+    organicWaste:            save.organicWaste,
+    fertilizers:             save.fertilizers,
+    compostWasteCount:       save.compostWasteCount,
+    compostLastCollectedAt:  save.compostLastCollectedAt,
   }
 }
 
@@ -224,6 +262,10 @@ export class FarmProgressStore {
       musicSongId:         payload.musicSongId,
       musicMuted:          payload.musicMuted,
       musicVolume:         payload.musicVolume,
+      organicWaste:            payload.organicWaste ?? 0,
+      fertilizers:             payload.fertilizers ?? [],
+      compostWasteCount:       payload.compostWasteCount ?? 0,
+      compostLastCollectedAt:  payload.compostLastCollectedAt ?? 0,
       updatedAt:           Date.now(),
     }
 

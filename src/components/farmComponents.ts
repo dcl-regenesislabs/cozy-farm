@@ -23,6 +23,10 @@ export const PlotState = engine.defineComponent('cozyfarm::PlotState', {
   isPlanting: Schemas.Boolean,
   /** Watering-can VFX is currently playing — interactions are blocked until it finishes */
   isWatering: Schemas.Boolean,
+  /** Crop missed harvest window and has rotted — yields Organic Waste on harvest */
+  isRotten: Schemas.Boolean,
+  /** FertilizerType applied at planting (-1 = none) */
+  fertilizerType: Schemas.Int,
 })
 
 /** Maps soil entity -> crop child entity for model display */
