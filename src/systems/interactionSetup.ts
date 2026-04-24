@@ -189,7 +189,7 @@ export function setupEntities() {
     )
   }
 
-  // ── Bed (tutorial skip — 3 clicks = skip tutorial + 2000 coins) ──────────
+  // ── Bed (3 clicks = lose all coins) ─────────────────────────────────────
   let bedClickCount = 0
   const bed = engine.getEntityOrNullByName('Bed.glb')
   if (bed) {
@@ -199,7 +199,26 @@ export function setupEntities() {
       () => {
         if (isVisiting()) return
         bedClickCount++
-        if (bedClickCount >= 3) skipTutorial()
+        if (bedClickCount >= 3) {
+          bedClickCount = 0
+          playerState.coins = 0
+        }
+      },
+    )
+  }
+
+  // ── Axe (dev shortcut — 3 clicks = skip tutorial + 20k coins) ────────────
+  // Requires collider enabled on the model in Creator Hub (same as Bed, Computer, etc.)
+  let axeClickCount = 0
+  const axe = engine.getEntityOrNullByName('Axe 2')
+  if (axe) {
+    enablePointerOnGltf(axe)
+    pointerEventsSystem.onPointerDown(
+      { entity: axe, opts: { button: InputAction.IA_POINTER, hoverText: 'Chop', maxDistance: 8 } },
+      () => {
+        if (isVisiting()) return
+        axeClickCount++
+        if (axeClickCount >= 3) { axeClickCount = 0; skipTutorial() }
       },
     )
   }
