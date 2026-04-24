@@ -9,8 +9,8 @@
     "upgrade-sdk": "npm install --save-dev @dcl/sdk@latest",
     "upgrade-sdk:next": "npm install --save-dev @dcl/sdk@next",
     "server-logs": "sdk-commands sdk-server-logs",
-    "deploy:testing": "node scripts/deploy-env.js testing",
-    "deploy:production": "node scripts/deploy-env.js production"
+    "deploy:testing": "sdk-commands deploy",
+    "deploy:production": "sdk-commands deploy"
   },
   "devDependencies": {
     "@dcl/js-runtime": "7.21.1-22918726402.commit-ee210ee",
