@@ -14,6 +14,8 @@ import { onHarvestCrop, onWater, onPlant, onSell } from './questState'
 import { spawnDog } from '../systems/dogSystem'
 import { onTutorialAction } from '../systems/tutorialSystem'
 import { playSound } from '../systems/sfxSystem'
+import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
+import { placeOrnamentInNextSlot, isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 
 /** Create or update the crop child entity on a soil plot */
 export function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -391,6 +393,23 @@ export function sellCrop(cropType: CropType, quantity: number): boolean {
   return true
 }
 
+
+/**
+ * Purchase a beauty ornament and place it in the next empty slot.
+ * Returns true on success. Fails if: already placed, no empty slot, or insufficient coins.
+ */
+export function buyOrnament(objectId: number): boolean {
+  const def = BEAUTY_OBJECTS.get(objectId)
+  if (!def) return false
+  if (isOrnamentPlaced(objectId)) return false
+  if (!hasEmptySlot()) return false
+  if (playerState.coins < def.price) return false
+
+  playerState.coins -= def.price
+  placeOrnamentInNextSlot(objectId)
+  console.log(`CozyFarm: Bought ornament "${def.name}" (id=${objectId}, beauty=${def.beautyValue})`)
+  return true
+}
 
 /** Purchase the dog companion for 500 coins. No-op if already owned or insufficient coins. */
 export function buyDog() {

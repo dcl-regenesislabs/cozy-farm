@@ -36,6 +36,8 @@ export const playerState = {
   claimedRewards: [] as number[],
   // Beauty score — cached after each save/load, read by StatsPanel
   beautyScore: 0,
+  // Beauty decoration slots — 3 entries, each holds an objectId (0 = empty)
+  beautySlots: [0, 0, 0] as number[],
   totalLikesReceived: 0,
   mailbox: [] as MailboxReward[],
   mailboxSeenCount: 0,

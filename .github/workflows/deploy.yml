@@ -1,0 +1,28 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+env:
+  DCL_PRIVATE_KEY: ${{ secrets.DCL_WORLDS_PRIVATE_KEY }}
+
+jobs:
+  deploy:
+    name: Deploy to .org
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install npm packages
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi
+    - name: Build scene
+      run: |
+        npm install --no-save @dcl/js-runtime@7.20.2-22169778016.commit-030cbfe
+        npm run build
+    - name: Deploy scene
+      run: npm run deploy:production

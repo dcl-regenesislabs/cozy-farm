@@ -6,6 +6,7 @@ import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
 import { room, FarmStatePayload, CropCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
 import { calculateBeautyScore } from '../game/beautyScore'
+import { getBeautySlots, applyBeautySlots } from '../systems/beautySpotSystem'
 import { setCropModel, setSoilIconDisplay } from '../game/actions'
 import {
   unlockExpansion1Plots, unlockExpansion2Plots,
@@ -100,6 +101,7 @@ export function buildSavePayload(): FarmStatePayload {
     musicMuted:          musicState.muted,
     musicVolume:         musicState.volume,
     beautyScore:         0,
+    beautySlots:         getBeautySlots(),
     totalLikesReceived:  playerState.totalLikesReceived,
     mailbox:             playerState.mailbox,
   }
@@ -180,6 +182,8 @@ function applyPayload(payload: FarmStatePayload): void {
   restorePlotStates(payload.plotStates)
 
   playerState.beautyScore = payload.beautyScore ?? 0
+  playerState.beautySlots = payload.beautySlots ?? [0, 0, 0]
+  applyBeautySlots(playerState.beautySlots)
 
   farmLoaded = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
