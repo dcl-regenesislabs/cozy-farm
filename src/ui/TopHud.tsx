@@ -5,10 +5,7 @@ import { COINS_IMAGE } from '../data/imagePaths'
 import { triggerBtnAnim } from './navAnimSystem'
 import { getWorkerDebtDays } from '../shared/worker'
 
-const C_GOLD = { r: 1, g: 0.88, b: 0.2, a: 1 }
 
-const LEADERBOARD_BTN_RIGHT = 10
-const LEADERBOARD_BTN_TOP   = 10
 const DEBUG_SOCIAL_TOAST = false
 const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 
@@ -78,26 +75,6 @@ export const TopHud = () => {
         />
       </UiEntity>
     )}
-    <UiEntity
-      uiTransform={{
-        positionType: 'absolute',
-        position: { top: LEADERBOARD_BTN_TOP, right: LEADERBOARD_BTN_RIGHT },
-        width: 110, height: 50,
-        alignItems: 'center', justifyContent: 'center',
-        pointerFilter: 'block',
-      }}
-      uiBackground={{
-        color: playerState.activeMenu === 'leaderboard'
-          ? { r: 0.55, g: 0.42, b: 0.04, a: 1 }
-          : { r: 0.09, g: 0.07, b: 0.03, a: 0.92 },
-      }}
-      onMouseDown={() => {
-        playerState.activeMenu = playerState.activeMenu === 'leaderboard' ? 'none' : 'leaderboard'
-      }}
-    >
-      <Label value="✦ Ranks" fontSize={18} color={C_GOLD} textAlign="middle-center" />
-    </UiEntity>
-
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
