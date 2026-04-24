@@ -1,16 +1,18 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
-import { buySeed, buyDog } from '../game/actions'
+import { buySeed, buyDog, buyOrnament } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
 import { playSound } from '../systems/sfxSystem'
+import { BEAUTY_OBJECTS, RARITY_COLOR, RARITY_LABEL } from '../data/beautyObjectData'
+import { isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 import { WORKER_DAILY_WAGE, WORKER_DEBUG_ENABLED, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/saveService'
 
-const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'workers' | 'debug' }
+const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
 
 // 5 cards per row × 2 rows = 10 per page
@@ -126,6 +128,61 @@ const DogCard = () => {
         <Label value="Owned" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
         <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardShake('shop_dog'); buyDog() }} />
+      )}
+    </UiEntity>
+  )
+}
+
+const OrnamentCard = ({ objectId }: { objectId: number }) => {
+  const def       = BEAUTY_OBJECTS.get(objectId)!
+  const placed    = isOrnamentPlaced(objectId)
+  const full      = !hasEmptySlot()
+  const canAfford = playerState.coins >= def.price
+  const canBuy    = !placed && !full && canAfford
+  const shakeKey  = `shop_ornament_${objectId}`
+  const offsetX   = getShakeOffset(shakeKey)
+  const rarityCol = RARITY_COLOR[def.rarity]
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: 200,
+        height: 265,
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+        positionType: 'relative',
+        position: { left: offsetX },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      {/* Rarity color swatch as visual */}
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 8 }, flexShrink: 0, alignItems: 'center', justifyContent: 'center' }}
+        uiBackground={{ color: rarityCol }}
+      >
+        <Label value="✦" fontSize={42} color={{ r: 1, g: 1, b: 1, a: 0.9 }} textAlign="middle-center" />
+      </UiEntity>
+
+      <Label value={def.name} fontSize={22} color={C.textMain} textAlign="middle-center" />
+
+      {/* Rarity + beauty row */}
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 4 } }}>
+        <Label value={RARITY_LABEL[def.rarity]} fontSize={16} color={rarityCol} uiTransform={{ margin: { right: 8 } }} />
+        <Label value={`✦ ${def.beautyValue}`} fontSize={16} color={C.gold} />
+      </UiEntity>
+
+      {placed ? (
+        <Label value="Placed ✓" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : full ? (
+        <Label value="Slots Full" fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : (
+        <BuyButton
+          cost={def.price}
+          canAfford={canAfford}
+          onPress={() => { triggerCardShake(shakeKey); buyOrnament(objectId) }}
+        />
       )}
     </UiEntity>
   )
@@ -323,30 +380,37 @@ export const ShopMenu = () => {
         <Button
           value="Seeds"
           variant={tab === 'seeds' ? 'primary' : 'secondary'}
-          fontSize={28}
-          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
+          fontSize={26}
+          uiTransform={{ width: 220, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'seeds' }}
         />
         <Button
           value="Pets"
           variant={tab === 'pets' ? 'primary' : 'secondary'}
-          fontSize={28}
-          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
+          fontSize={24}
+          uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'pets' }}
+        />
+        <Button
+          value="Ornaments"
+          variant={tab === 'ornaments' ? 'primary' : 'secondary'}
+          fontSize={24}
+          uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
+          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'ornaments' }}
         />
         <Button
           value="Workers"
           variant={tab === 'workers' ? 'primary' : 'secondary'}
-          fontSize={28}
-          uiTransform={{ width: 240, height: 68, margin: { right: 12 } }}
+          fontSize={24}
+          uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'workers' }}
         />
         {WORKER_DEBUG_ENABLED && (
           <Button
             value="Debug"
             variant={tab === 'debug' ? 'primary' : 'secondary'}
-            fontSize={28}
-            uiTransform={{ width: 240, height: 68 }}
+            fontSize={24}
+            uiTransform={{ width: 200, height: 68 }}
             onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'debug' }}
           />
         )}
@@ -388,6 +452,30 @@ export const ShopMenu = () => {
       {tab === 'pets' && (
         <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
           <DogCard />
+        </UiEntity>
+      )}
+
+      {/* Ornaments tab */}
+      {tab === 'ornaments' && (
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+            {Array.from(BEAUTY_OBJECTS.keys()).map((id) => (
+              <OrnamentCard objectId={id} />
+            ))}
+          </UiEntity>
+          {!hasEmptySlot() && (
+            <UiEntity
+              uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
+              uiBackground={{ color: { r: 0.18, g: 0.10, b: 0.04, a: 1 } }}
+            >
+              <Label
+                value="All 3 decoration slots are full — future update will let you swap ornaments"
+                fontSize={20}
+                color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
+                textAlign="middle-center"
+              />
+            </UiEntity>
+          )}
         </UiEntity>
       )}
 

@@ -68,6 +68,7 @@ export type FarmSaveV1 = {
   musicMuted:     boolean
   musicVolume:    number
   beautyScore:    number
+  beautySlots:    number[]
   totalLikesReceived: number
   mailbox:        MailboxReward[]
   likeLedger:     LikeLedgerEntry[]
@@ -114,6 +115,7 @@ function emptyFarm(wallet: string): FarmSaveV1 {
     musicMuted:     false,
     musicVolume:    0.42,
     beautyScore:    0,
+    beautySlots:    [0, 0, 0],
     totalLikesReceived: 0,
     mailbox:        [],
     likeLedger:     [],
@@ -172,6 +174,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     musicMuted:          safeBool(maybe.musicMuted),
     musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
     beautyScore:         safeInt(maybe.beautyScore, 0),
+    beautySlots:         safeArray<number>(maybe.beautySlots).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
     totalLikesReceived:  safeInt(maybe.totalLikesReceived, 0),
     mailbox:             safeArray<MailboxReward>(maybe.mailbox),
     likeLedger:          safeArray<LikeLedgerEntry>(maybe.likeLedger)
@@ -229,6 +232,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     musicMuted:          save.musicMuted,
     musicVolume:         save.musicVolume,
     beautyScore:         save.beautyScore,
+    beautySlots:         save.beautySlots,
     totalLikesReceived:  save.totalLikesReceived,
     mailbox:             save.mailbox,
   }
@@ -680,6 +684,7 @@ export class FarmProgressStore {
       musicVolume:         payload.musicVolume,
       // Always recalculate on server — client value is advisory, server is authoritative
       beautyScore:         calculateBeautyScore(payload),
+      beautySlots:         (payload.beautySlots ?? [0, 0, 0]).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
       totalLikesReceived:  existing.totalLikesReceived,
       mailbox:             existing.mailbox,
       likeLedger:          existing.likeLedger,

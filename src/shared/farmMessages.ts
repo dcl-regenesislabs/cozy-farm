@@ -105,6 +105,8 @@ const FarmStateSchema = Schemas.Map({
 
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
+  // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
+  beautySlots: Schemas.Array(Schemas.Int),
   totalLikesReceived: Schemas.Int,
   mailbox: Schemas.Array(MailboxRewardSchema),
 })
@@ -386,6 +388,7 @@ export type FarmStatePayload = {
   musicMuted:     boolean
   musicVolume:    number
   beautyScore:    number
+  beautySlots:    number[]
   totalLikesReceived: number
   mailbox: MailboxReward[]
 }

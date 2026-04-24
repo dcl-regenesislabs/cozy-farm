@@ -1,4 +1,5 @@
 import type { FarmStatePayload } from '../shared/farmMessages'
+import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
 
 // ---------------------------------------------------------------------------
 // Beauty score contributors
@@ -27,7 +28,7 @@ const BEAUTY = {
 export function calculateBeautyScore(payload: Pick<
   FarmStatePayload,
   'plotStates' | 'expansion1Unlocked' | 'expansion2Unlocked' |
-  'dogOwned' | 'farmerHired' | 'level' | 'totalCropsHarvested'
+  'dogOwned' | 'farmerHired' | 'level' | 'totalCropsHarvested' | 'beautySlots'
 >): number {
   let score = 0
 
@@ -49,6 +50,12 @@ export function calculateBeautyScore(payload: Pick<
   // Harvest activity bonus (capped at 20 pts = 2000 crops)
   const harvestBonus = Math.min(20, Math.floor(payload.totalCropsHarvested / 100))
   score += harvestBonus * BEAUTY.perHundredHarvests
+
+  // Decoration slots — sum beauty value of each placed object
+  for (const objectId of (payload.beautySlots ?? [])) {
+    const def = BEAUTY_OBJECTS.get(objectId)
+    if (def) score += def.beautyValue
+  }
 
   return Math.max(0, score)
 }
