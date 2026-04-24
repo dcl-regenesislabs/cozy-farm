@@ -23,7 +23,7 @@ jobs:
         fi
     - name: Build scene
       run: |
-        npm install --no-save @dcl/js-runtime@7.20.2-22169778016.commit-030cbfe
+        npm install --no-save @dcl/sdk@auth-server @dcl/js-runtime@7.21.1-22918726402.commit-ee210ee
         npm run build
     - name: Deploy scene
       run: npm run deploy:production
