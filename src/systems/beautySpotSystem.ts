@@ -49,8 +49,8 @@ function buildPlaceholderVisual(parent: Entity, slotIndex: number): void {
 // Show / hide the 3D model for a slot
 // ---------------------------------------------------------------------------
 function updateSlotModel(slotIndex: number, objectId: number): void {
-  const parent = spotEntities[slotIndex]
-  if (!parent) return
+  const spot = spotEntities[slotIndex]
+  if (!spot) return
 
   const prev = modelEntities[slotIndex]
   if (prev) {
@@ -63,8 +63,12 @@ function updateSlotModel(slotIndex: number, objectId: number): void {
   const def = BEAUTY_OBJECTS.get(objectId)
   if (!def) return
 
+  // Root entity — same world position as the spot, no parent rotation inherited
+  const spotPos = Transform.getOrNull(spot)?.position ?? Vector3.Zero()
   const model = engine.addEntity()
-  Transform.create(model, { parent, position: Vector3.create(0, 0, 0) })
+  Transform.create(model, {
+    position: Vector3.create(spotPos.x, 0, spotPos.z),
+  })
   GltfContainer.create(model, { src: def.modelPath })
   modelEntities[slotIndex] = model
 }
