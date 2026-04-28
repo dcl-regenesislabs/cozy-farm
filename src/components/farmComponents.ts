@@ -34,3 +34,13 @@ export const cropChildEntities = new Map<Entity, Entity>()
 
 /** Maps soil entity -> array of billboard icon child entities for icon display */
 export const soilIconEntities = new Map<Entity, Entity[]>()
+
+// ---------------------------------------------------------------------------
+// BeautySpotState — one per beauty decoration slot (3 total)
+// ---------------------------------------------------------------------------
+export const BeautySpotState = engine.defineComponent('cozyfarm::BeautySpotState', {
+  /** Slot index 0-2 */
+  slotIndex: Schemas.Int,
+  /** ID of the placed beauty object (0 = empty) */
+  objectId: Schemas.Int,
+})

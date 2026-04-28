@@ -5,7 +5,9 @@ import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
+import { calculateBeautyScore } from '../game/beautyScore'
+import { getBeautySlots, applyBeautySlots } from '../systems/beautySpotSystem'
 import { setCropModel, setSoilIconDisplay, applyRotVisual } from '../game/actions'
 import { isPlotRotten } from '../game/rotUtils'
 import {
@@ -16,6 +18,8 @@ import {
 import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
+import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
+import { spawnFarmer } from '../systems/farmerSystem'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval
@@ -86,7 +90,8 @@ function collectPlotStates(): PlotSaveState[] {
 // Build the full payload from current playerState + ECS
 // ---------------------------------------------------------------------------
 export function buildSavePayload(): FarmStatePayload {
-  return {
+  const plotStates = collectPlotStates()
+  const payload: FarmStatePayload = {
     wallet:   playerState.wallet,
     coins:    playerState.coins,
     seeds:    mapToArray(playerState.seeds),
@@ -99,6 +104,9 @@ export function buildSavePayload(): FarmStatePayload {
     farmerHired:        playerState.farmerHired,
     farmerSeeds:     mapToArray(playerState.farmerSeeds),
     farmerInventory: mapToArray(playerState.farmerInventory),
+    workerOutstandingWages: playerState.workerOutstandingWages,
+    workerUnpaidDays: playerState.workerUnpaidDays,
+    workerLastWageProcessedAt: playerState.workerLastWageProcessedAt,
     dogOwned:        playerState.dogOwned,
     totalCropsHarvested: playerState.totalCropsHarvested,
     totalWaterCount:     playerState.totalWaterCount,
@@ -110,7 +118,7 @@ export function buildSavePayload(): FarmStatePayload {
     tutorialSeedsBought: tutorialState.seedsBought,
     tutorialHarvestMore: tutorialState.harvestMoreCount,
     claimedRewards:      playerState.claimedRewards,
-    plotStates:          collectPlotStates(),
+    plotStates,
     questProgress:       Array.from(questProgressMap.values()).map((qp) => ({
       id: qp.id, current: qp.current, status: qp.status,
     })),
@@ -121,7 +129,14 @@ export function buildSavePayload(): FarmStatePayload {
     fertilizers:             fertMapToArray(playerState.fertilizers),
     compostWasteCount:       playerState.compostWasteCount,
     compostLastCollectedAt:  playerState.compostLastCollectedAt,
+    beautyScore:         0,
+    beautySlots:         getBeautySlots(),
+    totalLikesReceived:  playerState.totalLikesReceived,
+    mailbox:             playerState.mailbox,
   }
+  payload.beautyScore = calculateBeautyScore(payload)
+  playerState.beautyScore = payload.beautyScore
+  return payload
 }
 
 // ---------------------------------------------------------------------------
@@ -155,6 +170,15 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.farmerHired      = payload.farmerHired
   playerState.farmerSeeds      = arrayToMap(payload.farmerSeeds)
   playerState.farmerInventory  = arrayToMap(payload.farmerInventory)
+  playerState.workerOutstandingWages = payload.workerOutstandingWages ?? 0
+  playerState.workerUnpaidDays = payload.workerUnpaidDays ?? 0
+  playerState.workerLastWageProcessedAt = payload.workerLastWageProcessedAt ?? 0
+
+  if (payload.cropsUnlocked) {
+    removeForSaleSign()
+    unlockFarmerPlots()
+    spawnFarmer()
+  }
 
   // ── Dog ───────────────────────────────────────────────────────────────────
   playerState.dogOwned = payload.dogOwned
@@ -165,6 +189,9 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.totalSeedPlanted    = payload.totalSeedPlanted
   playerState.totalSellCount      = payload.totalSellCount
   playerState.totalCoinsEarned    = payload.totalCoinsEarned
+  playerState.totalLikesReceived  = payload.totalLikesReceived ?? 0
+  playerState.mailbox             = payload.mailbox ?? []
+  playerState.mailboxSeenCount    = playerState.mailbox.length
 
   // ── Tutorial state ────────────────────────────────────────────────────────
   // Restore progress so players resume mid-tutorial after disconnect.
@@ -214,6 +241,10 @@ function applyPayload(payload: FarmStatePayload): void {
 
   // ── Restore in-progress plots ─────────────────────────────────────────────
   restorePlotStates(payload.plotStates)
+
+  playerState.beautyScore = payload.beautyScore ?? 0
+  playerState.beautySlots = payload.beautySlots ?? [0, 0, 0]
+  applyBeautySlots(playerState.beautySlots)
 
   farmLoaded = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
@@ -316,6 +347,50 @@ export function saveFarm(): void {
   void room.send('playerSaveFarm', payload)
 }
 
+function applyWorkerServerState(data: {
+  coinsDelta: number
+  workerOutstandingWages: number
+  workerUnpaidDays: number
+  workerLastWageProcessedAt: number
+}): void {
+  playerState.coins = Math.max(0, playerState.coins + data.coinsDelta)
+  playerState.workerOutstandingWages = data.workerOutstandingWages
+  playerState.workerUnpaidDays = data.workerUnpaidDays
+  playerState.workerLastWageProcessedAt = data.workerLastWageProcessedAt
+}
+
+export function requestPayWorkerWages(): void {
+  void room.send('payWorkerWages', {})
+}
+
+function applyDebugWorkerState(data: {
+  coins: number
+  cropsUnlocked: boolean
+  farmerHired: boolean
+  farmerSeeds: CropCount[]
+  workerOutstandingWages: number
+  workerUnpaidDays: number
+  workerLastWageProcessedAt: number
+}): void {
+  playerState.coins = data.coins
+  playerState.cropsUnlocked = data.cropsUnlocked
+  playerState.farmerHired = data.farmerHired
+  playerState.farmerSeeds = arrayToMap(data.farmerSeeds)
+  playerState.workerOutstandingWages = data.workerOutstandingWages
+  playerState.workerUnpaidDays = data.workerUnpaidDays
+  playerState.workerLastWageProcessedAt = data.workerLastWageProcessedAt
+
+  if (data.cropsUnlocked) {
+    removeForSaleSign()
+    unlockFarmerPlots()
+    spawnFarmer()
+  }
+}
+
+export function requestDebugWorkerAction(action: string, amount = 0): void {
+  void room.send('debugWorkerAction', { action, amount })
+}
+
 // ---------------------------------------------------------------------------
 // Schedule auto-save every 60s
 // ---------------------------------------------------------------------------
@@ -353,6 +428,10 @@ export const registryCallbacks = {
   onRegistryLoaded: null as ((data: PlayerRegistryResponse) => void) | null,
 }
 
+export const leaderboardCallbacks = {
+  onBeautyLeaderboardLoaded: null as ((data: BeautyLeaderboardResponse) => void) | null,
+}
+
 // ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
 // onLoaded is called after the first farm state is applied (use it to start
@@ -381,6 +460,22 @@ export function initSaveService(onLoaded?: () => void): void {
   })
   room.onMessage('playerRegistryLoaded', (data) => {
     registryCallbacks.onRegistryLoaded?.(data)
+  })
+  room.onMessage('beautyLeaderboardLoaded', (data) => {
+    if (data.requester !== playerState.wallet) return
+    leaderboardCallbacks.onBeautyLeaderboardLoaded?.(data)
+  })
+  room.onMessage('workerStatusUpdated', (data) => {
+    if (data.requester !== playerState.wallet) return
+    applyWorkerServerState(data)
+  })
+  room.onMessage('workerWagePaymentResult', (data) => {
+    if (data.requester !== playerState.wallet) return
+    applyWorkerServerState(data)
+  })
+  room.onMessage('debugWorkerStateUpdated', (data) => {
+    if (data.requester !== playerState.wallet) return
+    applyDebugWorkerState(data)
   })
 
   // Ask server to load our farm (wallet must already be set in playerState)

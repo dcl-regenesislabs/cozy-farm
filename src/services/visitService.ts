@@ -8,6 +8,7 @@ import {
   pauseAutoSave, resumeAutoSave,
   visitCallbacks, registryCallbacks,
 } from './saveService'
+import { refreshAllPlotHoverTexts, clearVisitSessionWater } from '../systems/interactionSetup'
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -33,8 +34,9 @@ export function isVisiting(): boolean {
   return playerState.viewingFarm !== null
 }
 
-export function requestOtherFarm(address: string): void {
+export function requestOtherFarm(address: string, displayName = ''): void {
   pendingVisitAddress = address.toLowerCase()
+  playerState.viewingFarmDisplayName = displayName
   void room.send('loadOtherFarm', { address: pendingVisitAddress })
 }
 
@@ -54,8 +56,11 @@ export function enterVisitMode(address: string, payload: FarmStatePayload): void
   restorePlotStates(payload.plotStates)
 
   playerState.viewingFarm = address
+  playerState.visitorSessionWaterCount = 0
   playerState.activeMenu  = 'none'
+  clearVisitSessionWater()
   pauseAutoSave()
+  refreshAllPlotHoverTexts()
 }
 
 export function exitVisitMode(): void {
@@ -69,10 +74,14 @@ export function exitVisitMode(): void {
   restorePlotStates(ownPlotSnapshot)
 
   playerState.viewingFarm = null
+  playerState.viewingFarmDisplayName = ''
+  playerState.visitorSessionWaterCount = 0
+  clearVisitSessionWater()
   resumeAutoSave()
   ownPlotSnapshot = null
   pendingVisitAddress = null
   visitedPayload = null
+  refreshAllPlotHoverTexts()
 }
 
 // ---------------------------------------------------------------------------

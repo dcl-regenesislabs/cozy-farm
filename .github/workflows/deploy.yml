@@ -1,0 +1,27 @@
+name: Deploy
+
+on:
+  release:
+    types: [published]
+
+env:
+  DCL_PRIVATE_KEY: ${{ secrets.DCL_WORLDS_PRIVATE_KEY }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  deploy:
+    name: Deploy to .org
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Install npm packages
+      run: |
+        if [ -f package-lock.json ]; then
+          npm ci
+        else
+          npm install
+        fi
+    - name: Build scene
+      run: npm run build
+    - name: Deploy scene
+      run: npm run deploy:production

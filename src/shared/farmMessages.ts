@@ -34,6 +34,17 @@ const CropCountSchema = Schemas.Map({
   count:    Schemas.Int,
 })
 
+const MailboxRewardSchema = Schemas.Map({
+  id:          Schemas.String,
+  type:        Schemas.String,
+  reason:      Schemas.String,
+  amount:      Schemas.Int,
+  cropType:    Schemas.Int,
+  fromAddress: Schemas.String,
+  fromName:    Schemas.String,
+  createdAt:   Schemas.Int64,
+})
+
 // ---------------------------------------------------------------------------
 // Fertilizer inventory pair
 // ---------------------------------------------------------------------------
@@ -68,6 +79,9 @@ const FarmStateSchema = Schemas.Map({
   farmerHired:      Schemas.Boolean,
   farmerSeeds:      Schemas.Array(CropCountSchema),
   farmerInventory:  Schemas.Array(CropCountSchema),
+  workerOutstandingWages: Schemas.Int,
+  workerUnpaidDays:       Schemas.Int,
+  workerLastWageProcessedAt: Schemas.Int64,
 
   // Dog
   dogOwned: Schemas.Boolean,
@@ -104,6 +118,12 @@ const FarmStateSchema = Schemas.Map({
   fertilizers:             Schemas.Array(FertilizerCountSchema),
   compostWasteCount:       Schemas.Int,
   compostLastCollectedAt:  Schemas.Number,
+  // Beauty score — calculated on save, stored for leaderboard
+  beautyScore: Schemas.Int,
+  // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
+  beautySlots: Schemas.Array(Schemas.Int),
+  totalLikesReceived: Schemas.Int,
+  mailbox: Schemas.Array(MailboxRewardSchema),
 })
 
 // ---------------------------------------------------------------------------
@@ -113,6 +133,16 @@ const PlayerEntrySchema = Schemas.Map({
   address:     Schemas.String,
   level:       Schemas.Int,
   displayName: Schemas.String,
+})
+
+// ---------------------------------------------------------------------------
+// Leaderboard entry — used in the Beauty Leaderboard
+// ---------------------------------------------------------------------------
+const LeaderboardEntrySchema = Schemas.Map({
+  rank:         Schemas.Int,
+  address:      Schemas.String,
+  displayName:  Schemas.String,
+  beautyScore:  Schemas.Int,
 })
 
 // ---------------------------------------------------------------------------
@@ -128,6 +158,14 @@ const FarmMessages = {
   /** Client → Server: persist current farm state */
   playerSaveFarm: FarmStateSchema,
 
+  /** Client → Server: clear any outstanding worker back-pay */
+  payWorkerWages: Schemas.Map({}),
+
+  debugWorkerAction: Schemas.Map({
+    action: Schemas.String,
+    amount: Schemas.Int,
+  }),
+
   /** Client → Server: fetch a page of known players */
   loadPlayerRegistry: Schemas.Map({ page: Schemas.Int }),
 
@@ -136,6 +174,17 @@ const FarmMessages = {
     players:    Schemas.Array(PlayerEntrySchema),
     totalPages: Schemas.Int,
     page:       Schemas.Int,
+  }),
+
+  /** Client → Server: request the beauty leaderboard (top N farms) */
+  loadBeautyLeaderboard: Schemas.Map({}),
+
+  /** Server → Client: beauty leaderboard response */
+  beautyLeaderboardLoaded: Schemas.Map({
+    requester:      Schemas.String, // filter on client — same pattern as farmStateLoaded
+    entries:        Schemas.Array(LeaderboardEntrySchema),
+    currentRank:    Schemas.Int,   // 0 = not ranked
+    currentScore:   Schemas.Int,
   }),
 
   /** Client → Server: load another player's farm for viewing */
@@ -153,6 +202,107 @@ const FarmMessages = {
     requester: Schemas.String,
     address:   Schemas.String,
     reason:    Schemas.String,
+  }),
+
+  socialLikeFarm: Schemas.Map({
+    targetWallet: Schemas.String,
+  }),
+
+  socialLikeResult: Schemas.Map({
+    requester:    Schemas.String,
+    targetWallet: Schemas.String,
+    success:      Schemas.Boolean,
+    reason:       Schemas.String,
+    likeCount:    Schemas.Int,
+    rewardCoins:  Schemas.Int,
+  }),
+
+  collectMailbox: Schemas.Map({}),
+
+  mailboxCollected: Schemas.Map({
+    requester: Schemas.String,
+    success:   Schemas.Boolean,
+    coins:     Schemas.Int,
+    seeds:     Schemas.Array(CropCountSchema),
+    rewards:   Schemas.Array(MailboxRewardSchema),
+  }),
+
+  socialOwnerRewardReceived: Schemas.Map({
+    ownerWallet: Schemas.String,
+    reward: Schemas.Map({
+      id:          Schemas.String,
+      type:        Schemas.String,
+      reason:      Schemas.String,
+      amount:      Schemas.Int,
+      cropType:    Schemas.Int,
+      fromAddress: Schemas.String,
+      fromName:    Schemas.String,
+      createdAt:   Schemas.Int64,
+    }),
+    totalLikesReceived: Schemas.Int,
+    notificationText:   Schemas.String,
+  }),
+
+  /** Client → Server: visitor requests to water a plot on the farm they are visiting */
+  visitorWaterPlot: Schemas.Map({
+    targetWallet: Schemas.String,
+    plotIndex:    Schemas.Int,
+  }),
+
+  /** Server → Client (visitor): result of a visitor water attempt */
+  visitorWaterResult: Schemas.Map({
+    requester:    Schemas.String,
+    targetWallet: Schemas.String,
+    plotIndex:    Schemas.Int,
+    success:      Schemas.Boolean,
+    reason:       Schemas.String,
+  }),
+
+  /** Server → Client (owner): notification that a visitor watered a crop */
+  socialOwnerWaterReceived: Schemas.Map({
+    ownerWallet:      Schemas.String,
+    reward: Schemas.Map({
+      id:          Schemas.String,
+      type:        Schemas.String,
+      reason:      Schemas.String,
+      amount:      Schemas.Int,
+      cropType:    Schemas.Int,
+      fromAddress: Schemas.String,
+      fromName:    Schemas.String,
+      createdAt:   Schemas.Int64,
+    }),
+    notificationText: Schemas.String,
+  }),
+
+  workerStatusUpdated: Schemas.Map({
+    requester: Schemas.String,
+    coinsDelta: Schemas.Int,
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
+  }),
+
+  workerWagePaymentResult: Schemas.Map({
+    requester: Schemas.String,
+    success: Schemas.Boolean,
+    reason: Schemas.String,
+    coinsDelta: Schemas.Int,
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
+  }),
+
+  debugWorkerStateUpdated: Schemas.Map({
+    requester: Schemas.String,
+    success: Schemas.Boolean,
+    reason: Schemas.String,
+    coins: Schemas.Int,
+    cropsUnlocked: Schemas.Boolean,
+    farmerHired: Schemas.Boolean,
+    farmerSeeds: Schemas.Array(CropCountSchema),
+    workerOutstandingWages: Schemas.Int,
+    workerUnpaidDays: Schemas.Int,
+    workerLastWageProcessedAt: Schemas.Int64,
   }),
 }
 
@@ -184,6 +334,17 @@ export type FertilizerCount = {
   count:          number
 }
 
+export type MailboxReward = {
+  id:          string
+  type:        string
+  reason:      string
+  amount:      number
+  cropType:    number
+  fromAddress: string
+  fromName:    string
+  createdAt:   number
+}
+
 export type QuestProgressSave = {
   id:      string
   current: number
@@ -194,6 +355,20 @@ export type PlayerEntry = {
   address:     string
   level:       number
   displayName: string
+}
+
+export type LeaderboardEntry = {
+  rank:        number
+  address:     string
+  displayName: string
+  beautyScore: number
+}
+
+export type BeautyLeaderboardResponse = {
+  requester:    string
+  entries:      LeaderboardEntry[]
+  currentRank:  number
+  currentScore: number
 }
 
 export type PlayerRegistryResponse = {
@@ -215,6 +390,9 @@ export type FarmStatePayload = {
   farmerHired:        boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
+  workerOutstandingWages: number
+  workerUnpaidDays: number
+  workerLastWageProcessedAt: number
   dogOwned: boolean
   totalCropsHarvested: number
   totalWaterCount:     number
@@ -235,4 +413,8 @@ export type FarmStatePayload = {
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
   compostLastCollectedAt:  number
+  beautyScore:    number
+  beautySlots:    number[]
+  totalLikesReceived: number
+  mailbox: MailboxReward[]
 }

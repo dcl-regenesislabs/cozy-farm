@@ -15,9 +15,10 @@ import { StatsPanel }    from './ui/StatsPanel'
 import { QuestPanel }    from './ui/QuestPanel'
 import { FarmPanel }     from './ui/FarmPanel'
 import { JukeboxMenu }  from './ui/JukeboxMenu'
-import { MailboxMenu }     from './ui/MailboxMenu'
-import { CompostBinMenu } from './ui/CompostBinMenu'
-import { VisitHud }       from './ui/VisitHud'
+import { MailboxMenu }      from './ui/MailboxMenu'
+import { CompostBinMenu }  from './ui/CompostBinMenu'
+import { LeaderboardPanel } from './ui/LeaderboardPanel'
+import { VisitHud }         from './ui/VisitHud'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -50,6 +51,9 @@ const MainUi = () => (
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
     {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
     {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
+
+    {/* Leaderboard panel */}
+    {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
     {/* Bottom-nav panels */}
     {playerState.activeMenu === 'inventory' && <InventoryPanel />}

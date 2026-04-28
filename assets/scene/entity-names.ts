@@ -6,6 +6,9 @@
  */
 export enum EntityNames {
   Axe_2 = "Axe 2",
+  BeautySpot_1 = "BeautySpot_1",
+  BeautySpot_2 = "BeautySpot_2",
+  BeautySpot_3 = "BeautySpot_3",
   Bed_glb = "Bed.glb",
   Blooming_Green_Acacia_Tree = "Blooming Green Acacia Tree",
   Boombox = "Boombox",
