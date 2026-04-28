@@ -1,8 +1,9 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
+import { FertilizerType } from '../data/fertilizerData'
 import type { MailboxReward } from '../shared/farmMessages'
 
-export type MenuType = 'none' | 'plant' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'leaderboard'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard'
 
 export const playerState = {
   coins: 0,
@@ -48,6 +49,11 @@ export const playerState = {
   socialToastExpiresAt: 0,
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
+  // Fertilizer system
+  organicWaste: 0,
+  fertilizers: new Map<FertilizerType, number>(),
+  compostWasteCount: 0,
+  compostLastCollectedAt: 0,
   viewingFarmDisplayName: '',
   // Tracks how many plots this visitor has watered in the current visit session (max 5)
   visitorSessionWaterCount: 0,

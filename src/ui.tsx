@@ -3,6 +3,7 @@ import { playerState } from './game/gameState'
 import { TopHud }        from './ui/TopHud'
 import { BottomNav }     from './ui/BottomNav'
 import { PlantMenu }     from './ui/PlantMenu'
+import { FertilizeMenu } from './ui/FertilizeMenu'
 import { ShopMenu }      from './ui/ShopMenu'
 import { SellMenu }      from './ui/SellMenu'
 import { UnlockMenu }    from './ui/UnlockMenu'
@@ -15,6 +16,7 @@ import { QuestPanel }    from './ui/QuestPanel'
 import { FarmPanel }     from './ui/FarmPanel'
 import { JukeboxMenu }  from './ui/JukeboxMenu'
 import { MailboxMenu }      from './ui/MailboxMenu'
+import { CompostBinMenu }  from './ui/CompostBinMenu'
 import { LeaderboardPanel } from './ui/LeaderboardPanel'
 import { VisitHud }         from './ui/VisitHud'
 
@@ -37,6 +39,7 @@ const MainUi = () => (
 
     {/* World-interaction menus (triggered by clicking scene objects) */}
     {playerState.activeMenu === 'plant'     && <PlantMenu />}
+    {playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
     {playerState.activeMenu === 'shop'      && <ShopMenu />}
     {playerState.activeMenu === 'sell'      && <SellMenu />}
     {playerState.activeMenu === 'unlock'    && <UnlockMenu />}
@@ -47,6 +50,7 @@ const MainUi = () => (
     {/* World-object menus (continued) */}
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
     {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
+    {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
 
     {/* Leaderboard panel */}
     {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}

@@ -1,7 +1,7 @@
 import { engine, AvatarBase, PlayerIdentityData } from '@dcl/sdk/ecs'
 import { room } from '../shared/farmMessages'
 import {
-  createFarmProgressStore, farmSaveToPayload,
+  createFarmProgressStore, emptyFarm, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
 } from './storage/playerFarm'
 import { WORKER_DEBUG_ENABLED } from '../shared/worker'
@@ -109,7 +109,13 @@ export function setupFarmServer(): void {
   // Load farm state when player connects
   room.onMessage('playerLoadFarm', async (_data, context) => {
     if (!context) return
-    await loadAndSend(context.from)
+    try {
+      await loadAndSend(context.from)
+    } catch (err) {
+      console.error('[FarmServer] loadAndSend failed, sending fresh farm:', err)
+      const fresh = emptyFarm(context.from.toLowerCase())
+      void room.send('farmStateLoaded', farmSaveToPayload(fresh))
+    }
   })
 
   // Receive and persist farm state from client

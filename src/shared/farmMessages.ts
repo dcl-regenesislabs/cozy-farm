@@ -13,6 +13,8 @@ const PlotSaveSchema = Schemas.Map({
   growthStarted: Schemas.Boolean,
   growthStage:  Schemas.Int,
   isReady:      Schemas.Boolean,
+  isRotten:     Schemas.Boolean,
+  fertilizerType: Schemas.Int,     // FertilizerType | -1
 })
 
 // ---------------------------------------------------------------------------
@@ -41,6 +43,14 @@ const MailboxRewardSchema = Schemas.Map({
   fromAddress: Schemas.String,
   fromName:    Schemas.String,
   createdAt:   Schemas.Int64,
+})
+
+// ---------------------------------------------------------------------------
+// Fertilizer inventory pair
+// ---------------------------------------------------------------------------
+const FertilizerCountSchema = Schemas.Map({
+  fertilizerType: Schemas.Int,
+  count:          Schemas.Int,
 })
 
 // ---------------------------------------------------------------------------
@@ -103,6 +113,11 @@ const FarmStateSchema = Schemas.Map({
   musicMuted:  Schemas.Boolean,
   musicVolume: Schemas.Number,
 
+  // Fertilizer system
+  organicWaste:            Schemas.Int,
+  fertilizers:             Schemas.Array(FertilizerCountSchema),
+  compostWasteCount:       Schemas.Int,
+  compostLastCollectedAt:  Schemas.Number,
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
   // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
@@ -297,19 +312,26 @@ export const room = registerMessages(FarmMessages)
 // Re-export types so other modules can use them without re-importing Schemas
 // ---------------------------------------------------------------------------
 export type PlotSaveState = {
-  plotIndex:     number
-  isUnlocked:    boolean
-  cropType:      number
-  plantedAt:     number
-  waterCount:    number
-  growthStarted: boolean
-  growthStage:   number
-  isReady:       boolean
+  plotIndex:      number
+  isUnlocked:     boolean
+  cropType:       number
+  plantedAt:      number
+  waterCount:     number
+  growthStarted:  boolean
+  growthStage:    number
+  isReady:        boolean
+  isRotten:       boolean
+  fertilizerType: number
 }
 
 export type CropCount = {
   cropType: number
   count:    number
+}
+
+export type FertilizerCount = {
+  fertilizerType: number
+  count:          number
 }
 
 export type MailboxReward = {
@@ -387,6 +409,10 @@ export type FarmStatePayload = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  organicWaste:            number
+  fertilizers:             FertilizerCount[]
+  compostWasteCount:       number
+  compostLastCollectedAt:  number
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number

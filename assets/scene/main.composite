@@ -3324,6 +3324,27 @@
             "parent": 659
           }
         },
+        "666": {
+          "json": {
+            "position": {
+              "x": 36.5,
+              "y": 0,
+              "z": 43.75
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "scale": {
+              "x": 3,
+              "y": 3,
+              "z": 3
+            },
+            "parent": 659
+          }
+        },
         "667": {
           "json": {
             "position": {
@@ -3429,67 +3450,25 @@
             "parent": 659
           }
         },
-        "675": {
+        "672": {
           "json": {
             "position": {
-              "x": 50.75,
-              "y": 0.05000000074505806,
-              "z": 12
-            },
-            "scale": {
-              "x": 2.299999952316284,
-              "y": 1.5,
-              "z": 1
+              "x": -0.3333333432674408,
+              "y": 0.25,
+              "z": 0.25
             },
             "rotation": {
-              "x": 0.7041000127792358,
+              "x": 0,
               "y": 0,
               "z": 0,
-              "w": -0.710099995136261
-            },
-            "parent": 0
-          }
-        },
-        "676": {
-          "json": {
-            "position": {
-              "x": 50.5,
-              "y": 0.05000000074505806,
-              "z": 22.25
+              "w": 1
             },
             "scale": {
-              "x": 2.299999952316284,
-              "y": 1.5,
-              "z": 1
+              "x": 0.5999999642372131,
+              "y": 0.5999999642372131,
+              "z": 0.5999999642372131
             },
-            "rotation": {
-              "x": 0.7041000127792358,
-              "y": 0,
-              "z": 0,
-              "w": -0.710099995136261
-            },
-            "parent": 0
-          }
-        },
-        "677": {
-          "json": {
-            "position": {
-              "x": 35,
-              "y": 0.05000000074505806,
-              "z": 40.5
-            },
-            "scale": {
-              "x": 2.299999952316284,
-              "y": 1.5,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0.7041000127792358,
-              "y": 0,
-              "z": 0,
-              "w": -0.710099995136261
-            },
-            "parent": 0
+            "parent": 666
           }
         },
         "1939": {
@@ -10007,6 +9986,13 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
+        "666": {
+          "json": {
+            "src": "assets/asset-packs/drawer_2/Drawer 2.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
         "668": {
           "json": {
             "src": "assets/asset-packs/floor_-_black_small/BlackFloor_Small.glb",
@@ -10017,6 +10003,13 @@
         "670": {
           "json": {
             "src": "assets/asset-packs/residential_mailbox/MailPost_02/MailPost_02.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "672": {
+          "json": {
+            "src": "assets/asset-packs/mud/HWN20_Mud.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -11823,26 +11816,6 @@
       }
     },
     {
-      "name": "core::Material",
-      "jsonSchema": {
-        "type": "object",
-        "properties": {},
-        "serializationType": "protocol-buffer",
-        "protocolBuffer": "PBMaterial"
-      },
-      "data": {
-        "675": {
-          "json": {}
-        },
-        "676": {
-          "json": {}
-        },
-        "677": {
-          "json": {}
-        }
-      }
-    },
-    {
       "name": "core::MeshCollider",
       "jsonSchema": {
         "type": "object",
@@ -11853,74 +11826,6 @@
       "data": {
         "514": {
           "json": {}
-        },
-        "675": {
-          "json": {
-            "collisionMask": 3,
-            "mesh": {
-              "$case": "plane",
-              "plane": {}
-            }
-          }
-        },
-        "676": {
-          "json": {
-            "collisionMask": 3,
-            "mesh": {
-              "$case": "plane",
-              "plane": {}
-            }
-          }
-        },
-        "677": {
-          "json": {
-            "collisionMask": 3,
-            "mesh": {
-              "$case": "plane",
-              "plane": {}
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "core::MeshRenderer",
-      "jsonSchema": {
-        "type": "object",
-        "properties": {},
-        "serializationType": "protocol-buffer",
-        "protocolBuffer": "PBMeshRenderer"
-      },
-      "data": {
-        "675": {
-          "json": {
-            "mesh": {
-              "$case": "plane",
-              "plane": {
-                "uvs": []
-              }
-            }
-          }
-        },
-        "676": {
-          "json": {
-            "mesh": {
-              "$case": "plane",
-              "plane": {
-                "uvs": []
-              }
-            }
-          }
-        },
-        "677": {
-          "json": {
-            "mesh": {
-              "$case": "plane",
-              "plane": {
-                "uvs": []
-              }
-            }
-          }
         }
       }
     },
@@ -12707,6 +12612,11 @@
             "value": "Wood Planks Floor Modules 4x4M_6"
           }
         },
+        "666": {
+          "json": {
+            "value": "CompostBin"
+          }
+        },
         "667": {
           "json": {
             "value": "Fences"
@@ -12732,19 +12642,9 @@
             "value": "FARMERSPAWNS"
           }
         },
-        "675": {
+        "672": {
           "json": {
-            "value": "BeautySpot_1"
-          }
-        },
-        "676": {
-          "json": {
-            "value": "BeautySpot_2"
-          }
-        },
-        "677": {
-          "json": {
-            "value": "BeautySpot_3"
+            "value": "Mud"
           }
         },
         "1939": {
@@ -14171,9 +14071,9 @@
         "serializationType": "map"
       },
       "data": {
-        "629": {
+        "666": {
           "json": {
-            "gizmo": 0
+            "gizmo": 1
           }
         }
       }
@@ -14227,10 +14127,7 @@
                   1939,
                   668,
                   2196,
-                  659,
-                  675,
-                  676,
-                  677
+                  659
                 ]
               },
               {
@@ -16226,11 +16123,13 @@
                   664,
                   665,
                   669,
-                  671
+                  671,
+                  666
                 ]
               },
               {
                 "entity": 667,
+                "open": true,
                 "children": [
                   574,
                   646,
@@ -16331,15 +16230,13 @@
                 ]
               },
               {
-                "entity": 675,
-                "children": []
+                "entity": 666,
+                "children": [
+                  672
+                ]
               },
               {
-                "entity": 676,
-                "children": []
-              },
-              {
-                "entity": 677,
+                "entity": 672,
                 "children": []
               }
             ]
@@ -16818,6 +16715,9 @@
         "665": {
           "json": {}
         },
+        "666": {
+          "json": {}
+        },
         "667": {
           "json": {}
         },
@@ -16833,13 +16733,7 @@
         "671": {
           "json": {}
         },
-        "675": {
-          "json": {}
-        },
-        "676": {
-          "json": {}
-        },
-        "677": {
+        "672": {
           "json": {}
         },
         "2196": {

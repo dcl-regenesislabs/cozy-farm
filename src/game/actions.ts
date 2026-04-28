@@ -3,8 +3,9 @@ import { spawnHarvestVfx } from '../systems/harvestVfxSystem'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { PlotState, cropChildEntities, soilIconEntities } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
+import { FertilizerType, ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
-import { CROP_HARVEST_IMAGES, WATERINGCAN_ICON, WATER_ICON, WATER_DRY_ICON, HAND_ICON } from '../data/imagePaths'
+import { CROP_HARVEST_IMAGES, WATERINGCAN_ICON, WATER_ICON, WATER_DRY_ICON, HAND_ICON, ORGANIC_WASTE_ICON } from '../data/imagePaths'
 import { playerState } from './gameState'
 import { updatePlotHoverText } from '../systems/interactionSetup'
 import { playSeedVfx } from '../systems/seedVfxSystem'
@@ -36,6 +37,16 @@ export function removeCropModel(soilEntity: Entity) {
     cropChildEntities.delete(soilEntity)
   }
 }
+
+const ROT_CROP_MODEL = 'assets/scene/Models/RotCrop/RotCrop.glb'
+
+/** Swap the crop model to the rotten variant */
+export function applyRotVisual(soilEntity: Entity) {
+  setCropModel(soilEntity, ROT_CROP_MODEL)
+}
+
+/** No-op — model is cleaned up by removeCropModel in resetPlot */
+export function clearRotVisual(_soilEntity: Entity) {}
 
 // ---------------------------------------------------------------------------
 // Soil icon display — sizes and positions to tune here
@@ -79,12 +90,13 @@ export type SoilIconState = {
   isReady:           boolean
   isPlanting:        boolean
   justHarvested:     boolean
+  isRotten?:         boolean
 }
 
 // Debounce: only rebuild sprites when state actually changes
 const lastSoilIconState = new Map<Entity, string>()
 function soilStateHash(s: SoilIconState): string {
-  return `${s.cropType}|${s.waterCount}|${s.wateringsRequired}|${s.canWater}|${s.isReady}|${s.isPlanting}|${s.justHarvested}`
+  return `${s.cropType}|${s.waterCount}|${s.wateringsRequired}|${s.canWater}|${s.isReady}|${s.isPlanting}|${s.justHarvested}|${s.isRotten ?? false}`
 }
 
 // Internal remove — does NOT clear the hash (used inside setSoilIconDisplay)
@@ -111,8 +123,9 @@ export function setSoilIconDisplay(soilEntity: Entity, state: SoilIconState) {
   } else if (state.justHarvested) {
     sprites.push(makeIconSprite(soilEntity, 0, HARVEST_ICON_Y, HAND_ICON, ACTION_ICON_SIZE))
   } else if (state.isReady) {
-    // Ready to collect — only the hand icon, nothing else
-    sprites.push(makeIconSprite(soilEntity, 0, HARVEST_ICON_Y, HAND_ICON, ACTION_ICON_SIZE))
+    // Rotten: show organic waste (soil) icon; normal: show hand icon
+    const readyIcon = state.isRotten ? ORGANIC_WASTE_ICON : HAND_ICON
+    sprites.push(makeIconSprite(soilEntity, 0, HARVEST_ICON_Y, readyIcon, ACTION_ICON_SIZE))
   } else if (state.cropType !== -1) {
     // Crop image (row 1)
     const cropSrc = CROP_HARVEST_IMAGES[state.cropType as CropType]
@@ -161,15 +174,17 @@ export function setSoilTimerText(soilEntity: Entity, text: string) {
       position: Vector3.create(0, TIMER_TEXT_Y, 0),
     })
     Billboard.create(child, { billboardMode: BillboardMode.BM_ALL })
+    TextShape.create(child, {
+      text,
+      fontSize: 3,
+      textColor: { r: 1, g: 1, b: 1, a: 1 },
+      outlineWidth: 0.15,
+      outlineColor: { r: 0, g: 0, b: 0 },
+    })
     timerTextEntities.set(soilEntity, child)
+  } else {
+    TextShape.getMutable(child).text = text
   }
-  TextShape.createOrReplace(child, {
-    text,
-    fontSize: 3,
-    textColor: { r: 1, g: 1, b: 1, a: 1 },
-    outlineWidth: 0.15,
-    outlineColor: { r: 0, g: 0, b: 0 },
-  })
 }
 
 /** Remove the countdown text from a soil plot */
@@ -181,6 +196,10 @@ export function removeSoilTimerText(soilEntity: Entity) {
   }
 }
 
+function hasFertilizersAvailable(): boolean {
+  return ALL_FERTILIZER_TYPES.some((f) => (playerState.fertilizers.get(f) ?? 0) > 0)
+}
+
 export function handlePlotClick(entity: Entity) {
   const plot = PlotState.get(entity)
 
@@ -190,9 +209,12 @@ export function handlePlotClick(entity: Entity) {
   if (plot.isPlanting || plot.isWatering) return
 
   if (plot.justHarvested) {
-    // Second click after harvest -> clear the plot
+    // Click after harvest → clear the plot immediately
     clearPlot(entity)
-  } else if (plot.cropType === -1) {
+    return
+  }
+
+  if (plot.cropType === -1) {
     // Empty plot -> open plant menu
     playSound('menu')
     playerState.activePlotEntity = entity
@@ -201,8 +223,16 @@ export function handlePlotClick(entity: Entity) {
     // Ready to harvest
     harvestCrop(entity)
   } else {
-    // Growing or waiting for first water -> water it
-    waterCrop(entity)
+    const { canWater } = getWateringStatus(plot, Date.now())
+    if (canWater) {
+      // Can water → water it (no fertilizer interrupt)
+      waterCrop(entity)
+    } else if (plot.growthStarted && plot.fertilizerType === -1 && hasFertilizersAvailable()) {
+      // Crop is growing, no fertilizer applied yet, player has some → offer fertilize
+      playerState.activePlotEntity = entity
+      playerState.activeMenu = 'fertilize'
+    }
+    // else: nothing to do (watering window not open, already fertilized)
   }
 }
 
@@ -214,12 +244,15 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
   if (plot.cropType !== -1) return false
 
   playerState.seeds.set(cropType, seedCount - 1)
+
   plot.cropType = cropType
   plot.growthStage = 0  // no model yet — appears after first quarter of grow time
   plot.plantedAt = 0    // not started yet — needs first watering
   plot.waterCount = 0
   plot.growthStarted = false
   plot.isReady = false
+  plot.isRotten = false
+  plot.fertilizerType = -1  // applied at first watering, not at planting
   plot.justHarvested = false
   plot.isPlanting = true  // blocked until seed VFX finishes
 
@@ -249,7 +282,7 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
  *  - Missing a window permanently loses that watering (lower yield at harvest).
  */
 export function getWateringStatus(
-  plot: { cropType: number; isReady: boolean; isPlanting: boolean; growthStarted: boolean; waterCount: number; plantedAt: number },
+  plot: { cropType: number; isReady: boolean; isPlanting: boolean; growthStarted: boolean; waterCount: number; plantedAt: number; fertilizerType?: number },
   now: number
 ): { canWater: boolean; nextWindowInMs: number | null } {
   if (plot.cropType === -1 || plot.isReady || plot.isPlanting) {
@@ -263,18 +296,20 @@ export function getWateringStatus(
 
   const def = CROP_DATA.get(plot.cropType as CropType)!
   const N = def.wateringsRequired
+  // WaterSaver fertilizer reduces waterings required by 1 (min 1)
+  const effectiveN = (plot.fertilizerType === FertilizerType.WaterSaver) ? Math.max(1, N - 1) : N
 
   // Single-water crops: nothing left to do after the planting water
-  if (N <= 1) return { canWater: false, nextWindowInMs: null }
+  if (effectiveN <= 1) return { canWater: false, nextWindowInMs: null }
 
   const elapsed = now - plot.plantedAt
   let windowsOpened = 0
   let inOpenWindow = false
   let nextWindowInMs: number | null = null
 
-  for (let k = 1; k < N; k++) {
-    const windowStart = (k / N) * def.growTimeMs
-    const windowEnd   = ((k + 1) / N) * def.growTimeMs
+  for (let k = 1; k < effectiveN; k++) {
+    const windowStart = (k / effectiveN) * def.growTimeMs
+    const windowEnd   = ((k + 1) / effectiveN) * def.growTimeMs
 
     if (elapsed >= windowStart) {
       windowsOpened++
@@ -315,8 +350,39 @@ export function waterCrop(entity: Entity): boolean {
 
 export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, number>): boolean {
   const plot = PlotState.getMutable(entity)
-  if (plot.growthStage !== 3) return false
+  if (!plot.isReady) return false
 
+  const savedFertilizerType = plot.fertilizerType
+
+  // Reset plot state (common to both rotten and normal paths)
+  function resetPlot() {
+    plot.cropType = -1
+    plot.growthStage = 0
+    plot.plantedAt = 0
+    plot.waterCount = 0
+    plot.growthStarted = false
+    plot.isReady = false
+    plot.isRotten = false
+    plot.fertilizerType = -1
+    plot.justHarvested = true
+    removeCropModel(entity)
+    removeSoilTimerText(entity)
+    setSoilIconDisplay(entity, {
+      cropType: -1, waterCount: 0, wateringsRequired: 0,
+      canWater: false, isReady: false, isPlanting: false, justHarvested: true,
+    })
+  }
+
+  // Rotten crop — yield organic waste, no XP
+  if (plot.isRotten) {
+    clearRotVisual(entity)
+    playerState.organicWaste += 1
+    resetPlot()
+    playSound('harvest')
+    return true
+  }
+
+  // Normal harvest
   const cropType = plot.cropType as CropType
   const def = CROP_DATA.get(cropType)!
 
@@ -324,7 +390,12 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   const waterRatio = plot.waterCount / def.wateringsRequired
   const yieldMultiplier = waterRatio >= 1 ? 1.0 : waterRatio >= 0.5 ? 0.75 : 0.5
   const baseYield = Math.floor(Math.random() * (def.yieldMax - def.yieldMin + 1)) + def.yieldMin
-  const finalYield = Math.max(1, Math.floor(baseYield * yieldMultiplier))
+  let finalYield = Math.max(1, Math.floor(baseYield * yieldMultiplier))
+
+  // YieldBoost fertilizer: +50% harvest yield
+  if (savedFertilizerType === FertilizerType.YieldBoost) {
+    finalYield = Math.ceil(finalYield * 1.5)
+  }
 
   const inventory = targetInventory ?? playerState.harvested
   const current = inventory.get(cropType) ?? 0
@@ -340,21 +411,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   onHarvestCrop(cropType, finalYield)
   onTutorialAction('harvest')
 
-  // Reset plot — enter "just harvested" interstitial state
-  plot.cropType = -1
-  plot.growthStage = 0
-  plot.plantedAt = 0
-  plot.waterCount = 0
-  plot.growthStarted = false
-  plot.isReady = false
-  plot.justHarvested = true
-
-  removeCropModel(entity)
-  removeSoilTimerText(entity)
-  setSoilIconDisplay(entity, {
-    cropType: -1, waterCount: 0, wateringsRequired: 0,
-    canWater: false, isReady: false, isPlanting: false, justHarvested: true,
-  })
+  resetPlot()
   return true
 }
 
@@ -364,6 +421,20 @@ function clearPlot(entity: Entity) {
   removeSoilIcons(entity)
   removeSoilTimerText(entity)
   updatePlotHoverText(entity)
+}
+
+/** Apply a fertilizer to a growing crop (3rd step after plant → water). */
+export function applyFertilizer(entity: Entity, fertilizerType: FertilizerType): boolean {
+  const plot = PlotState.getMutable(entity)
+  if (!plot.growthStarted || plot.isReady || plot.fertilizerType !== -1) return false
+
+  const current = playerState.fertilizers.get(fertilizerType) ?? 0
+  if (current <= 0) return false
+
+  playerState.fertilizers.set(fertilizerType, current - 1)
+  plot.fertilizerType = fertilizerType
+  updatePlotHoverText(entity)
+  return true
 }
 
 export function buySeed(cropType: CropType, quantity: number): boolean {

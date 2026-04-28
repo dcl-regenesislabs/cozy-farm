@@ -1,10 +1,12 @@
 import { engine, Entity } from '@dcl/sdk/ecs'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
+import { FertilizerType } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
-import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText, setSoilTimerText, getWateringStatus, removeSoilIcons } from '../game/actions'
+import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText, setSoilTimerText, getWateringStatus, removeSoilIcons, applyRotVisual } from '../game/actions'
 import { updatePlotHoverText } from './interactionSetup'
 import { tutorialState } from '../game/tutorialState'
+import { isPlotRotten } from '../game/rotUtils'
 
 /** Onion grow time during the tutorial — 30 seconds so it doesn't feel like a wait */
 const TUTORIAL_ONION_GROW_MS = 30_000
@@ -52,7 +54,7 @@ function growthSystem(_dt: number) {
       }
       continue
     }
-    harvestClearTimers.delete(entity)  // clean up if plot was cleared by manual click first
+    harvestClearTimers.delete(entity)
 
     // Skip empty plots
     if (plot.cropType === -1) continue
@@ -60,15 +62,33 @@ function growthSystem(_dt: number) {
     // Skip plots waiting for first watering
     if (!plot.growthStarted) continue
 
-    // Skip plots already signalled ready (icons stay as HandIcon)
-    if (plot.isReady) continue
-
     const def = CROP_DATA.get(plot.cropType as CropType)!
     // During the tutorial, onion seeds grow in 30 s instead of the normal time
-    const effectiveGrowTimeMs =
+    let effectiveGrowTimeMs =
       tutorialState.active && plot.cropType === CropType.Onion
         ? TUTORIAL_ONION_GROW_MS
         : def.growTimeMs
+    // GrowthBoost fertilizer reduces grow time by 25%
+    if (plot.fertilizerType === FertilizerType.GrowthBoost) {
+      effectiveGrowTimeMs = Math.floor(effectiveGrowTimeMs * 0.75)
+    }
+
+    // For already-ready plots: only check for rot, then skip growth updates
+    if (plot.isReady) {
+      if (!plot.isRotten && isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
+        const mutable = PlotState.getMutable(entity)
+        mutable.isRotten = true
+        applyRotVisual(entity)
+        setSoilIconDisplay(entity, {
+          cropType: plot.cropType, waterCount: plot.waterCount,
+          wateringsRequired: def.wateringsRequired,
+          canWater: false, isReady: true, isPlanting: false, justHarvested: false,
+          isRotten: true,
+        })
+        updatePlotHoverText(entity)
+      }
+      continue
+    }
     const elapsed = now - plot.plantedAt
     const progress = elapsed / effectiveGrowTimeMs
 
@@ -100,10 +120,16 @@ function growthSystem(_dt: number) {
     if (progress >= 1.0) {
       const mutable = PlotState.getMutable(entity)
       mutable.isReady = true
+      // Check for immediate rot (edge case: crop grew and rotted in same frame)
+      if (isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
+        mutable.isRotten = true
+        applyRotVisual(entity)
+      }
       setSoilIconDisplay(entity, {
         cropType: plot.cropType, waterCount: plot.waterCount,
         wateringsRequired: def.wateringsRequired,
         canWater: false, isReady: true, isPlanting: false, justHarvested: false,
+        isRotten: mutable.isRotten,
       })
       removeSoilTimerText(entity)
       prevCanWater.delete(entity)

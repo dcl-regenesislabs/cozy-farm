@@ -1,13 +1,15 @@
 import { engine, executeTask, GltfContainer } from '@dcl/sdk/ecs'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
+import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
 import { calculateBeautyScore } from '../game/beautyScore'
 import { getBeautySlots, applyBeautySlots } from '../systems/beautySpotSystem'
-import { setCropModel, setSoilIconDisplay } from '../game/actions'
+import { setCropModel, setSoilIconDisplay, applyRotVisual } from '../game/actions'
+import { isPlotRotten } from '../game/rotUtils'
 import {
   unlockExpansion1Plots, unlockExpansion2Plots,
   removeForSaleSign2, removeForSaleSign3,
@@ -45,6 +47,22 @@ function arrayToMap(arr: CropCount[]): Map<CropType, number> {
   return map
 }
 
+function fertMapToArray(map: Map<FertilizerType, number>): FertilizerCount[] {
+  const result: FertilizerCount[] = []
+  map.forEach((count, fertilizerType) => {
+    if (count > 0) result.push({ fertilizerType, count })
+  })
+  return result
+}
+
+function fertArrayToMap(arr: FertilizerCount[]): Map<FertilizerType, number> {
+  const map = new Map<FertilizerType, number>()
+  for (const { fertilizerType, count } of arr) {
+    map.set(fertilizerType as FertilizerType, count)
+  }
+  return map
+}
+
 // ---------------------------------------------------------------------------
 // Collect current PlotState from ECS
 // ---------------------------------------------------------------------------
@@ -58,9 +76,11 @@ function collectPlotStates(): PlotSaveState[] {
       cropType:      plot.cropType,
       plantedAt:     plot.plantedAt,
       waterCount:    plot.waterCount,
-      growthStarted: plot.growthStarted,
-      growthStage:   plot.growthStage,
-      isReady:       plot.isReady,
+      growthStarted:  plot.growthStarted,
+      growthStage:    plot.growthStage,
+      isReady:        plot.isReady,
+      isRotten:       plot.isRotten,
+      fertilizerType: plot.fertilizerType,
     })
   }
   return states
@@ -93,7 +113,7 @@ export function buildSavePayload(): FarmStatePayload {
     totalSeedPlanted:    playerState.totalSeedPlanted,
     totalSellCount:      playerState.totalSellCount,
     totalCoinsEarned:    playerState.totalCoinsEarned,
-    tutorialComplete:    !tutorialState.active || tutorialState.step === 'complete',
+    tutorialComplete:    !tutorialState.active && tutorialState.step === 'complete',
     tutorialStep:        tutorialState.step,
     tutorialSeedsBought: tutorialState.seedsBought,
     tutorialHarvestMore: tutorialState.harvestMoreCount,
@@ -105,6 +125,10 @@ export function buildSavePayload(): FarmStatePayload {
     musicSongId:         musicState.currentSongId,
     musicMuted:          musicState.muted,
     musicVolume:         musicState.volume,
+    organicWaste:            playerState.organicWaste,
+    fertilizers:             fertMapToArray(playerState.fertilizers),
+    compostWasteCount:       playerState.compostWasteCount,
+    compostLastCollectedAt:  playerState.compostLastCollectedAt,
     beautyScore:         0,
     beautySlots:         getBeautySlots(),
     totalLikesReceived:  playerState.totalLikesReceived,
@@ -192,6 +216,29 @@ function applyPayload(payload: FarmStatePayload): void {
   setMuted(payload.musicMuted ?? false)
   setMusicVolume(payload.musicVolume ?? 0.42)
 
+  // ── Fertilizer system ─────────────────────────────────────────────────────
+  playerState.organicWaste       = payload.organicWaste ?? 0
+  playerState.fertilizers        = fertArrayToMap(payload.fertilizers ?? [])
+  playerState.compostWasteCount  = payload.compostWasteCount ?? 0
+  playerState.compostLastCollectedAt = payload.compostLastCollectedAt ?? 0
+
+  // Offline compost progression: award fertilizers produced while player was away
+  if (playerState.compostWasteCount > 0 && playerState.compostLastCollectedAt > 0) {
+    const now = Date.now()
+    const cyclesDone = Math.min(
+      Math.floor((now - playerState.compostLastCollectedAt) / 300_000),
+      playerState.compostWasteCount
+    )
+    if (cyclesDone > 0) {
+      for (let i = 0; i < cyclesDone; i++) {
+        const fert = randomFertilizer()
+        playerState.fertilizers.set(fert, (playerState.fertilizers.get(fert) ?? 0) + 1)
+      }
+      playerState.compostWasteCount      -= cyclesDone
+      playerState.compostLastCollectedAt  = now
+    }
+  }
+
   // ── Restore in-progress plots ─────────────────────────────────────────────
   restorePlotStates(payload.plotStates)
 
@@ -231,17 +278,25 @@ export function restorePlotStates(savedPlots: PlotSaveState[]): void {
     const def = CROP_DATA.get(saved.cropType as CropType)
     if (!def) continue
 
-    mutable.cropType      = saved.cropType
-    mutable.plantedAt     = saved.plantedAt
-    mutable.waterCount    = saved.waterCount
-    mutable.growthStarted = saved.growthStarted
-    mutable.isReady       = saved.isReady
+    mutable.cropType       = saved.cropType
+    mutable.plantedAt      = saved.plantedAt
+    mutable.waterCount     = saved.waterCount
+    mutable.growthStarted  = saved.growthStarted
+    mutable.isReady        = saved.isReady
+    mutable.isRotten       = saved.isRotten ?? false
+    mutable.fertilizerType = saved.fertilizerType ?? -1
+
+    // Compute effective grow time (same logic as growthSystem)
+    let effectiveGrowTimeMs = def.growTimeMs
+    if (saved.fertilizerType === FertilizerType.GrowthBoost) {
+      effectiveGrowTimeMs = Math.floor(def.growTimeMs * 0.75)
+    }
 
     // Recalculate actual current stage based on elapsed time, not the saved stage
     // (crop may have progressed further while player was offline)
     if (saved.growthStarted && !saved.isReady) {
       const elapsed  = now - saved.plantedAt
-      const progress = elapsed / def.growTimeMs
+      const progress = elapsed / effectiveGrowTimeMs
 
       let stage: number
       if (progress >= 0.75)      stage = 3
@@ -252,24 +307,31 @@ export function restorePlotStates(savedPlots: PlotSaveState[]): void {
       mutable.growthStage = stage
       if (stage > 0) setCropModel(entity, CROP_MODELS[saved.cropType as CropType][stage - 1])
 
-      // If crop finished growing while offline → mark ready
+      // If crop finished growing while offline → mark ready + check rot
       if (progress >= 1.0) {
         mutable.isReady = true
-        const { canWater: _ } = { canWater: false }
+        const rotten = isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now)
+        mutable.isRotten = rotten
+        if (rotten) applyRotVisual(entity)
         setSoilIconDisplay(entity, {
           cropType: saved.cropType, waterCount: saved.waterCount,
           wateringsRequired: def.wateringsRequired,
           canWater: false, isReady: true, isPlanting: false, justHarvested: false,
+          isRotten: rotten,
         })
       }
     } else if (saved.isReady) {
-      // Was already ready when player left — restore stage 3 model
+      // Was already ready when player left — restore stage 3 model, check rot
       mutable.growthStage = 3
       setCropModel(entity, CROP_MODELS[saved.cropType as CropType][2])
+      const rotten = saved.isRotten || isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now)
+      mutable.isRotten = rotten
+      if (rotten) applyRotVisual(entity)
       setSoilIconDisplay(entity, {
         cropType: saved.cropType, waterCount: saved.waterCount,
         wateringsRequired: def.wateringsRequired,
         canWater: false, isReady: true, isPlanting: false, justHarvested: false,
+        isRotten: rotten,
       })
     }
     // else: planted but not watered yet → stage 0, no model needed
@@ -378,8 +440,13 @@ export const leaderboardCallbacks = {
 export function initSaveService(onLoaded?: () => void): void {
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (payload) => {
-    // Filter: only apply if this is our own wallet
-    if (payload.wallet !== playerState.wallet) return
+    // Filter: only apply if this is our own wallet.
+    // If wallet is not yet set (preview / guest mode), accept the first response and adopt its wallet.
+    if (playerState.wallet && payload.wallet !== playerState.wallet) return
+    if (!playerState.wallet) {
+      playerState.wallet = payload.wallet
+      console.log(`[SaveService] wallet adopted from server payload: ${payload.wallet}`)
+    }
     applyPayload(payload)
     onLoaded?.()
   })

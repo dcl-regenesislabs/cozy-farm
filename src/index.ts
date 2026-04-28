@@ -25,6 +25,7 @@ import { initSocialService } from './services/socialService'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
+import { initCompostBinVfx } from './systems/compostBinVfx'
 import { initBeautySpotSystem } from './systems/beautySpotSystem'
 
 // Seconds between each regular NPC arrival once the tutorial is complete
@@ -45,6 +46,7 @@ export function main() {
   setupMusicSystem()
   setupInputModifierSystem()
   initVisitService()
+  initCompostBinVfx()
   initSocialService()
   initVisitorWaterFeedback()
 
