@@ -1,16 +1,30 @@
 name: Deploy
 
 on:
+  push:
+    branches:
+      - main
   release:
     types: [published]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - testing
+          - production
 
 env:
   DCL_PRIVATE_KEY: ${{ secrets.DCL_WORLDS_PRIVATE_KEY }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DEPLOY_ENV: ${{ inputs.environment || 'production' }}
 
 jobs:
   deploy:
-    name: Deploy to .org
+    name: Deploy
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -24,4 +38,4 @@ jobs:
     - name: Build scene
       run: npm run build
     - name: Deploy scene
-      run: npm run deploy:production
+      run: npm run deploy:${{ env.DEPLOY_ENV }}

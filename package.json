@@ -9,8 +9,8 @@
     "upgrade-sdk": "npm install --save-dev @dcl/sdk@latest",
     "upgrade-sdk:next": "npm install --save-dev @dcl/sdk@next",
     "server-logs": "sdk-commands sdk-server-logs",
-    "deploy:testing": "sdk-commands deploy",
-    "deploy:production": "sdk-commands deploy"
+    "deploy:testing": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.zone",
+    "deploy:production": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org"
   },
   "devDependencies": {
     "@dcl/js-runtime": "7.21.1-22918726402.commit-ee210ee",
