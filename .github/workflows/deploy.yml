@@ -1,26 +1,13 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - main
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'production'
-        type: choice
-        options:
-          - testing
-          - production
 
 env:
   DCL_PRIVATE_KEY: ${{ secrets.DCL_WORLDS_PRIVATE_KEY }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-  DEPLOY_ENV: ${{ inputs.environment || (github.event_name == 'release' && 'production') || 'testing' }}
 
 jobs:
   deploy:
@@ -38,4 +25,4 @@ jobs:
     - name: Build scene
       run: npm run build
     - name: Deploy scene
-      run: npm run deploy:${{ env.DEPLOY_ENV }}
+      run: npm run deploy:production
