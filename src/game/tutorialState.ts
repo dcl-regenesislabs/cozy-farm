@@ -84,4 +84,6 @@ export const tutorialCallbacks = {
   getComputerEntity:    (): AnyEntity | null => null,      // returns the shop Computer entity
   getTruckEntity:       (): AnyEntity | null => null,      // returns the sell Truck entity
   getMayorEntity:       (): AnyEntity | null => null,      // returns the Mayor NPC entity
+  resetSoilPlots:       () => {},                          // wired from interactionSetup: clear all crops, re-lock plots
+  onResetComplete:      () => {},                          // wired from index.ts: respawn Mayor after full reset
 }

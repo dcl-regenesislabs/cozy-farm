@@ -1,9 +1,10 @@
 import { CropType } from './cropData'
 
-export type QuestType = 'harvest_crop' | 'harvest_total' | 'water_total' | 'plant_total' | 'sell_total'
+export type QuestType = 'harvest_crop' | 'harvest_total' | 'water_total' | 'plant_total' | 'sell_total' | 'collect_fertilizer'
 
 export interface QuestDefinition {
-  id:          string       // matches NpcDefinition.id exactly
+  id:          string       // unique quest id (may differ from npcId for multi-quest NPCs)
+  npcId?:      string       // which NPC owns this quest; defaults to id if absent
   npcName:     string
   title:       string
   description: string
@@ -12,6 +13,7 @@ export interface QuestDefinition {
   target:      number
   rewardCoins: number
   rewardXp:    number
+  requiresRotSystem?: boolean  // if true, quest is hidden until rotSystemUnlocked
 }
 
 export const QUEST_DEFINITIONS: QuestDefinition[] = [
@@ -50,5 +52,13 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
     description: "The town market needs your active participation. Sell 5 crops to prove your commitment to our local economy.",
     type: 'sell_total', cropType: null, target: 5,
     rewardCoins: 200, rewardXp: 100,
+  },
+  {
+    id: 'mayorchen_fertilizer', npcId: 'mayorchen', npcName: 'Mayor Chen',
+    title: 'Generate 5 Fertilizers',
+    description: "Practice makes perfect! Add organic waste to your compost bin and collect 5 fertilizers. Your crops will thank you!",
+    type: 'collect_fertilizer', cropType: null, target: 5,
+    rewardCoins: 150, rewardXp: 100,
+    requiresRotSystem: true,
   },
 ]

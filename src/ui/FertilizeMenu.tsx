@@ -3,27 +3,35 @@ import { playerState } from '../game/gameState'
 import { applyFertilizer } from '../game/actions'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType } from '../data/fertilizerData'
 import { PanelShell, C } from './PanelShell'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 
 type FertCardProps = { key?: number; fertType: FertilizerType; count: number }
 
 const FertCard = ({ fertType, count }: FertCardProps) => {
-  const def = FERTILIZER_DATA.get(fertType)!
+  const def     = FERTILIZER_DATA.get(fertType)!
+  const zoomKey = `fert_${fertType}`
+  const scale   = getZoomScale(zoomKey)
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 220,
-        height: 230,
+        width: Math.round(220 * scale),
+        height: Math.round(230 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
       }}
       uiBackground={{ color: C.rowBg }}
       onMouseDown={() => {
+        if (isZooming(zoomKey)) return
+        triggerCardZoom(zoomKey)
         const entity = playerState.activePlotEntity
-        if (entity) applyFertilizer(entity, fertType)
-        playerState.activeMenu = 'none'
-        playerState.activePlotEntity = null
+        setTimeout(() => {
+          if (entity) applyFertilizer(entity, fertType)
+          // Only close the fertilize menu if no callback opened a new dialog
+          if (playerState.activeMenu === 'fertilize') playerState.activeMenu = 'none'
+          playerState.activePlotEntity = null
+        }, 290)
       }}
     >
       <UiEntity

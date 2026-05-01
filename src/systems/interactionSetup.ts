@@ -1,10 +1,10 @@
 import { engine, Entity, GltfContainer, InputAction, pointerEventsSystem, Transform, Billboard, BillboardMode, MeshRenderer, MeshCollider, ColliderLayer, Material } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { PlotState } from '../components/farmComponents'
-import { handlePlotClick, getWateringStatus } from '../game/actions'
+import { handlePlotClick, getWateringStatus, removeCropModel, removeSoilIcons, removeSoilTimerText } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
-import { skipTutorial } from './tutorialSystem'
+import { skipTutorial, resetFarm } from './tutorialSystem'
 import { playSound } from './sfxSystem'
 import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
@@ -88,6 +88,7 @@ let forSaleSign3Entity: Entity | null = null
 let computerEntity: Entity | null = null
 let truckEntity: Entity | null = null
 let compostBinEntity: Entity | null = null
+let compostBinOriginalScale: { x: number; y: number; z: number } | null = null
 
 export function setupEntities() {
   // ── Computer ──────────────────────────────────────────────────────────────
@@ -193,7 +194,7 @@ export function setupEntities() {
     )
   }
 
-  // ── Bed (3 clicks = lose all coins) ─────────────────────────────────────
+  // ── Bed (3 clicks = dev full reset to tutorial start) ────────────────────
   let bedClickCount = 0
   const bed = engine.getEntityOrNullByName('Bed.glb')
   if (bed) {
@@ -205,7 +206,7 @@ export function setupEntities() {
         bedClickCount++
         if (bedClickCount >= 3) {
           bedClickCount = 0
-          playerState.coins = 0
+          resetFarm()
         }
       },
     )
@@ -241,10 +242,12 @@ export function setupEntities() {
   const compostBin = engine.getEntityOrNullByName('CompostBin')
   compostBinEntity = compostBin
   if (compostBin) {
+    const s = Transform.get(compostBin).scale
+    compostBinOriginalScale = { x: s.x, y: s.y, z: s.z }
     enablePointerOnGltf(compostBin)
     pointerEventsSystem.onPointerDown(
       { entity: compostBin, opts: { button: InputAction.IA_POINTER, hoverText: 'Compost Bin', maxDistance: 8 } },
-      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'compost' }
+      () => { if (isVisiting()) return; if (!playerState.compostBinUnlocked) return; playSound('menu'); playerState.activeMenu = 'compost' }
     )
   }
 
@@ -459,4 +462,43 @@ export function getTruckEntity(): Entity | null {
 
 export function getCompostBinEntity(): Entity | null {
   return compostBinEntity
+}
+
+/** Dev reset: clear all crop models, re-lock all plots except #0. */
+export function resetSoilPlots(): void {
+  soilEntities.forEach((entity, index) => {
+    const plot = PlotState.getMutable(entity)
+    if (plot.cropType !== -1) removeCropModel(entity)
+    removeSoilIcons(entity)
+    removeSoilTimerText(entity)
+    plot.cropType      = -1
+    plot.growthStage   = 0
+    plot.plantedAt     = 0
+    plot.waterCount    = 0
+    plot.isUnlocked    = index === 0
+    plot.growthStarted = false
+    plot.isReady       = false
+    plot.justHarvested = false
+    plot.isPlanting    = false
+    plot.isWatering    = false
+    plot.isRotten      = false
+    plot.fertilizerType = -1
+    if (index >= 1) {
+      GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
+    } else {
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+}
+
+/** Show or hide the compost bin 3D model. Call after unlock state is known. */
+export function setCompostBinVisible(visible: boolean) {
+  if (!compostBinEntity) return
+  const t = Transform.getMutable(compostBinEntity)
+  if (visible) {
+    const s = compostBinOriginalScale ?? { x: 3, y: 3, z: 3 }
+    t.scale = Vector3.create(s.x, s.y, s.z)
+  } else {
+    t.scale = Vector3.Zero()
+  }
 }

@@ -99,6 +99,14 @@ const FarmStateSchema = Schemas.Map({
   tutorialSeedsBought:    Schemas.Int,
   tutorialHarvestMore:    Schemas.Int,
 
+  // Progression events (Level 5 Mayor return, etc.)
+  rotSystemUnlocked:      Schemas.Boolean,
+  progressionEventStep:   Schemas.String,
+
+  // NPC scheduling
+  lastNpcVisitAt:         Schemas.Number,
+  npcScheduleIndex:       Schemas.Int,
+
   // Level rewards claimed
   claimedRewards: Schemas.Array(Schemas.Int),
 
@@ -118,6 +126,7 @@ const FarmStateSchema = Schemas.Map({
   fertilizers:             Schemas.Array(FertilizerCountSchema),
   compostWasteCount:       Schemas.Int,
   compostLastCollectedAt:  Schemas.Number,
+  compostBinUnlocked:      Schemas.Boolean,
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
   // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
@@ -404,6 +413,10 @@ export type FarmStatePayload = {
   tutorialSeedsBought: number
   tutorialHarvestMore: number
   claimedRewards: number[]
+  rotSystemUnlocked:      boolean
+  progressionEventStep:   string
+  lastNpcVisitAt:         number
+  npcScheduleIndex:       number
   plotStates:     PlotSaveState[]
   questProgress:  QuestProgressSave[]
   musicSongId:    string
@@ -413,6 +426,7 @@ export type FarmStatePayload = {
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
   compostLastCollectedAt:  number
+  compostBinUnlocked:      boolean
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number

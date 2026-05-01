@@ -7,6 +7,7 @@ import { setCropModel, removeCropModel, setSoilIconDisplay, removeSoilTimerText,
 import { updatePlotHoverText } from './interactionSetup'
 import { tutorialState } from '../game/tutorialState'
 import { isPlotRotten } from '../game/rotUtils'
+import { playerState } from '../game/gameState'
 
 /** Onion grow time during the tutorial — 30 seconds so it doesn't feel like a wait */
 const TUTORIAL_ONION_GROW_MS = 30_000
@@ -75,6 +76,7 @@ function growthSystem(_dt: number) {
 
     // For already-ready plots: only check for rot, then skip growth updates
     if (plot.isReady) {
+      if (!playerState.rotSystemUnlocked) continue
       if (!plot.isRotten && isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
         const mutable = PlotState.getMutable(entity)
         mutable.isRotten = true
@@ -83,7 +85,7 @@ function growthSystem(_dt: number) {
           cropType: plot.cropType, waterCount: plot.waterCount,
           wateringsRequired: def.wateringsRequired,
           canWater: false, isReady: true, isPlanting: false, justHarvested: false,
-          isRotten: true,
+          isRotten: true, fertilizerType: plot.fertilizerType,
         })
         updatePlotHoverText(entity)
       }
@@ -121,7 +123,7 @@ function growthSystem(_dt: number) {
       const mutable = PlotState.getMutable(entity)
       mutable.isReady = true
       // Check for immediate rot (edge case: crop grew and rotted in same frame)
-      if (isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
+      if (playerState.rotSystemUnlocked && isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
         mutable.isRotten = true
         applyRotVisual(entity)
       }
@@ -129,7 +131,7 @@ function growthSystem(_dt: number) {
         cropType: plot.cropType, waterCount: plot.waterCount,
         wateringsRequired: def.wateringsRequired,
         canWater: false, isReady: true, isPlanting: false, justHarvested: false,
-        isRotten: mutable.isRotten,
+        isRotten: mutable.isRotten, fertilizerType: plot.fertilizerType,
       })
       removeSoilTimerText(entity)
       prevCanWater.delete(entity)
@@ -144,6 +146,7 @@ function growthSystem(_dt: number) {
       cropType: plot.cropType, waterCount: plot.waterCount,
       wateringsRequired: def.wateringsRequired,
       canWater, isReady: false, isPlanting: false, justHarvested: false,
+      fertilizerType: plot.fertilizerType,
     })
 
     // Update timer text every frame (cheap — just updates TextShape content)

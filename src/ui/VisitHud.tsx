@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { requestLikeFarm, socialUiCallbacks } from '../services/socialService'
 import { exitVisitMode, getVisitedPayload } from '../services/visitService'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { formatPlayerLabel } from '../utils/playerLabel'
 import { C } from './PanelShell'
 
@@ -109,13 +110,14 @@ export const VisitHud = () => {
         </UiEntity>
 
         <UiEntity
-          uiTransform={{ width: 138, height: 44, alignItems: 'center', justifyContent: 'center', margin: { right: 10 } }}
+          uiTransform={{ width: Math.round(138 * getZoomScale('visit_like')), height: Math.round(44 * getZoomScale('visit_like')), alignItems: 'center', justifyContent: 'center', margin: { right: 10 } }}
           uiBackground={{ color: likeBg }}
           onMouseDown={(!likeUiState.pending && !likeUiState.liked) ? () => {
             playSound('buttonclick')
+            triggerCardZoom('visit_like')
             likeUiState.pending = true
             likeUiState.status  = ''
-            requestLikeFarm(targetFarm)
+            setTimeout(() => requestLikeFarm(targetFarm), 290)
           } : undefined}
         >
           <Label value={likeLabel} fontSize={18} color={C.textMain} textAlign="middle-center" />
@@ -129,15 +131,19 @@ export const VisitHud = () => {
         </UiEntity>
 
         <UiEntity
-          uiTransform={{ width: 150, height: 44, alignItems: 'center', justifyContent: 'center' }}
+          uiTransform={{ width: Math.round(150 * getZoomScale('visit_return')), height: Math.round(44 * getZoomScale('visit_return')), alignItems: 'center', justifyContent: 'center' }}
           uiBackground={{ color: { r: 0.2, g: 0.55, b: 0.2, a: 1 } }}
           onMouseDown={() => {
+            if (isZooming('visit_return')) return
             playSound('buttonclick')
-            likeUiState.farm    = ''
-            likeUiState.pending = false
-            likeUiState.liked   = false
-            likeUiState.status  = ''
-            exitVisitMode()
+            triggerCardZoom('visit_return')
+            setTimeout(() => {
+              likeUiState.farm    = ''
+              likeUiState.pending = false
+              likeUiState.liked   = false
+              likeUiState.status  = ''
+              exitVisitMode()
+            }, 290)
           }}
         >
           <Label value="Return Home" fontSize={20} color={C.textMain} textAlign="middle-center" />

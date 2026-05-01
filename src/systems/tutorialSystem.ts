@@ -4,12 +4,16 @@ import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { tutorialState, TutorialActionType, tutorialCallbacks, tutorialNavState } from '../game/tutorialState'
 import { CropType } from '../data/cropData'
+import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { MAYOR_DEF } from '../data/npcData'
-import { setOnQuestAccepted, setOnQuestClaimed, setOnQuestClaimable } from '../game/questState'
+import { setOnQuestAccepted, setOnQuestClaimed, setOnQuestClaimable, resetQuestProgress } from '../game/questState'
 import { walkNpcToPosition, requestNpcDeparture } from './npcSystem'
+import { addXp } from './levelingSystem'
 import { PlotState } from '../components/farmComponents'
 import { playSound } from './sfxSystem'
 import { initTutorialArrow, setArrowTarget } from './tutorialArrowSystem'
+import { progressionEventState } from '../game/progressionEventState'
+import { saveFarm } from '../services/saveService'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
 const SEEDS_TO_BUY          = 5
@@ -360,9 +364,92 @@ export function skipTutorial() {
   tutorialState.step   = 'complete'
   playerState.coins    = 20000
   playerState.seeds.set(CropType.Onion, 5)
+  ALL_FERTILIZER_TYPES.forEach((f) => playerState.fertilizers.set(f, 2))
+  playerState.organicWaste = 10
   playerState.activeMenu = 'none'
   setArrowTarget(null)
   tutorialCallbacks.unlockSoilsAll6()
   requestNpcDeparture()
-  console.log('CozyFarm Tutorial: skipped via Bed (3 clicks)')
+  addXp(900)  // bring player to level 5, firing level-up callbacks to trigger progression events
+  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks)')
+}
+
+// ---------------------------------------------------------------------------
+// Dev reset — 3 clicks on Bed resets all progress back to tutorial start
+// ---------------------------------------------------------------------------
+export function resetFarm() {
+  // Despawn any active NPC and clear UI
+  requestNpcDeparture(true)
+  playerState.activeMenu = 'none'
+  setArrowTarget(null)
+
+  // Reset economy + inventory
+  playerState.coins    = 0
+  playerState.seeds.clear()
+  playerState.harvested.clear()
+
+  // Reset progression
+  playerState.xp    = 0
+  playerState.level = 1
+
+  // Reset unlocks
+  playerState.cropsUnlocked      = false
+  playerState.expansion1Unlocked = false
+  playerState.expansion2Unlocked = false
+
+  // Reset farmer
+  playerState.farmerHired                = false
+  playerState.farmerSeeds.clear()
+  playerState.farmerInventory.clear()
+  playerState.workerOutstandingWages     = 0
+  playerState.workerUnpaidDays           = 0
+  playerState.workerLastWageProcessedAt  = 0
+
+  // Reset lifetime stats
+  playerState.totalCropsHarvested = 0
+  playerState.totalWaterCount     = 0
+  playerState.totalSeedPlanted    = 0
+  playerState.totalSellCount      = 0
+  playerState.totalCoinsEarned    = 0
+  playerState.claimedRewards      = []
+  playerState.beautyScore         = 0
+  playerState.beautySlots         = [0, 0, 0]
+  playerState.totalLikesReceived  = 0
+  playerState.mailbox             = []
+  playerState.mailboxSeenCount    = 0
+
+  // Reset fertilizer system
+  playerState.organicWaste            = 0
+  playerState.fertilizers.clear()
+  playerState.compostWasteCount       = 0
+  playerState.compostLastCollectedAt  = 0
+  playerState.compostBinUnlocked      = false
+  playerState.tutorialCompostCycle    = false
+
+  // Reset progression event
+  progressionEventState.active = false
+  progressionEventState.step   = ''
+  playerState.rotSystemUnlocked      = false
+  playerState.progressionEventStep   = ''
+  playerState.lastNpcVisitAt         = 0
+  playerState.npcScheduleIndex       = 0
+
+  // Reset tutorial state
+  tutorialState.active          = true
+  tutorialState.step            = 'welcome'
+  tutorialState.seedsBought     = 0
+  tutorialState.harvestMoreCount = 0
+  tutorialNavState.highlightQuests = false
+
+  // Reset quests and plots via callbacks (avoids circular imports)
+  resetQuestProgress()
+  tutorialCallbacks.resetSoilPlots()
+
+  // Persist the empty state to the server
+  saveFarm()
+
+  // Respawn Mayor and restart tutorial via index.ts callback
+  tutorialCallbacks.onResetComplete()
+
+  console.log('CozyFarm: Farm reset via Bed (3 clicks) — tutorial restarted')
 }

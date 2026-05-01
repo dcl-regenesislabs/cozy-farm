@@ -7,6 +7,7 @@ import {
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_ICON, SOIL_ICON } from '../data/imagePaths'
 
 const EXPANSION_COST  = 500
@@ -17,6 +18,7 @@ const BTN_W_BUY       = 220
 const BTN_W_CANCEL    = 180
 const BTN_BOTTOM      = 24
 const BTN_RIGHT       = 24
+const ZOOM_DURATION   = 290
 const SHAKE_DURATION  = 320
 
 const BUY_BTN_BG          = { r: 0.17, g: 0.52, b: 0.17, a: 1 }
@@ -25,6 +27,9 @@ const BUY_BTN_BG_DISABLED = { r: 0.22, g: 0.22, b: 0.22, a: 1 }
 export const ExpansionMenu = () => {
   const pack      = playerState.activeMenu === 'expansion1' ? 1 : 2
   const canAfford = playerState.coins >= EXPANSION_COST
+  const buyScale  = getZoomScale('expansion_confirm')
+  const buyW      = Math.round(BTN_W_BUY * buyScale)
+  const buyH      = Math.round(BTN_H * buyScale)
 
   function doConfirm() {
     playerState.coins -= EXPANSION_COST
@@ -136,21 +141,21 @@ export const ExpansionMenu = () => {
         uiTransform={{
           positionType: 'absolute',
           position: {
-            right: BTN_RIGHT + BTN_W_CANCEL + 12 - getShakeOffset('expansion_confirm'),
-            bottom: BTN_BOTTOM,
+            right: BTN_RIGHT + BTN_W_CANCEL + 12,
+            bottom: BTN_BOTTOM + Math.round((BTN_H - buyH) / 2),
           },
-          width: BTN_W_BUY,
-          height: BTN_H,
+          width: buyW,
+          height: buyH,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
         }}
         uiBackground={{ color: canAfford ? BUY_BTN_BG : BUY_BTN_BG_DISABLED }}
         onMouseDown={() => {
-          if (!canAfford || isShaking('expansion_confirm')) return
+          if (!canAfford || isZooming('expansion_confirm')) return
           playSound('buttonclick')
-          triggerCardShake('expansion_confirm')
-          setTimeout(doConfirm, SHAKE_DURATION)
+          triggerCardZoom('expansion_confirm')
+          setTimeout(doConfirm, ZOOM_DURATION)
         }}
       >
         <Label

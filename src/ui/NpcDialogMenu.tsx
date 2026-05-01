@@ -4,6 +4,7 @@ import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, questProgressMap } from '../game/questState'
 import { C } from './PanelShell'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import {
   CROP_HARVEST_IMAGES,
@@ -14,7 +15,9 @@ import {
   SHOPINGCART_ICON,
 } from '../data/imagePaths'
 
-const SHAKE_KEY = 'dialog_btn'
+const SHAKE_KEY  = 'dialog_btn'
+const ZOOM_KEY   = 'dialog_btn_zoom'
+const ZOOM_DURATION  = 290
 const SHAKE_DURATION = 320
 
 const PORTRAIT_SIZE = 200
@@ -224,23 +227,20 @@ export const NpcDialogMenu = () => {
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: {
-            right: BTN_RIGHT + BTN_W_PAIR + 12 - getShakeOffset('dialog_accept'),
-            bottom: BTN_BOTTOM,
-          },
+          position: { right: BTN_RIGHT + BTN_W_PAIR + 12, bottom: BTN_BOTTOM },
         }}
       >
         <Button
           value="Accept"
           variant="primary"
           fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_PAIR, height: BTN_H }}
+          uiTransform={{ width: Math.round(BTN_W_PAIR * getZoomScale('dialog_accept')), height: Math.round(BTN_H * getZoomScale('dialog_accept')) }}
           onMouseDown={() => {
-            if (isShaking('dialog_accept')) return
+            if (isZooming('dialog_accept')) return
             playSound('buttonclick')
             const accept = npcDialogState.onAccept
-            triggerCardShake('dialog_accept')
-            setTimeout(() => { closeDialog(); accept?.() }, SHAKE_DURATION)
+            triggerCardZoom('dialog_accept')
+            setTimeout(() => { closeDialog(); accept?.() }, ZOOM_DURATION)
           }}
         />
       </UiEntity>
@@ -275,7 +275,7 @@ export const NpcDialogMenu = () => {
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: BTN_RIGHT - getShakeOffset(SHAKE_KEY), bottom: BTN_BOTTOM },
+          position: { right: BTN_RIGHT, bottom: BTN_BOTTOM },
           flexDirection: 'row',
         }}
       >
@@ -283,12 +283,12 @@ export const NpcDialogMenu = () => {
           value="Keep it up!"
           variant="secondary"
           fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
+          uiTransform={{ width: Math.round(BTN_W_SINGLE * getZoomScale(ZOOM_KEY)), height: Math.round(BTN_H * getZoomScale(ZOOM_KEY)) }}
           onMouseDown={() => {
-            if (isShaking(SHAKE_KEY)) return
+            if (isZooming(ZOOM_KEY)) return
             playSound('buttonclick')
-            triggerCardShake(SHAKE_KEY)
-            setTimeout(closeDialog, SHAKE_DURATION)
+            triggerCardZoom(ZOOM_KEY)
+            setTimeout(closeDialog, ZOOM_DURATION)
           }}
         />
       </UiEntity>
@@ -298,7 +298,7 @@ export const NpcDialogMenu = () => {
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: BTN_RIGHT - getShakeOffset(SHAKE_KEY), bottom: BTN_BOTTOM },
+          position: { right: BTN_RIGHT, bottom: BTN_BOTTOM },
           flexDirection: 'row',
         }}
       >
@@ -306,13 +306,13 @@ export const NpcDialogMenu = () => {
           value="Claim Reward!"
           variant="primary"
           fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
+          uiTransform={{ width: Math.round(BTN_W_SINGLE * getZoomScale(ZOOM_KEY)), height: Math.round(BTN_H * getZoomScale(ZOOM_KEY)) }}
           onMouseDown={() => {
-            if (isShaking(SHAKE_KEY)) return
+            if (isZooming(ZOOM_KEY)) return
             playSound('buttonclick')
             const claim = npcDialogState.onClaim
-            triggerCardShake(SHAKE_KEY)
-            setTimeout(() => { closeDialog(); claim?.() }, SHAKE_DURATION)
+            triggerCardZoom(ZOOM_KEY)
+            setTimeout(() => { closeDialog(); claim?.() }, ZOOM_DURATION)
           }}
         />
       </UiEntity>
@@ -322,7 +322,7 @@ export const NpcDialogMenu = () => {
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: BTN_RIGHT - getShakeOffset(SHAKE_KEY), bottom: BTN_BOTTOM },
+          position: { right: BTN_RIGHT, bottom: BTN_BOTTOM },
           flexDirection: 'row',
         }}
       >
@@ -330,12 +330,12 @@ export const NpcDialogMenu = () => {
           value="Goodbye"
           variant="secondary"
           fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
+          uiTransform={{ width: Math.round(BTN_W_SINGLE * getZoomScale(ZOOM_KEY)), height: Math.round(BTN_H * getZoomScale(ZOOM_KEY)) }}
           onMouseDown={() => {
-            if (isShaking(SHAKE_KEY)) return
+            if (isZooming(ZOOM_KEY)) return
             playSound('buttonclick')
-            triggerCardShake(SHAKE_KEY)
-            setTimeout(closeDialog, SHAKE_DURATION)
+            triggerCardZoom(ZOOM_KEY)
+            setTimeout(closeDialog, ZOOM_DURATION)
           }}
         />
       </UiEntity>
@@ -345,7 +345,7 @@ export const NpcDialogMenu = () => {
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: BTN_RIGHT - getShakeOffset(SHAKE_KEY), bottom: BTN_BOTTOM },
+          position: { right: BTN_RIGHT, bottom: BTN_BOTTOM },
           flexDirection: 'row',
         }}
       >
@@ -353,12 +353,12 @@ export const NpcDialogMenu = () => {
           value={npcDialogState.tutorialButtonLabel}
           variant="primary"
           fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_SINGLE, height: BTN_H }}
+          uiTransform={{ width: Math.round(BTN_W_SINGLE * getZoomScale(ZOOM_KEY)), height: Math.round(BTN_H * getZoomScale(ZOOM_KEY)) }}
           onMouseDown={() => {
-            if (isShaking(SHAKE_KEY)) return
+            if (isZooming(ZOOM_KEY)) return
             playSound('buttonclick')
-            triggerCardShake(SHAKE_KEY)
-            setTimeout(closeDialog, SHAKE_DURATION)
+            triggerCardZoom(ZOOM_KEY)
+            setTimeout(closeDialog, ZOOM_DURATION)
           }}
         />
       </UiEntity>

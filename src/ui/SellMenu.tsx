@@ -4,30 +4,28 @@ import { sellCrop } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
-import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 
-const SHAKE_DURATION = 320
+const ZOOM_DURATION = 290
 
 type SellCardProps = { key?: string | number; cropType: CropType; count: number }
 
 const SellCard = ({ cropType, count }: SellCardProps) => {
   const def        = CROP_DATA.get(cropType)!
   const totalValue = def.sellPrice * count
-  const shakeKey   = `sell_${cropType}`
-  const offsetX    = getShakeOffset(shakeKey)
+  const zoomKey    = `sell_${cropType}`
+  const scale      = getZoomScale(zoomKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 245,
+        width: Math.round(200 * scale),
+        height: Math.round(245 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
@@ -58,10 +56,10 @@ const SellCard = ({ cropType, count }: SellCardProps) => {
         }}
         uiBackground={{ color: { r: 0.15, g: 0.45, b: 0.15, a: 1 } }}
         onMouseDown={() => {
-          if (isShaking(shakeKey)) return
+          if (isZooming(zoomKey)) return
           playSound('buttonclick')
-          triggerCardShake(shakeKey)
-          setTimeout(() => sellCrop(cropType, count), SHAKE_DURATION)
+          triggerCardZoom(zoomKey)
+          setTimeout(() => sellCrop(cropType, count), ZOOM_DURATION)
         }}
       >
         <Label

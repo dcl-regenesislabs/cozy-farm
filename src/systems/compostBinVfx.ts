@@ -65,6 +65,7 @@ function makeTimerText(worldPos: { x: number; y: number; z: number }): Entity {
 }
 
 function compostBinVfxSystem(_dt: number) {
+  if (!playerState.compostBinUnlocked) return
   const bin = getCompostBinEntity()
   if (!bin) return
 
@@ -75,10 +76,11 @@ function compostBinVfxSystem(_dt: number) {
   const wasteInBin   = playerState.compostWasteCount
   const lastCollected = playerState.compostLastCollectedAt
 
+  const cycleMs     = playerState.tutorialCompostCycle ? 15_000 : COMPOST_CYCLE_MS
   const timeElapsed = (lastCollected > 0 && wasteInBin > 0) ? now - lastCollected : 0
-  const cyclesDone  = Math.min(Math.floor(timeElapsed / COMPOST_CYCLE_MS), wasteInBin)
+  const cyclesDone  = Math.min(Math.floor(timeElapsed / cycleMs), wasteInBin)
   const nextCycleMs = (wasteInBin > cyclesDone && lastCollected > 0)
-    ? COMPOST_CYCLE_MS - (timeElapsed % COMPOST_CYCLE_MS)
+    ? cycleMs - (timeElapsed % cycleMs)
     : null
 
   const mode: 'empty' | 'working' | 'ready' =

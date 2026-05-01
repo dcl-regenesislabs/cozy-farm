@@ -10,7 +10,7 @@ import { XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3, XP_PLANT, XP_TABL
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
 const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -71,6 +71,11 @@ export type FarmSaveV1 = {
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
   compostLastCollectedAt:  number
+  compostBinUnlocked:      boolean
+  rotSystemUnlocked:       boolean
+  progressionEventStep:    string
+  lastNpcVisitAt:          number
+  npcScheduleIndex:        number
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number
@@ -122,6 +127,11 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     fertilizers:             [],
     compostWasteCount:       0,
     compostLastCollectedAt:  0,
+    compostBinUnlocked:      false,
+    rotSystemUnlocked:       false,
+    progressionEventStep:    '',
+    lastNpcVisitAt:          0,
+    npcScheduleIndex:        0,
     beautyScore:    0,
     beautySlots:    [0, 0, 0],
     totalLikesReceived: 0,
@@ -159,7 +169,7 @@ function normalizePlotSave(raw: Partial<PlotSaveState>): PlotSaveState {
 // ---------------------------------------------------------------------------
 function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
   const maybe = raw as Partial<FarmSaveV1> | null
-  if (!maybe || maybe.schemaVersion !== SCHEMA_VERSION) return emptyFarm(wallet)
+  if (!maybe || (maybe.schemaVersion ?? 0) < 3) return emptyFarm(wallet)
 
   const safeInt    = (v: unknown, fallback = 0): number =>
     typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : fallback
@@ -207,6 +217,11 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     fertilizers:             safeArray<FertilizerCount>((maybe as any).fertilizers),
     compostWasteCount:       safeInt((maybe as any).compostWasteCount, 0),
     compostLastCollectedAt:  safeInt((maybe as any).compostLastCollectedAt, 0),
+    compostBinUnlocked:      safeBool((maybe as any).compostBinUnlocked, false),
+    rotSystemUnlocked:       safeBool((maybe as any).rotSystemUnlocked, false),
+    progressionEventStep:    safeStr((maybe as any).progressionEventStep, ''),
+    lastNpcVisitAt:          safeInt((maybe as any).lastNpcVisitAt, 0),
+    npcScheduleIndex:        safeInt((maybe as any).npcScheduleIndex, 0),
     beautyScore:         safeInt(maybe.beautyScore, 0),
     beautySlots:         safeArray<number>(maybe.beautySlots).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
     totalLikesReceived:  safeInt(maybe.totalLikesReceived, 0),
@@ -269,6 +284,11 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     fertilizers:             save.fertilizers,
     compostWasteCount:       save.compostWasteCount,
     compostLastCollectedAt:  save.compostLastCollectedAt,
+    compostBinUnlocked:      save.compostBinUnlocked,
+    rotSystemUnlocked:       save.rotSystemUnlocked,
+    progressionEventStep:    save.progressionEventStep,
+    lastNpcVisitAt:          save.lastNpcVisitAt,
+    npcScheduleIndex:        save.npcScheduleIndex,
     beautyScore:         save.beautyScore,
     beautySlots:         save.beautySlots,
     totalLikesReceived:  save.totalLikesReceived,
@@ -724,6 +744,11 @@ export class FarmProgressStore {
       fertilizers:             payload.fertilizers ?? [],
       compostWasteCount:       payload.compostWasteCount ?? 0,
       compostLastCollectedAt:  payload.compostLastCollectedAt ?? 0,
+      compostBinUnlocked:      payload.compostBinUnlocked ?? existing.compostBinUnlocked,
+      rotSystemUnlocked:       payload.rotSystemUnlocked ?? existing.rotSystemUnlocked,
+      progressionEventStep:    payload.progressionEventStep ?? '',
+      lastNpcVisitAt:          payload.lastNpcVisitAt ?? 0,
+      npcScheduleIndex:        payload.npcScheduleIndex ?? 0,
       // Always recalculate on server — client value is advisory, server is authoritative
       beautyScore:         calculateBeautyScore(payload),
       beautySlots:         (payload.beautySlots ?? [0, 0, 0]).slice(0, 3).concat([0, 0, 0]).slice(0, 3),

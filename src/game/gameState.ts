@@ -54,7 +54,16 @@ export const playerState = {
   fertilizers: new Map<FertilizerType, number>(),
   compostWasteCount: 0,
   compostLastCollectedAt: 0,
+  compostBinUnlocked: false,
+  // Progression events (Level 5 Mayor return, etc.)
+  rotSystemUnlocked: false,
+  progressionEventStep: '',
+  // NPC scheduling
+  lastNpcVisitAt: 0,
+  npcScheduleIndex: 0,
   viewingFarmDisplayName: '',
   // Tracks how many plots this visitor has watered in the current visit session (max 5)
   visitorSessionWaterCount: 0,
+  // Runtime-only: compost bin uses 12s tutorial cycle during the Level 5 event
+  tutorialCompostCycle: false,
 }
