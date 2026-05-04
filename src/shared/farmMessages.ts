@@ -71,9 +71,10 @@ const FarmStateSchema = Schemas.Map({
   level: Schemas.Int,
 
   // Unlocks
-  cropsUnlocked:      Schemas.Boolean,
-  expansion1Unlocked: Schemas.Boolean,
-  expansion2Unlocked: Schemas.Boolean,
+  cropsUnlocked:       Schemas.Boolean,
+  expansion1Unlocked:  Schemas.Boolean,
+  expansion2Unlocked:  Schemas.Boolean,
+  unlockedPlotGroups:  Schemas.Array(Schemas.String),
 
   // Farmer / worker
   farmerHired:      Schemas.Boolean,
@@ -393,10 +394,11 @@ export type FarmStatePayload = {
   harvested: CropCount[]
   xp:       number
   level:    number
-  cropsUnlocked:      boolean
-  expansion1Unlocked: boolean
-  expansion2Unlocked: boolean
-  farmerHired:        boolean
+  cropsUnlocked:       boolean
+  expansion1Unlocked:  boolean
+  expansion2Unlocked:  boolean
+  unlockedPlotGroups:  string[]
+  farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   workerOutstandingWages: number

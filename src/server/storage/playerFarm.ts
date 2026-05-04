@@ -18,6 +18,11 @@ const VISITOR_WATER_DAILY_LIMIT = 5
 const WORKER_OFFLINE_ACTION_MS = 8_000
 const WORKER_OFFLINE_MAX_ACTIONS = 500_000
 
+function mergeStringArrays(existing: string[], incoming: string[]): string[] {
+  const merged = new Set([...existing, ...incoming])
+  return Array.from(merged)
+}
+
 type LikeLedgerEntry = {
   visitorAddress: string
   lastLikedAt:    number
@@ -41,10 +46,11 @@ export type FarmSaveV1 = {
   harvested:     CropCount[]
   xp:            number
   level:         number
-  cropsUnlocked:      boolean
-  expansion1Unlocked: boolean
-  expansion2Unlocked: boolean
-  farmerHired:        boolean
+  cropsUnlocked:       boolean
+  expansion1Unlocked:  boolean
+  expansion2Unlocked:  boolean
+  unlockedPlotGroups:  string[]
+  farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   workerOutstandingWages: number
@@ -97,10 +103,11 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     harvested: [],
     xp: 0,
     level: 1,
-    cropsUnlocked: false,
+    cropsUnlocked:      false,
     expansion1Unlocked: false,
     expansion2Unlocked: false,
-    farmerHired: false,
+    unlockedPlotGroups: [],
+    farmerHired:        false,
     farmerSeeds: [],
     farmerInventory: [],
     workerOutstandingWages: 0,
@@ -187,10 +194,11 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     harvested:     safeArray<CropCount>(maybe.harvested),
     xp:            safeInt(maybe.xp),
     level:         Math.max(1, safeInt(maybe.level, 1)),
-    cropsUnlocked:      safeBool(maybe.cropsUnlocked),
-    expansion1Unlocked: safeBool(maybe.expansion1Unlocked),
-    expansion2Unlocked: safeBool(maybe.expansion2Unlocked),
-    farmerHired:        safeBool(maybe.farmerHired),
+    cropsUnlocked:       safeBool(maybe.cropsUnlocked),
+    expansion1Unlocked:  safeBool(maybe.expansion1Unlocked),
+    expansion2Unlocked:  safeBool(maybe.expansion2Unlocked),
+    unlockedPlotGroups:  safeArray<string>((maybe as any).unlockedPlotGroups),
+    farmerHired:         safeBool(maybe.farmerHired),
     farmerSeeds:      safeArray<CropCount>(maybe.farmerSeeds),
     farmerInventory:  safeArray<CropCount>(maybe.farmerInventory),
     workerOutstandingWages: safeInt(maybe.workerOutstandingWages, 0),
@@ -258,6 +266,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     cropsUnlocked:       save.cropsUnlocked,
     expansion1Unlocked:  save.expansion1Unlocked,
     expansion2Unlocked:  save.expansion2Unlocked,
+    unlockedPlotGroups:  save.unlockedPlotGroups,
     farmerHired:         save.farmerHired,
     farmerSeeds:         save.farmerSeeds,
     farmerInventory:     save.farmerInventory,
@@ -717,6 +726,7 @@ export class FarmProgressStore {
       cropsUnlocked:       existing.cropsUnlocked || payload.cropsUnlocked,
       expansion1Unlocked:  existing.expansion1Unlocked || payload.expansion1Unlocked,
       expansion2Unlocked:  existing.expansion2Unlocked || payload.expansion2Unlocked,
+      unlockedPlotGroups:  mergeStringArrays(existing.unlockedPlotGroups, payload.unlockedPlotGroups ?? []),
       farmerHired,
       farmerSeeds:         payload.farmerSeeds,
       farmerInventory:     payload.farmerInventory,

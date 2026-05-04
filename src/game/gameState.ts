@@ -3,7 +3,7 @@ import { CropType } from '../data/cropData'
 import { FertilizerType } from '../data/fertilizerData'
 import type { MailboxReward } from '../shared/farmMessages'
 
-export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'plotGroupUnlock'
 
 export const playerState = {
   coins: 0,
@@ -66,4 +66,7 @@ export const playerState = {
   visitorSessionWaterCount: 0,
   // Runtime-only: compost bin uses 12s tutorial cycle during the Level 5 event
   tutorialCompostCycle: false,
+  // Plot group unlock tracking
+  unlockedPlotGroups: [] as string[],      // group names purchased via coins
+  activePlotGroupName: '',                  // set before opening 'plotGroupUnlock' menu
 }

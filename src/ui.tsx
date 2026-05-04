@@ -6,8 +6,9 @@ import { PlantMenu }     from './ui/PlantMenu'
 import { FertilizeMenu } from './ui/FertilizeMenu'
 import { ShopMenu }      from './ui/ShopMenu'
 import { SellMenu }      from './ui/SellMenu'
-import { UnlockMenu }    from './ui/UnlockMenu'
-import { ExpansionMenu } from './ui/ExpansionMenu'
+import { UnlockMenu }          from './ui/UnlockMenu'
+import { ExpansionMenu }       from './ui/ExpansionMenu'
+import { PlotGroupUnlockMenu } from './ui/PlotGroupUnlockMenu'
 import { FarmerMenu }    from './ui/FarmerMenu'
 import { NpcDialogMenu } from './ui/NpcDialogMenu'
 import { InventoryPanel } from './ui/InventoryPanel'
@@ -42,7 +43,8 @@ const MainUi = () => (
     {playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
     {playerState.activeMenu === 'shop'      && <ShopMenu />}
     {playerState.activeMenu === 'sell'      && <SellMenu />}
-    {playerState.activeMenu === 'unlock'    && <UnlockMenu />}
+    {playerState.activeMenu === 'unlock'         && <UnlockMenu />}
+    {playerState.activeMenu === 'plotGroupUnlock' && <PlotGroupUnlockMenu />}
     {(playerState.activeMenu === 'expansion1' || playerState.activeMenu === 'expansion2') && <ExpansionMenu />}
     {playerState.activeMenu === 'farmer'    && <FarmerMenu />}
     {playerState.activeMenu === 'npcDialog' && <NpcDialogMenu />}

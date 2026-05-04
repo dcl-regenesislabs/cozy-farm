@@ -15,7 +15,11 @@ import {
   removeForSaleSign2, removeForSaleSign3,
   applyPlotUnlockVisual,
   setCompostBinVisible,
+  unlockPlotGroupByName,
+  hidePlotGroupSign,
+  checkLevelGroupUnlocks,
 } from '../systems/interactionSetup'
+import { LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
@@ -99,9 +103,10 @@ export function buildSavePayload(): FarmStatePayload {
     harvested: mapToArray(playerState.harvested),
     xp:       playerState.xp,
     level:    playerState.level,
-    cropsUnlocked:      playerState.cropsUnlocked,
-    expansion1Unlocked: playerState.expansion1Unlocked,
-    expansion2Unlocked: playerState.expansion2Unlocked,
+    cropsUnlocked:       playerState.cropsUnlocked,
+    expansion1Unlocked:  playerState.expansion1Unlocked,
+    expansion2Unlocked:  playerState.expansion2Unlocked,
+    unlockedPlotGroups:  [...playerState.unlockedPlotGroups],
     farmerHired:        playerState.farmerHired,
     farmerSeeds:     mapToArray(playerState.farmerSeeds),
     farmerInventory: mapToArray(playerState.farmerInventory),
@@ -163,14 +168,20 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.expansion1Unlocked = payload.expansion1Unlocked
   playerState.expansion2Unlocked = payload.expansion2Unlocked
 
-  if (payload.expansion1Unlocked) {
-    unlockExpansion1Plots()
-    removeForSaleSign2()
+  // Restore purchased plot groups — with migration from old expansion1/2 booleans
+  const restoredGroups = new Set<string>(payload.unlockedPlotGroups ?? [])
+  if (payload.expansion1Unlocked) restoredGroups.add('PlotGroup_Buy_A')
+  if (payload.expansion2Unlocked) restoredGroups.add('PlotGroup_Buy_B')
+  playerState.unlockedPlotGroups = Array.from(restoredGroups)
+
+  for (const groupName of playerState.unlockedPlotGroups) {
+    unlockPlotGroupByName(groupName)
+    hidePlotGroupSign(groupName)
   }
-  if (payload.expansion2Unlocked) {
-    unlockExpansion2Plots()
-    removeForSaleSign3()
-  }
+
+  // Level-gated groups: auto-unlock any that match the loaded level
+  const levelUnlocked = checkLevelGroupUnlocks(payload.level, playerState.unlockedPlotGroups)
+  // Level groups are NOT added to unlockedPlotGroups (they're tracked by level, not purchase)
 
   // ── Farmer ────────────────────────────────────────────────────────────────
   playerState.farmerHired      = payload.farmerHired
