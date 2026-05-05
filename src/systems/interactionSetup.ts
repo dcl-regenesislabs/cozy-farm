@@ -222,7 +222,7 @@ export function setupEntities() {
   }
 
   // ── Compost Bin ───────────────────────────────────────────────────────────
-  const compostBin = engine.getEntityOrNullByName('CompostBin')
+  const compostBin = engine.getEntityOrNullByName('CompostBin.glb')
   compostBinEntity = compostBin
   if (compostBin) {
     const s = Transform.get(compostBin).scale
