@@ -3,6 +3,7 @@ import { playerState } from '../game/gameState'
 import { musicState, SONGS, SongDef } from '../game/musicState'
 import { playSong, toggleMute, setMusicVolume } from '../systems/musicSystem'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { PanelShell, C, PANEL_W } from './PanelShell'
 
 // ─── Palette additions for the jukebox ─────────────────────────────────────
@@ -27,13 +28,16 @@ type SongCardProps = { key?: string; song: SongDef; isPlaying: boolean; isMuted:
 const SongCard = ({ song, isPlaying, isMuted }: SongCardProps) => {
   const active = isPlaying
 
+  const zoomKey = `jukebox_${song.id}`
+  const scale   = getZoomScale(zoomKey)
+
   return (
     <UiEntity
       uiTransform={{
         flexDirection:  'row',
         alignItems:     'center',
         width:          '100%',
-        height:         120,
+        height:         Math.round(120 * scale),
         margin:         { bottom: 14 },
         padding:        { top: 12, bottom: 12, left: 20, right: 20 },
         pointerFilter:  'block',
@@ -42,6 +46,7 @@ const SongCard = ({ song, isPlaying, isMuted }: SongCardProps) => {
       onMouseDown={() => {
         if (!active) {
           playSound('buttonclick')
+          triggerCardZoom(zoomKey)
           playSong(song.id)
         }
       }}
@@ -114,8 +119,8 @@ const VolumePicker = ({ volume }: { volume: number }) => {
             <UiEntity
               key={`vol_${pct}`}
               uiTransform={{
-                width:          VOL_BTN_W,
-                height:         70,
+                width:          Math.round(VOL_BTN_W * getZoomScale(`jukebox_vol_${pct}`)),
+                height:         Math.round(70 * getZoomScale(`jukebox_vol_${pct}`)),
                 alignItems:     'center',
                 justifyContent: 'center',
                 pointerFilter:  'block',
@@ -124,6 +129,7 @@ const VolumePicker = ({ volume }: { volume: number }) => {
               onMouseDown={() => {
                 if (!isActive) {
                   playSound('buttonclick')
+                  triggerCardZoom(`jukebox_vol_${pct}`)
                   setMusicVolume(pct / 100)
                 }
               }}
@@ -147,14 +153,19 @@ const MuteButton = ({ muted }: { muted: boolean }) => (
   <UiEntity
     uiTransform={{
       width:          '100%',
-      height:         72,
+      height:         Math.round(72 * getZoomScale('jukebox_mute')),
       alignItems:     'center',
       justifyContent: 'center',
       margin:         { top: 6 },
       pointerFilter:  'block',
     }}
     uiBackground={{ color: muted ? MUTE_RED : { r: 0.12, g: 0.12, b: 0.12, a: 1 } }}
-    onMouseDown={() => { playSound('buttonclick'); toggleMute() }}
+    onMouseDown={() => {
+      if (isZooming('jukebox_mute')) return
+      playSound('buttonclick')
+      triggerCardZoom('jukebox_mute')
+      setTimeout(toggleMute, 290)
+    }}
   >
     <Label
       value={muted ? 'Unmute Music' : 'Mute Music'}

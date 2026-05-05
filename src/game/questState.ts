@@ -11,11 +11,12 @@ export interface QuestProgress {
   status:  QuestStatus
 }
 
-// Runtime progress map — keyed by quest id, initialized from definitions
+// Runtime progress map — keyed by quest id, initialized from definitions.
+// requiresRotSystem quests start as 'completed' (hidden) until the rot system is unlocked.
 export const questProgressMap: Map<string, QuestProgress> = new Map(
   QUEST_DEFINITIONS.map((def) => [
     def.id,
-    { id: def.id, current: 0, status: 'available' },
+    { id: def.id, current: 0, status: def.requiresRotSystem ? 'completed' : 'available' },
   ])
 )
 
@@ -26,6 +27,15 @@ export const questProgressMap: Map<string, QuestProgress> = new Map(
 let onQuestAcceptedCb:  (() => void) | null = null
 let onQuestClaimedCb:   (() => void) | null = null
 let onQuestClaimableCb: (() => void) | null = null
+
+// One-shot callbacks for the progression event (plant/water/fertilize steps)
+let onNextPlantCb:         (() => void) | null = null
+let onNextWaterCb:         (() => void) | null = null
+let onNextFertilizeCb:     (() => void) | null = null
+
+export function setOnNextPlant(cb: () => void): void     { onNextPlantCb     = cb }
+export function setOnNextWater(cb: () => void): void     { onNextWaterCb     = cb }
+export function setOnNextFertilize(cb: () => void): void { onNextFertilizeCb = cb }
 
 export function setOnQuestAccepted(cb: () => void): void {
   onQuestAcceptedCb = cb
@@ -95,6 +105,26 @@ export function onWater(): void {
       checkCompletion(def, qp)
     }
   }
+  const cb = onNextWaterCb
+  onNextWaterCb = null
+  cb?.()
+}
+
+export function onFertilize(): void {
+  const cb = onNextFertilizeCb
+  onNextFertilizeCb = null
+  cb?.()
+}
+
+export function onCollectFertilizer(amount: number): void {
+  for (const def of QUEST_DEFINITIONS) {
+    const qp = questProgressMap.get(def.id)
+    if (!qp || qp.status !== 'active') continue
+    if (def.type === 'collect_fertilizer') {
+      qp.current = Math.min(qp.current + amount, def.target)
+      checkCompletion(def, qp)
+    }
+  }
 }
 
 export function onPlant(): void {
@@ -106,6 +136,9 @@ export function onPlant(): void {
       checkCompletion(def, qp)
     }
   }
+  const cb = onNextPlantCb
+  onNextPlantCb = null
+  cb?.()
 }
 
 export function onSell(amount: number): void {
@@ -133,10 +166,46 @@ function checkCompletion(def: QuestDefinition, qp: QuestProgress): void {
 // Lookup helpers
 // ---------------------------------------------------------------------------
 
+/** Returns the most relevant quest + progress for an NPC (active > claimable > available).
+ *  Skips requiresRotSystem quests if rot system not yet unlocked. */
+export function getActiveQuestForNpc(npcId: string): { def: QuestDefinition; qp: QuestProgress } | undefined {
+  const candidates = QUEST_DEFINITIONS.filter((d) => (d.npcId ?? d.id) === npcId)
+  const priority: QuestStatus[] = ['active', 'claimable', 'available']
+  for (const status of priority) {
+    for (const def of candidates) {
+      if (def.requiresRotSystem && !playerState.rotSystemUnlocked) continue
+      const qp = questProgressMap.get(def.id)
+      if (qp && qp.status === status) return { def, qp }
+    }
+  }
+  return undefined
+}
+
+/** Backward-compat wrapper — returns just the definition */
 export function getQuestForNpc(npcId: string): QuestDefinition | undefined {
-  return QUEST_DEFINITIONS.find((d) => d.id === npcId)
+  return getActiveQuestForNpc(npcId)?.def
 }
 
 export function getQuestProgress(questId: string): QuestProgress | undefined {
   return questProgressMap.get(questId)
+}
+
+/** Reset all quest progress to initial state (dev reset). */
+export function resetQuestProgress(): void {
+  for (const def of QUEST_DEFINITIONS) {
+    const qp = questProgressMap.get(def.id)
+    if (qp) {
+      qp.current = 0
+      qp.status  = def.requiresRotSystem ? 'completed' : 'available'
+    }
+  }
+}
+
+/** Unlock the Mayor fertilizer quest after the rot system is enabled. */
+export function unlockFertilizerQuest(): void {
+  const qp = questProgressMap.get('mayorchen_fertilizer')
+  if (qp && qp.status === 'completed') {
+    qp.status  = 'active'
+    qp.current = 0
+  }
 }

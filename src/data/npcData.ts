@@ -53,3 +53,13 @@ export const MAYOR_DEF = NPC_ROSTER.find((n) => n.id === 'mayorchen')!
 
 /** The five regular visiting NPCs — spawned on a timer after the tutorial is complete. */
 export const REGULAR_NPC_ROSTER = NPC_ROSTER.filter((n) => n.id !== 'mayorchen')
+
+/** Minimum player level required for each regular NPC to appear. */
+export const NPC_SCHEDULE: Record<string, { minLevel: number }> = {
+  rosa:       { minLevel: 1 },
+  gerald:     { minLevel: 2 },
+  marco:      { minLevel: 3 },
+  lily:       { minLevel: 4 },
+  dave:       { minLevel: 5 },
+  mayorchen:  { minLevel: 5 },
+}

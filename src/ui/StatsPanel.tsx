@@ -3,7 +3,7 @@ import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { PanelShell, C } from './PanelShell'
-import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { LeaderboardContent } from './LeaderboardPanel'
 
@@ -88,8 +88,8 @@ const RewardsTab = () => (
       const unlocked  = playerState.level >= r.level
       const claimed   = playerState.claimedRewards.includes(r.level)
       const claimable = unlocked && !claimed
-      const shakeKey  = `reward_${r.level}`
-      const offsetX   = getShakeOffset(shakeKey)
+      const zoomKey   = `reward_${r.level}`
+      const scale     = getZoomScale(zoomKey)
 
       const bg = claimed   ? { r: 0.07, g: 0.18, b: 0.07, a: 1 }
                : claimable ? { r: 0.52, g: 0.37, b: 0.02, a: 1 }
@@ -101,19 +101,17 @@ const RewardsTab = () => (
           uiTransform={{
             flexDirection: 'column',
             alignItems: 'center',
-            width: 220,
-            height: 165,
+            width: Math.round(220 * scale),
+            height: Math.round(165 * scale),
             margin: { right: 15, bottom: 15 },
             padding: { top: 20, bottom: 16, left: 14, right: 14 },
-            positionType: 'relative',
-            position: { left: offsetX },
           }}
           uiBackground={{ color: bg }}
           onMouseDown={claimable ? () => {
-            if (isShaking(shakeKey)) return
+            if (isZooming(zoomKey)) return
             playSound('buttonclick')
-            triggerCardShake(shakeKey)
-            setTimeout(() => claimReward(r.level), 320)
+            triggerCardZoom(zoomKey)
+            setTimeout(() => claimReward(r.level), 290)
           } : undefined}
         >
           <Label

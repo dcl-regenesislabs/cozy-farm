@@ -4,31 +4,30 @@ import { plantSeed } from '../game/actions'
 import { CropType, CROP_NAMES, ALL_CROP_TYPES } from '../data/cropData'
 import { CROP_SEED_IMAGES } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
-import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 
 type SeedCardProps = { key?: string | number; cropType: CropType; count: number }
 
 const SeedCard = ({ cropType, count }: SeedCardProps) => {
-  const shakeKey = `plant_${cropType}`
-  const offsetX  = getShakeOffset(shakeKey)
+  const zoomKey = `plant_${cropType}`
+  const scale   = getZoomScale(zoomKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 215,
+        width: Math.round(200 * scale),
+        height: Math.round(215 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
       onMouseDown={() => {
-        if (!playerState.activePlotEntity) return
-        triggerCardShake(shakeKey)
-        plantSeed(playerState.activePlotEntity, cropType)
+        const entity = playerState.activePlotEntity
+        if (!entity || isZooming(zoomKey)) return
+        triggerCardZoom(zoomKey)
+        setTimeout(() => plantSeed(entity, cropType), 290)
       }}
     >
       <UiEntity

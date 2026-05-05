@@ -1,5 +1,6 @@
 import { playerState } from '../game/gameState'
 import { XP_TABLE } from '../shared/leveling'
+import { checkLevelGroupUnlocks } from './interactionSetup'
 
 export {
   XP_PLANT,
@@ -59,6 +60,7 @@ export function addXp(amount: number): void {
   ) {
     playerState.level += 1
     console.log(`CozyFarm: Level up! Now level ${playerState.level}`)
+    checkLevelGroupUnlocks(playerState.level, playerState.unlockedPlotGroups)
     for (const cb of levelUpCallbacks) cb(playerState.level)
   }
 }

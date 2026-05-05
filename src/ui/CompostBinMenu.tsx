@@ -4,19 +4,24 @@ import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer
 import { PanelShell, C } from './PanelShell'
 import { ORGANIC_WASTE_ICON } from '../data/imagePaths'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { formatTime } from '../systems/growthSystem'
+import { fireCompostWasteAdded, fireCompostCollected } from '../systems/progressionEventsSystem'
+import { onCollectFertilizer } from '../game/questState'
 
-const COMPOST_CYCLE_MS = 300_000  // 5 minutes per waste unit
+const COMPOST_CYCLE_MS          = 300_000  // 5 minutes per waste unit
+const TUTORIAL_COMPOST_CYCLE_MS = 15_000   // 15 seconds during the Level 5 tutorial
 
 function getCompostState() {
   const now = Date.now()
   const wasteInBin = playerState.compostWasteCount
   const lastCollected = playerState.compostLastCollectedAt
+  const cycleMs = playerState.tutorialCompostCycle ? TUTORIAL_COMPOST_CYCLE_MS : COMPOST_CYCLE_MS
 
   const timeElapsed = (lastCollected > 0 && wasteInBin > 0) ? now - lastCollected : 0
-  const cyclesDone = Math.min(Math.floor(timeElapsed / COMPOST_CYCLE_MS), wasteInBin)
+  const cyclesDone = Math.min(Math.floor(timeElapsed / cycleMs), wasteInBin)
   const nextCycleMs = (wasteInBin > cyclesDone && lastCollected > 0)
-    ? COMPOST_CYCLE_MS - (timeElapsed % COMPOST_CYCLE_MS)
+    ? cycleMs - (timeElapsed % cycleMs)
     : null
 
   return { wasteInBin, cyclesDone, nextCycleMs }
@@ -28,8 +33,9 @@ function collectReady() {
   const wasteInBin = playerState.compostWasteCount
   if (wasteInBin === 0 || lastCollected === 0) return
 
+  const cycleMs = playerState.tutorialCompostCycle ? TUTORIAL_COMPOST_CYCLE_MS : COMPOST_CYCLE_MS
   const elapsed = now - lastCollected
-  const cycles = Math.min(Math.floor(elapsed / COMPOST_CYCLE_MS), wasteInBin)
+  const cycles = Math.min(Math.floor(elapsed / cycleMs), wasteInBin)
   if (cycles <= 0) return
 
   for (let i = 0; i < cycles; i++) {
@@ -39,6 +45,8 @@ function collectReady() {
   playerState.compostWasteCount -= cycles
   playerState.compostLastCollectedAt = now
   playSound('buttonclick')
+  onCollectFertilizer(cycles)
+  fireCompostCollected()
 }
 
 function addWaste() {
@@ -49,6 +57,7 @@ function addWaste() {
     playerState.compostLastCollectedAt = Date.now()
   }
   playSound('buttonclick')
+  fireCompostWasteAdded()
 }
 
 type FertCardProps = { key?: number; fertType: FertilizerType }
@@ -126,12 +135,12 @@ export const CompostBinMenu = () => {
           {/* Add Waste button */}
           <UiEntity
             uiTransform={{
-              width: 320, height: 66,
+              width: Math.round(320 * getZoomScale('cbin_add')), height: Math.round(66 * getZoomScale('cbin_add')),
               alignItems: 'center', justifyContent: 'center',
               margin: { bottom: 14 },
             }}
             uiBackground={{ color: canAddWaste ? { r: 0.25, g: 0.55, b: 0.15, a: 1 } : { r: 0.2, g: 0.2, b: 0.2, a: 1 } }}
-            onMouseDown={canAddWaste ? addWaste : undefined}
+            onMouseDown={canAddWaste ? () => { if (isZooming('cbin_add')) return; triggerCardZoom('cbin_add'); setTimeout(addWaste, 290) } : undefined}
           >
             <Label
               value="Add Waste"
@@ -144,11 +153,11 @@ export const CompostBinMenu = () => {
           {/* Collect button */}
           <UiEntity
             uiTransform={{
-              width: 320, height: 66,
+              width: Math.round(320 * getZoomScale('cbin_collect')), height: Math.round(66 * getZoomScale('cbin_collect')),
               alignItems: 'center', justifyContent: 'center',
             }}
             uiBackground={{ color: canCollect ? { r: 0.6, g: 0.45, b: 0.05, a: 1 } : { r: 0.2, g: 0.2, b: 0.2, a: 1 } }}
-            onMouseDown={canCollect ? collectReady : undefined}
+            onMouseDown={canCollect ? () => { if (isZooming('cbin_collect')) return; triggerCardZoom('cbin_collect'); setTimeout(collectReady, 290) } : undefined}
           >
             <Label
               value={canCollect ? `Collect (${cyclesDone})` : 'Nothing ready'}

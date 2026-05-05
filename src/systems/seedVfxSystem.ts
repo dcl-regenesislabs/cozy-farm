@@ -63,7 +63,7 @@ function seedVfxSystem(dt: number) {
     const def = CROP_DATA.get(plot.cropType as CropType)!
     setSoilIconDisplay(entry.soilEntity, {
       cropType: plot.cropType, waterCount: 0, wateringsRequired: def.wateringsRequired,
-      canWater: true, isReady: false, isPlanting: false, justHarvested: false,
+      canWater: true, isReady: false, isPlanting: false, justHarvested: false, fertilizerType: -1,
     })
     updatePlotHoverText(entry.soilEntity)
   }

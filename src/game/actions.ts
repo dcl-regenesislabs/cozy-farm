@@ -1,17 +1,17 @@
 import { engine, Entity, GltfContainer, Transform, Billboard, BillboardMode, MeshRenderer, Material, TextShape } from '@dcl/sdk/ecs'
-import { spawnHarvestVfx } from '../systems/harvestVfxSystem'
+import { spawnHarvestVfx, spawnOrganicWasteVfx, spawnFertilizerVfx } from '../systems/harvestVfxSystem'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { PlotState, cropChildEntities, soilIconEntities } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
-import { CROP_HARVEST_IMAGES, WATERINGCAN_ICON, WATER_ICON, WATER_DRY_ICON, HAND_ICON, ORGANIC_WASTE_ICON } from '../data/imagePaths'
+import { CROP_HARVEST_IMAGES, WATERINGCAN_ICON, WATER_ICON, WATER_DRY_ICON, HAND_ICON, ORGANIC_WASTE_ICON, FERTILIZER_ICON_SRCS } from '../data/imagePaths'
 import { playerState } from './gameState'
-import { updatePlotHoverText } from '../systems/interactionSetup'
+import { updatePlotHoverText, setCompostBinVisible } from '../systems/interactionSetup'
 import { playSeedVfx } from '../systems/seedVfxSystem'
 import { playWateringVfx } from '../systems/wateringVfxSystem'
 import { addXp, XP_PLANT, XP_WATER, XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3 } from '../systems/levelingSystem'
-import { onHarvestCrop, onWater, onPlant, onSell } from './questState'
+import { onHarvestCrop, onWater, onPlant, onSell, onFertilize } from './questState'
 import { spawnDog } from '../systems/dogSystem'
 import { onTutorialAction } from '../systems/tutorialSystem'
 import { playSound } from '../systems/sfxSystem'
@@ -56,10 +56,12 @@ const CROP_IMG_SIZE     = 0.45  // size of the crop image sprite
 const WATER_DOT_Y       = 1.45  // y for the water dot row
 const WATER_DOT_SIZE    = 0.20  // size of each water dot icon
 const WATER_DOT_SPACING = 0.24  // horizontal spacing between dots (centre to centre)
-const ACTION_ICON_Y     = 0.85  // y for the watering-can / hand icon
-const ACTION_ICON_SIZE  = 0.75  // size of the action icon (tune here to make it bigger/smaller)
-const HARVEST_ICON_Y    = 1.5   // y used for hand icon after harvest
-const TIMER_TEXT_Y      = 3.5   // y for the countdown text — raised above VFX models (watering can, seed anim)
+const ACTION_ICON_Y        = 0.85  // y for the watering-can / hand icon
+const ACTION_ICON_SIZE     = 0.75  // size of the action icon (tune here to make it bigger/smaller)
+const HARVEST_ICON_Y       = 1.5   // y used for hand icon after harvest
+const TIMER_TEXT_Y         = 3.5   // y for the countdown text — raised above VFX models (watering can, seed anim)
+const FERTILIZER_BADGE_Y   = 2.8   // y for the persistent fertilizer type icon
+const FERTILIZER_BADGE_SIZE = 0.32 // size of the fertilizer badge icon
 
 /** Create a single billboard sprite plane parented to soilEntity */
 function makeIconSprite(parent: Entity, x: number, y: number, src: string, size: number): Entity {
@@ -91,12 +93,13 @@ export type SoilIconState = {
   isPlanting:        boolean
   justHarvested:     boolean
   isRotten?:         boolean
+  fertilizerType?:   number   // -1 or undefined = none applied
 }
 
 // Debounce: only rebuild sprites when state actually changes
 const lastSoilIconState = new Map<Entity, string>()
 function soilStateHash(s: SoilIconState): string {
-  return `${s.cropType}|${s.waterCount}|${s.wateringsRequired}|${s.canWater}|${s.isReady}|${s.isPlanting}|${s.justHarvested}|${s.isRotten ?? false}`
+  return `${s.cropType}|${s.waterCount}|${s.wateringsRequired}|${s.canWater}|${s.isReady}|${s.isPlanting}|${s.justHarvested}|${s.isRotten ?? false}|${s.fertilizerType ?? -1}`
 }
 
 // Internal remove — does NOT clear the hash (used inside setSoilIconDisplay)
@@ -140,6 +143,13 @@ export function setSoilIconDisplay(soilEntity: Entity, state: SoilIconState) {
         const src = i < filled ? WATER_ICON : WATER_DRY_ICON
         sprites.push(makeIconSprite(soilEntity, startX + i * WATER_DOT_SPACING, WATER_DOT_Y, src, WATER_DOT_SIZE))
       }
+    }
+
+    // Fertilizer badge — small icon above crop image when a fertilizer is active
+    const fType = state.fertilizerType ?? -1
+    if (fType !== -1) {
+      const fertIconSrc = FERTILIZER_ICON_SRCS[fType]
+      if (fertIconSrc) sprites.push(makeIconSprite(soilEntity, 0, FERTILIZER_BADGE_Y, fertIconSrc, FERTILIZER_BADGE_SIZE))
     }
 
     // Watering can icon (row 3) — only when player can water right now
@@ -268,7 +278,8 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
   onTutorialAction('plant')
 
   updatePlotHoverText(entity)
-  playerState.activeMenu = 'none'
+  // Only close the plant menu if no callback (e.g. progression event) opened a new dialog
+  if (playerState.activeMenu === 'plant') playerState.activeMenu = 'none'
   playerState.activePlotEntity = null
   return true
 }
@@ -377,6 +388,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   if (plot.isRotten) {
     clearRotVisual(entity)
     playerState.organicWaste += 1
+    spawnOrganicWasteVfx(Transform.get(entity).position)
     resetPlot()
     playSound('harvest')
     return true
@@ -433,7 +445,10 @@ export function applyFertilizer(entity: Entity, fertilizerType: FertilizerType):
 
   playerState.fertilizers.set(fertilizerType, current - 1)
   plot.fertilizerType = fertilizerType
+  spawnFertilizerVfx(Transform.get(entity).position, fertilizerType)
+  lastSoilIconState.delete(entity)  // force icon rebuild next tick
   updatePlotHoverText(entity)
+  onFertilize()
   return true
 }
 
@@ -479,6 +494,24 @@ export function buyOrnament(objectId: number): boolean {
   playerState.coins -= def.price
   placeOrnamentInNextSlot(objectId)
   console.log(`CozyFarm: Bought ornament "${def.name}" (id=${objectId}, beauty=${def.beautyValue})`)
+  return true
+}
+
+export const COMPOST_BIN_PRICE = 300
+
+let onBuyCompostBinCb: (() => void) | null = null
+export function setOnBuyCompostBin(cb: () => void): void { onBuyCompostBinCb = cb }
+
+/** Purchase the compost bin for 300 coins. Unlocks composting and the 3D bin interaction. */
+export function buyCompostBin(): boolean {
+  if (playerState.compostBinUnlocked) return false
+  if (playerState.coins < COMPOST_BIN_PRICE) return false
+  playerState.coins -= COMPOST_BIN_PRICE
+  playerState.compostBinUnlocked = true
+  setCompostBinVisible(true)
+  const cb = onBuyCompostBinCb
+  onBuyCompostBinCb = null
+  cb?.()
   return true
 }
 

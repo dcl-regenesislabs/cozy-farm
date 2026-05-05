@@ -4,6 +4,7 @@ import { room } from '../shared/farmMessages'
 import { leaderboardCallbacks } from '../services/saveService'
 import { PanelShell, C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
 import type { LeaderboardEntry } from '../shared/farmMessages'
 import { formatPlayerLabel } from '../utils/playerLabel'
 
@@ -113,15 +114,16 @@ export const LeaderboardContent = () => {
         )}
         <UiEntity
           uiTransform={{
-            width: 130, height: 40,
+            width: Math.round(130 * getZoomScale('lb_refresh')), height: Math.round(40 * getZoomScale('lb_refresh')),
             alignItems: 'center', justifyContent: 'center',
           }}
           uiBackground={{ color: lbState.loading ? { r: 0.18, g: 0.18, b: 0.18, a: 1 } : C.divider }}
           onMouseDown={() => {
             if (lbState.loading) return
             playSound('buttonclick')
+            triggerCardZoom('lb_refresh')
             lbState.loaded = false
-            requestLeaderboard()
+            setTimeout(requestLeaderboard, 290)
           }}
         >
           <Label

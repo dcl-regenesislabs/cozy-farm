@@ -14,7 +14,12 @@ import {
   unlockExpansion1Plots, unlockExpansion2Plots,
   removeForSaleSign2, removeForSaleSign3,
   applyPlotUnlockVisual,
+  setCompostBinVisible,
+  unlockPlotGroupByName,
+  hidePlotGroupSign,
+  checkLevelGroupUnlocks,
 } from '../systems/interactionSetup'
+import { LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
@@ -98,9 +103,10 @@ export function buildSavePayload(): FarmStatePayload {
     harvested: mapToArray(playerState.harvested),
     xp:       playerState.xp,
     level:    playerState.level,
-    cropsUnlocked:      playerState.cropsUnlocked,
-    expansion1Unlocked: playerState.expansion1Unlocked,
-    expansion2Unlocked: playerState.expansion2Unlocked,
+    cropsUnlocked:       playerState.cropsUnlocked,
+    expansion1Unlocked:  playerState.expansion1Unlocked,
+    expansion2Unlocked:  playerState.expansion2Unlocked,
+    unlockedPlotGroups:  [...playerState.unlockedPlotGroups],
     farmerHired:        playerState.farmerHired,
     farmerSeeds:     mapToArray(playerState.farmerSeeds),
     farmerInventory: mapToArray(playerState.farmerInventory),
@@ -129,6 +135,11 @@ export function buildSavePayload(): FarmStatePayload {
     fertilizers:             fertMapToArray(playerState.fertilizers),
     compostWasteCount:       playerState.compostWasteCount,
     compostLastCollectedAt:  playerState.compostLastCollectedAt,
+    compostBinUnlocked:      playerState.compostBinUnlocked,
+    rotSystemUnlocked:       playerState.rotSystemUnlocked,
+    progressionEventStep:    playerState.progressionEventStep,
+    lastNpcVisitAt:          playerState.lastNpcVisitAt,
+    npcScheduleIndex:        playerState.npcScheduleIndex,
     beautyScore:         0,
     beautySlots:         getBeautySlots(),
     totalLikesReceived:  playerState.totalLikesReceived,
@@ -157,14 +168,20 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.expansion1Unlocked = payload.expansion1Unlocked
   playerState.expansion2Unlocked = payload.expansion2Unlocked
 
-  if (payload.expansion1Unlocked) {
-    unlockExpansion1Plots()
-    removeForSaleSign2()
+  // Restore purchased plot groups — with migration from old expansion1/2 booleans
+  const restoredGroups = new Set<string>(payload.unlockedPlotGroups ?? [])
+  if (payload.expansion1Unlocked) restoredGroups.add('PlotGroup_Buy_A')
+  if (payload.expansion2Unlocked) restoredGroups.add('PlotGroup_Buy_B')
+  playerState.unlockedPlotGroups = Array.from(restoredGroups)
+
+  for (const groupName of playerState.unlockedPlotGroups) {
+    unlockPlotGroupByName(groupName)
+    hidePlotGroupSign(groupName)
   }
-  if (payload.expansion2Unlocked) {
-    unlockExpansion2Plots()
-    removeForSaleSign3()
-  }
+
+  // Level-gated groups: auto-unlock any that match the loaded level
+  const levelUnlocked = checkLevelGroupUnlocks(payload.level, playerState.unlockedPlotGroups)
+  // Level groups are NOT added to unlockedPlotGroups (they're tracked by level, not purchase)
 
   // ── Farmer ────────────────────────────────────────────────────────────────
   playerState.farmerHired      = payload.farmerHired
@@ -217,10 +234,16 @@ function applyPayload(payload: FarmStatePayload): void {
   setMusicVolume(payload.musicVolume ?? 0.42)
 
   // ── Fertilizer system ─────────────────────────────────────────────────────
-  playerState.organicWaste       = payload.organicWaste ?? 0
-  playerState.fertilizers        = fertArrayToMap(payload.fertilizers ?? [])
-  playerState.compostWasteCount  = payload.compostWasteCount ?? 0
+  playerState.organicWaste        = payload.organicWaste ?? 0
+  playerState.fertilizers         = fertArrayToMap(payload.fertilizers ?? [])
+  playerState.compostWasteCount   = payload.compostWasteCount ?? 0
   playerState.compostLastCollectedAt = payload.compostLastCollectedAt ?? 0
+  playerState.compostBinUnlocked  = (payload as any).compostBinUnlocked ?? false
+  setCompostBinVisible(playerState.compostBinUnlocked)
+  playerState.rotSystemUnlocked    = (payload as any).rotSystemUnlocked ?? false
+  playerState.progressionEventStep = (payload as any).progressionEventStep ?? ''
+  playerState.lastNpcVisitAt       = (payload as any).lastNpcVisitAt ?? 0
+  playerState.npcScheduleIndex     = (payload as any).npcScheduleIndex ?? 0
 
   // Offline compost progression: award fertilizers produced while player was away
   if (playerState.compostWasteCount > 0 && playerState.compostLastCollectedAt > 0) {
@@ -310,28 +333,28 @@ export function restorePlotStates(savedPlots: PlotSaveState[]): void {
       // If crop finished growing while offline → mark ready + check rot
       if (progress >= 1.0) {
         mutable.isReady = true
-        const rotten = isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now)
+        const rotten = playerState.rotSystemUnlocked && isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now)
         mutable.isRotten = rotten
         if (rotten) applyRotVisual(entity)
         setSoilIconDisplay(entity, {
           cropType: saved.cropType, waterCount: saved.waterCount,
           wateringsRequired: def.wateringsRequired,
           canWater: false, isReady: true, isPlanting: false, justHarvested: false,
-          isRotten: rotten,
+          isRotten: rotten, fertilizerType: mutable.fertilizerType,
         })
       }
     } else if (saved.isReady) {
       // Was already ready when player left — restore stage 3 model, check rot
       mutable.growthStage = 3
       setCropModel(entity, CROP_MODELS[saved.cropType as CropType][2])
-      const rotten = saved.isRotten || isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now)
+      const rotten = saved.isRotten || (playerState.rotSystemUnlocked && isPlotRotten(saved.plantedAt, saved.cropType, mutable.fertilizerType, effectiveGrowTimeMs, now))
       mutable.isRotten = rotten
       if (rotten) applyRotVisual(entity)
       setSoilIconDisplay(entity, {
         cropType: saved.cropType, waterCount: saved.waterCount,
         wateringsRequired: def.wateringsRequired,
         canWater: false, isReady: true, isPlanting: false, justHarvested: false,
-        isRotten: rotten,
+        isRotten: rotten, fertilizerType: mutable.fertilizerType,
       })
     }
     // else: planted but not watered yet → stage 0, no model needed
