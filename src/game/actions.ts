@@ -17,6 +17,7 @@ import { onTutorialAction } from '../systems/tutorialSystem'
 import { playSound } from '../systems/sfxSystem'
 import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
 import { placeOrnamentInNextSlot, isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
+import { tryDropVeggieScrap } from '../systems/animalSystem'
 
 /** Create or update the crop child entity on a soil plot */
 export function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -410,6 +411,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   playerState.totalCropsHarvested += finalYield
   onHarvestCrop(cropType, finalYield)
   onTutorialAction('harvest')
+  tryDropVeggieScrap()
 
   resetPlot()
   return true

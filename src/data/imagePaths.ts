@@ -24,8 +24,14 @@ export const CROP_HARVEST_IMAGES: Record<CropType, string> = {
   [CropType.Sunflower]:'assets/scene/Images/SunflowerTexture.png',
 }
 
-export const COINS_IMAGE    = 'assets/scene/Images/Coins.png'
-export const DOG01_ICON     = 'assets/scene/Images/Dog01Icon.png'
+export const COINS_IMAGE       = 'assets/scene/Images/Coins.png'
+export const DOG01_ICON        = 'assets/scene/Images/Dog01Icon.png'
+export const CHICKEN_ICON      = 'assets/scene/Images/ChickenIcon.png'
+export const EGG_ICON          = 'assets/scene/Images/EggIcon.png'
+export const GRAIN_ICON        = 'assets/scene/Images/GrainIcon.png'
+export const PIG_ICON          = 'assets/scene/Images/PigIcon.png'
+export const MANURE_ICON       = 'assets/scene/Images/PoopIcon.png'
+export const VEGGIE_SCRAP_ICON = 'assets/scene/Images/VeggieScrapIcon.png'
 export const BTN_INVENTORY  = 'assets/scene/Images/InventoryButton.png'
 export const BTN_FARM       = 'assets/scene/Images/FarmButton.png'
 export const BTN_QUESTS     = 'assets/scene/Images/QuestButton.png'

@@ -13,6 +13,8 @@ import { isVisiting } from '../services/visitService'
 import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/socialService'
 import { playWateringVfx } from './wateringVfxSystem'
+import { setupCoopClickHandler, setupPenClickHandler, CHICKEN_MODEL, PIG_MODEL } from './animalSystem'
+import { CHICKEN_COOP_CENTRE, PIG_PEN_CENTRE } from '../data/animalData'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -459,4 +461,33 @@ export function getTruckEntity(): Entity | null {
 
 export function getCompostBinEntity(): Entity | null {
   return compostBinEntity
+}
+
+// ---------------------------------------------------------------------------
+// Chicken Coop + Pig Pen — spawned from code until placed via Creator Hub
+// ---------------------------------------------------------------------------
+
+let chickenCoopEntity: Entity | null = null
+let pigPenEntity: Entity | null = null
+
+export function initAnimalBuildings(): void {
+  // Chicken Coop
+  chickenCoopEntity = engine.addEntity()
+  GltfContainer.create(chickenCoopEntity, { src: CHICKEN_MODEL })
+  Transform.create(chickenCoopEntity, {
+    position: Vector3.create(CHICKEN_COOP_CENTRE.x, CHICKEN_COOP_CENTRE.y, CHICKEN_COOP_CENTRE.z),
+    scale:    Vector3.create(1.2, 1.2, 1.2),
+  })
+  MeshCollider.setBox(chickenCoopEntity, ColliderLayer.CL_POINTER)
+  setupCoopClickHandler(chickenCoopEntity)
+
+  // Pig Pen
+  pigPenEntity = engine.addEntity()
+  GltfContainer.create(pigPenEntity, { src: PIG_MODEL })
+  Transform.create(pigPenEntity, {
+    position: Vector3.create(PIG_PEN_CENTRE.x, PIG_PEN_CENTRE.y, PIG_PEN_CENTRE.z),
+    scale:    Vector3.create(1.2, 1.2, 1.2),
+  })
+  MeshCollider.setBox(pigPenEntity, ColliderLayer.CL_POINTER)
+  setupPenClickHandler(pigPenEntity)
 }

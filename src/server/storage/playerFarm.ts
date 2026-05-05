@@ -71,6 +71,17 @@ export type FarmSaveV1 = {
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
   compostLastCollectedAt:  number
+  // Animal system
+  chickenCoopUnlocked:     boolean
+  grainCount:              number
+  eggsCount:               number
+  chickenLastProducedAt:   number
+  totalEggsCollected:      number
+  pigPenUnlocked:          boolean
+  vegetableScraps:         number
+  manureCount:             number
+  pigLastProducedAt:       number
+  totalManureCollected:    number
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number
@@ -122,6 +133,16 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     fertilizers:             [],
     compostWasteCount:       0,
     compostLastCollectedAt:  0,
+    chickenCoopUnlocked:     false,
+    grainCount:              0,
+    eggsCount:               0,
+    chickenLastProducedAt:   0,
+    totalEggsCollected:      0,
+    pigPenUnlocked:          false,
+    vegetableScraps:         0,
+    manureCount:             0,
+    pigLastProducedAt:       0,
+    totalManureCollected:    0,
     beautyScore:    0,
     beautySlots:    [0, 0, 0],
     totalLikesReceived: 0,
@@ -207,6 +228,16 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     fertilizers:             safeArray<FertilizerCount>((maybe as any).fertilizers),
     compostWasteCount:       safeInt((maybe as any).compostWasteCount, 0),
     compostLastCollectedAt:  safeInt((maybe as any).compostLastCollectedAt, 0),
+    chickenCoopUnlocked:     safeBool((maybe as any).chickenCoopUnlocked),
+    grainCount:              safeInt((maybe as any).grainCount, 0),
+    eggsCount:               safeInt((maybe as any).eggsCount, 0),
+    chickenLastProducedAt:   safeInt((maybe as any).chickenLastProducedAt, 0),
+    totalEggsCollected:      safeInt((maybe as any).totalEggsCollected, 0),
+    pigPenUnlocked:          safeBool((maybe as any).pigPenUnlocked),
+    vegetableScraps:         safeInt((maybe as any).vegetableScraps, 0),
+    manureCount:             safeInt((maybe as any).manureCount, 0),
+    pigLastProducedAt:       safeInt((maybe as any).pigLastProducedAt, 0),
+    totalManureCollected:    safeInt((maybe as any).totalManureCollected, 0),
     beautyScore:         safeInt(maybe.beautyScore, 0),
     beautySlots:         safeArray<number>(maybe.beautySlots).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
     totalLikesReceived:  safeInt(maybe.totalLikesReceived, 0),
@@ -269,6 +300,16 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     fertilizers:             save.fertilizers,
     compostWasteCount:       save.compostWasteCount,
     compostLastCollectedAt:  save.compostLastCollectedAt,
+    chickenCoopUnlocked:     save.chickenCoopUnlocked,
+    grainCount:              save.grainCount,
+    eggsCount:               save.eggsCount,
+    chickenLastProducedAt:   save.chickenLastProducedAt,
+    totalEggsCollected:      save.totalEggsCollected,
+    pigPenUnlocked:          save.pigPenUnlocked,
+    vegetableScraps:         save.vegetableScraps,
+    manureCount:             save.manureCount,
+    pigLastProducedAt:       save.pigLastProducedAt,
+    totalManureCollected:    save.totalManureCollected,
     beautyScore:         save.beautyScore,
     beautySlots:         save.beautySlots,
     totalLikesReceived:  save.totalLikesReceived,
@@ -724,6 +765,16 @@ export class FarmProgressStore {
       fertilizers:             payload.fertilizers ?? [],
       compostWasteCount:       payload.compostWasteCount ?? 0,
       compostLastCollectedAt:  payload.compostLastCollectedAt ?? 0,
+      chickenCoopUnlocked:     existing.chickenCoopUnlocked || (payload.chickenCoopUnlocked ?? false),
+      grainCount:              payload.grainCount ?? 0,
+      eggsCount:               payload.eggsCount ?? 0,
+      chickenLastProducedAt:   payload.chickenLastProducedAt ?? 0,
+      totalEggsCollected:      payload.totalEggsCollected ?? 0,
+      pigPenUnlocked:          existing.pigPenUnlocked || (payload.pigPenUnlocked ?? false),
+      vegetableScraps:         payload.vegetableScraps ?? 0,
+      manureCount:             payload.manureCount ?? 0,
+      pigLastProducedAt:       payload.pigLastProducedAt ?? 0,
+      totalManureCollected:    payload.totalManureCollected ?? 0,
       // Always recalculate on server — client value is advisory, server is authoritative
       beautyScore:         calculateBeautyScore(payload),
       beautySlots:         (payload.beautySlots ?? [0, 0, 0]).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
