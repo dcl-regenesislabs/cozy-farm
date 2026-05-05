@@ -3,6 +3,7 @@ import type { FarmStatePayload, PlotSaveState, CropCount, FertilizerCount, Quest
 import { calculateBeautyScore } from '../../game/beautyScore'
 import { WORKER_DAILY_WAGE, WORKER_DAY_MS } from '../../shared/worker'
 import { CROP_DATA, CropType } from '../../data/cropData'
+import { LEVEL_REWARDS } from '../../data/levelRewardData'
 import { QUEST_DEFINITIONS } from '../../data/questData'
 import { XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3, XP_PLANT, XP_TABLE, XP_WATER } from '../../shared/leveling'
 
@@ -21,6 +22,26 @@ const WORKER_OFFLINE_MAX_ACTIONS = 500_000
 function mergeStringArrays(existing: string[], incoming: string[]): string[] {
   const merged = new Set([...existing, ...incoming])
   return Array.from(merged)
+}
+
+function mergeIntArrays(existing: number[], incoming: number[]): number[] {
+  const merged = new Set([...existing, ...incoming])
+  return Array.from(merged)
+}
+
+const TIER1_CROP_TYPES = [CropType.Onion, CropType.Potato, CropType.Garlic] as number[]
+
+function deriveUnlockedCrops(savedCrops: number[], claimedRewards: number[]): number[] {
+  const unlocked = new Set<number>(TIER1_CROP_TYPES)
+  for (const n of savedCrops) unlocked.add(n)
+  for (const level of claimedRewards) {
+    const reward = LEVEL_REWARDS.find((r) => r.level === level && r.type === 'seeds' && r.cropType !== null)
+    if (reward?.cropType !== null && reward?.cropType !== undefined) {
+      const def = CROP_DATA.get(reward.cropType as CropType)
+      if (def && def.tier > 1) unlocked.add(reward.cropType)
+    }
+  }
+  return Array.from(unlocked)
 }
 
 type LikeLedgerEntry = {
@@ -50,6 +71,7 @@ export type FarmSaveV1 = {
   expansion1Unlocked:  boolean
   expansion2Unlocked:  boolean
   unlockedPlotGroups:  string[]
+  unlockedCrops:       number[]
   farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
@@ -118,6 +140,7 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     expansion1Unlocked: false,
     expansion2Unlocked: false,
     unlockedPlotGroups: [],
+    unlockedCrops:      [...TIER1_CROP_TYPES],
     farmerHired:        false,
     farmerSeeds: [],
     farmerInventory: [],
@@ -219,6 +242,10 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     expansion1Unlocked:  safeBool(maybe.expansion1Unlocked),
     expansion2Unlocked:  safeBool(maybe.expansion2Unlocked),
     unlockedPlotGroups:  safeArray<string>((maybe as any).unlockedPlotGroups),
+    unlockedCrops:       deriveUnlockedCrops(
+      safeArray<number>((maybe as any).unlockedCrops),
+      safeArray<number>(maybe.claimedRewards),
+    ),
     farmerHired:         safeBool(maybe.farmerHired),
     farmerSeeds:      safeArray<CropCount>(maybe.farmerSeeds),
     farmerInventory:  safeArray<CropCount>(maybe.farmerInventory),
@@ -298,6 +325,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     expansion1Unlocked:  save.expansion1Unlocked,
     expansion2Unlocked:  save.expansion2Unlocked,
     unlockedPlotGroups:  save.unlockedPlotGroups,
+    unlockedCrops:       save.unlockedCrops,
     farmerHired:         save.farmerHired,
     farmerSeeds:         save.farmerSeeds,
     farmerInventory:     save.farmerInventory,
@@ -768,6 +796,10 @@ export class FarmProgressStore {
       expansion1Unlocked:  existing.expansion1Unlocked || payload.expansion1Unlocked,
       expansion2Unlocked:  existing.expansion2Unlocked || payload.expansion2Unlocked,
       unlockedPlotGroups:  mergeStringArrays(existing.unlockedPlotGroups, payload.unlockedPlotGroups ?? []),
+      unlockedCrops:       deriveUnlockedCrops(
+        mergeIntArrays(existing.unlockedCrops, payload.unlockedCrops ?? []),
+        payload.claimedRewards,
+      ),
       farmerHired,
       farmerSeeds:         payload.farmerSeeds,
       farmerInventory:     payload.farmerInventory,

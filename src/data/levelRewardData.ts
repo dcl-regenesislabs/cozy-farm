@@ -1,6 +1,6 @@
 import { CropType } from './cropData'
 
-export type LevelRewardType = 'seeds' | 'coins'
+export type LevelRewardType = 'seeds' | 'coins' | 'unlock_crop'
 
 export interface LevelReward {
   level:    number

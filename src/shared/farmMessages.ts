@@ -75,6 +75,7 @@ const FarmStateSchema = Schemas.Map({
   expansion1Unlocked:  Schemas.Boolean,
   expansion2Unlocked:  Schemas.Boolean,
   unlockedPlotGroups:  Schemas.Array(Schemas.String),
+  unlockedCrops:       Schemas.Array(Schemas.Int),
 
   // Farmer / worker
   farmerHired:      Schemas.Boolean,
@@ -409,6 +410,7 @@ export type FarmStatePayload = {
   expansion1Unlocked:  boolean
   expansion2Unlocked:  boolean
   unlockedPlotGroups:  string[]
+  unlockedCrops:       number[]
   farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]

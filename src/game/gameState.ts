@@ -9,6 +9,7 @@ export const playerState = {
   coins: 0,
   seeds: new Map<CropType, number>(),
   harvested: new Map<CropType, number>(),
+  unlockedCrops: new Set<CropType>([CropType.Onion, CropType.Potato, CropType.Garlic]),
   activeMenu: 'none' as MenuType,
   activePlotEntity: null as Entity | null,
   cropsUnlocked: false,

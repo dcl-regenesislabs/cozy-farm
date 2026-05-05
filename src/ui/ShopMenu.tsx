@@ -2,6 +2,7 @@ import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
+import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON, PIG_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
@@ -54,14 +55,15 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
   </UiEntity>
 )
 
-type ShopCardProps = { key?: string | number; cropType: CropType; unlocked: boolean }
+type ShopCardProps = { key?: string | number; cropType: CropType; unlocked: boolean; unlockLevel?: number }
 
-const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
+const ShopCard = ({ cropType, unlocked, unlockLevel }: ShopCardProps) => {
   const def       = CROP_DATA.get(cropType)!
   const canAfford = playerState.coins >= def.seedCost
   const imgSrc    = CROP_SEED_IMAGES[cropType]
   const zoomKey   = `shop_${cropType}`
   const scale     = getZoomScale(zoomKey)
+  const lockLabel = unlockLevel ? `Unlock at Level ${unlockLevel}` : 'Locked'
 
   return (
     <UiEntity
@@ -96,7 +98,7 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
           onPress={() => { triggerCardZoom(zoomKey); buySeed(cropType, 1) }}
         />
       ) : (
-        <Label value="Locked" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+        <Label value={lockLabel} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       )}
     </UiEntity>
   )
@@ -561,16 +563,20 @@ export const ShopMenu = () => {
 
   const visibleCrops = ALL_CROP_TYPES.filter((ct) => {
     if (tutorialActive) return ct === CropType.Onion
-    const def = CROP_DATA.get(ct)!
-    return def.tier === 1 || playerState.cropsUnlocked
+    return playerState.unlockedCrops.has(ct)
   })
-  const lockedCrops = tutorialActive ? [] : ALL_CROP_TYPES.filter((ct) => {
-    const def = CROP_DATA.get(ct)!
-    return def.tier > 1 && !playerState.cropsUnlocked
-  })
+  const lockedCrops = tutorialActive ? [] : ALL_CROP_TYPES.filter((ct) => !playerState.unlockedCrops.has(ct))
+
+  const cropUnlockLevel = (ct: CropType): number | undefined => {
+    const r = LEVEL_REWARDS.find((r) => r.cropType === ct && (r.type === 'seeds' || r.type === 'unlock_crop'))
+    return r?.level
+  }
 
   const tab      = shopTab.value
-  const allSeeds = [...visibleCrops.map(ct => ({ ct, unlocked: true })), ...lockedCrops.map(ct => ({ ct, unlocked: false }))]
+  const allSeeds = [
+    ...visibleCrops.map((ct) => ({ ct, unlocked: true, unlockLevel: undefined as number | undefined })),
+    ...lockedCrops.map((ct) => ({ ct, unlocked: false, unlockLevel: cropUnlockLevel(ct) })),
+  ]
   const seedPage  = shopPage.seeds
   const seedLast  = Math.max(0, Math.ceil(allSeeds.length / SHOP_PAGE_SIZE) - 1)
   const seedSlice = allSeeds.slice(seedPage * SHOP_PAGE_SIZE, (seedPage + 1) * SHOP_PAGE_SIZE)
@@ -630,8 +636,8 @@ export const ShopMenu = () => {
       {tab === 'seeds' && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-            {seedSlice.map(({ ct, unlocked }) => (
-              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} />
+            {seedSlice.map(({ ct, unlocked, unlockLevel }) => (
+              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} unlockLevel={unlockLevel} />
             ))}
           </UiEntity>
           {seedLast > 0 && (
@@ -642,13 +648,13 @@ export const ShopMenu = () => {
               onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
             />
           )}
-          {!playerState.cropsUnlocked && !tutorialActive && (
+          {lockedCrops.length > 0 && !tutorialActive && (
             <UiEntity
               uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
               uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
             >
               <Label
-                value="Tier 2 & 3 seeds are locked — visit the For Sale Sign to unlock them"
+                value="Higher-tier seeds unlock as you level up — claim level rewards in the Stats panel"
                 fontSize={20}
                 color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
                 textAlign="middle-center"

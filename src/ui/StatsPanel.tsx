@@ -2,6 +2,7 @@ import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
+import { CROP_DATA } from '../data/cropData'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
@@ -17,9 +18,14 @@ function claimReward(level: number): void {
   if (reward.type === 'seeds' && reward.cropType !== null) {
     const current = playerState.seeds.get(reward.cropType) ?? 0
     playerState.seeds.set(reward.cropType, current + reward.amount)
+    // Unlock crop in shop when claiming tier 2+ seeds reward
+    const def = CROP_DATA.get(reward.cropType)
+    if (def && def.tier > 1) playerState.unlockedCrops.add(reward.cropType)
   } else if (reward.type === 'coins') {
     playerState.coins += reward.amount
     playerState.totalCoinsEarned += reward.amount
+  } else if (reward.type === 'unlock_crop' && reward.cropType !== null) {
+    playerState.unlockedCrops.add(reward.cropType)
   }
 }
 

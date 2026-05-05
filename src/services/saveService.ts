@@ -108,6 +108,7 @@ export function buildSavePayload(): FarmStatePayload {
     expansion1Unlocked:  playerState.expansion1Unlocked,
     expansion2Unlocked:  playerState.expansion2Unlocked,
     unlockedPlotGroups:  [...playerState.unlockedPlotGroups],
+    unlockedCrops:       [...playerState.unlockedCrops],
     farmerHired:        playerState.farmerHired,
     farmerSeeds:     mapToArray(playerState.farmerSeeds),
     farmerInventory: mapToArray(playerState.farmerInventory),
@@ -178,6 +179,11 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.cropsUnlocked      = payload.cropsUnlocked
   playerState.expansion1Unlocked = payload.expansion1Unlocked
   playerState.expansion2Unlocked = payload.expansion2Unlocked
+  playerState.unlockedCrops      = new Set<CropType>((payload.unlockedCrops ?? []).map((n) => n as CropType))
+  // Tier 1 always unlocked — guard against corrupt saves
+  playerState.unlockedCrops.add(CropType.Onion)
+  playerState.unlockedCrops.add(CropType.Potato)
+  playerState.unlockedCrops.add(CropType.Garlic)
 
   // Restore purchased plot groups — with migration from old expansion1/2 booleans
   const restoredGroups = new Set<string>(payload.unlockedPlotGroups ?? [])
