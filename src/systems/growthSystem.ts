@@ -8,6 +8,7 @@ import { updatePlotHoverText } from './interactionSetup'
 import { tutorialState } from '../game/tutorialState'
 import { isPlotRotten } from '../game/rotUtils'
 import { playerState } from '../game/gameState'
+import { showBadge } from '../game/badgeSystem'
 
 /** Onion grow time during the tutorial — 30 seconds so it doesn't feel like a wait */
 const TUTORIAL_ONION_GROW_MS = 30_000
@@ -122,6 +123,7 @@ function growthSystem(_dt: number) {
     if (progress >= 1.0) {
       const mutable = PlotState.getMutable(entity)
       mutable.isReady = true
+      showBadge('farm')
       // Check for immediate rot (edge case: crop grew and rotted in same frame)
       if (playerState.rotSystemUnlocked && isPlotRotten(plot.plantedAt, plot.cropType, plot.fertilizerType, effectiveGrowTimeMs, now)) {
         mutable.isRotten = true

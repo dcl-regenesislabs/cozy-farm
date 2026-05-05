@@ -4,6 +4,8 @@ import { getXpProgress } from '../systems/levelingSystem'
 import { COINS_IMAGE } from '../data/imagePaths'
 import { triggerBtnAnim } from './navAnimSystem'
 import { getWorkerDebtDays } from '../shared/worker'
+import { LEVEL_REWARDS } from '../data/levelRewardData'
+import { BadgeDot } from './BadgeDot'
 
 
 const DEBUG_SOCIAL_TOAST = false
@@ -121,6 +123,9 @@ export const TopHud = () => {
         >
           <Label value={`${playerState.level}`} fontSize={16} color={{ r: 0.04, g: 0.02, b: 0, a: 1 }} textAlign="middle-center" />
         </UiEntity>
+        {LEVEL_REWARDS.some(r => playerState.level >= r.level && !playerState.claimedRewards.includes(r.level)) && (
+          <BadgeDot top={-4} right={-4} size={16} />
+        )}
       </UiEntity>
 
       {/* ── Right content column ── */}

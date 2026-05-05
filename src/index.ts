@@ -33,6 +33,7 @@ import { initBeautySpotSystem } from './systems/beautySpotSystem'
 import { initAnimalSystem, catchUpAnimalProduction, unlockChickenCoop, unlockPigPen } from './systems/animalSystem'
 import { initAnimalBuildings } from './systems/interactionSetup'
 import { onLevelUp } from './systems/levelingSystem'
+import { recomputeStartupBadges } from './game/badgeSystem'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -106,6 +107,7 @@ export function main() {
     // Tutorial and NPC systems start inside onLoaded so they see the
     // restored state (tutorialComplete, tutorialStep, etc.) before firing.
     initSaveService(() => {
+      recomputeStartupBadges()
       initTutorialSystem()
 
       initProgressionEventsSystem()

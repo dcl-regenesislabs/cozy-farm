@@ -7,6 +7,7 @@ import { PanelShell, PaginationBar, C } from './PanelShell'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { LeaderboardContent } from './LeaderboardPanel'
+import { BadgeDot } from './BadgeDot'
 
 const tabState = { value: 'stats' as 'stats' | 'rewards' | 'ranking' }
 
@@ -179,22 +180,30 @@ const TAB_LABELS: Record<'stats' | 'rewards' | 'ranking', string> = {
   ranking: '✦ Leaderboard',
 }
 
-export const StatsPanel = () => (
+export const StatsPanel = () => {
+  const hasUnclaimedReward = LEVEL_REWARDS.some(
+    r => playerState.level >= r.level && !playerState.claimedRewards.includes(r.level)
+  )
+
+  return (
   <PanelShell title="Profile" onClose={() => { playerState.activeMenu = 'none' }}>
     <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 24 } }}>
       {(['stats', 'rewards', 'ranking'] as const).map((tab) => (
-        <Button
-          key={tab}
-          value={TAB_LABELS[tab]}
-          variant={tabState.value === tab ? 'primary' : 'secondary'}
-          fontSize={22}
-          uiTransform={{ width: 220, height: 65, margin: { right: 15 } }}
-          onMouseDown={() => { playSound('buttonclick'); tabState.value = tab }}
-        />
+        <UiEntity key={tab} uiTransform={{ margin: { right: 15 } }}>
+          <Button
+            value={TAB_LABELS[tab]}
+            variant={tabState.value === tab ? 'primary' : 'secondary'}
+            fontSize={22}
+            uiTransform={{ width: 220, height: 65 }}
+            onMouseDown={() => { playSound('buttonclick'); tabState.value = tab }}
+          />
+          {tab === 'rewards' && hasUnclaimedReward && <BadgeDot />}
+        </UiEntity>
       ))}
     </UiEntity>
     {tabState.value === 'stats'   && <StatsTab />}
     {tabState.value === 'rewards' && <RewardsTab />}
     {tabState.value === 'ranking' && <LeaderboardContent />}
   </PanelShell>
-)
+  )
+}

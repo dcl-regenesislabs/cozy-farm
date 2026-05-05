@@ -15,9 +15,14 @@ import { WORKER_DAILY_WAGE, WORKER_DEBUG_ENABLED, getWorkerDebtDays, getWorkerSt
 import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/saveService'
 import { GRAIN_BUY_PRICE, GRAIN_BULK_COUNT, GRAIN_BULK_PRICE } from '../data/animalData'
 import { buyGrain } from '../systems/animalSystem'
+import { BadgeDot } from './BadgeDot'
 
 const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'fertilizers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
+
+// Cleared to false each session; set true when player first visits the fertilizers tab
+// after the rot system unlocks, so the dot only shows until they've acknowledged it.
+let fertilizerTabSeen = false
 
 // 5 cards per row × 2 rows = 10 per page
 const SHOP_PAGE_SIZE = 10
@@ -605,13 +610,20 @@ export const ShopMenu = () => {
           uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'workers' }}
         />
-        <Button
-          value="Fertilizers"
-          variant={tab === 'fertilizers' ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 220, height: 68, margin: { right: 12 } }}
-          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'fertilizers' }}
-        />
+        <UiEntity uiTransform={{ margin: { right: 12 } }}>
+          <Button
+            value="Fertilizers"
+            variant={tab === 'fertilizers' ? 'primary' : 'secondary'}
+            fontSize={24}
+            uiTransform={{ width: 220, height: 68 }}
+            onMouseDown={() => {
+              playSound('buttonclick')
+              fertilizerTabSeen = true
+              shopTab.value = 'fertilizers'
+            }}
+          />
+          {playerState.rotSystemUnlocked && !fertilizerTabSeen && <BadgeDot />}
+        </UiEntity>
         {WORKER_DEBUG_ENABLED && (
           <Button
             value="Debug"
