@@ -88,49 +88,36 @@ const StatsTab = () => {
   )
 }
 
-// Tier sections — each becomes visible once the player is within 3 levels of its first reward
-const TIER_SECTIONS = [
-  { title: 'Tier 1  —  Starter',         subtitle: 'Always available',    visibleFrom: 1,  levels: [2, 3, 10, 18]  },
-  { title: 'Tier 2  —  Advanced Crops',  subtitle: 'Unlocks at Level 5',  visibleFrom: 2,  levels: [5, 7, 12]      },
-  { title: 'Tier 3  —  Prestige Crops',  subtitle: 'Unlocks at Level 15', visibleFrom: 12, levels: [15, 20, 25]    },
-]
+const REWARDS_PAGE_SIZE = 8
+const rewardsPage = { value: 0 }
 
-type RewardRowProps = { key?: string | number; level: number }
+type RewardCardProps = { key?: string | number; reward: (typeof LEVEL_REWARDS)[number] }
 
-const RewardRow = ({ level }: RewardRowProps) => {
-  const r        = LEVEL_REWARDS.find((x) => x.level === level)
-  if (!r) return null
-
+const RewardCard = ({ reward: r }: RewardCardProps) => {
   const unlocked  = playerState.level >= r.level
   const claimed   = playerState.claimedRewards.includes(r.level)
   const claimable = unlocked && !claimed
   const zoomKey   = `reward_${r.level}`
+  const scale     = getZoomScale(zoomKey)
 
   const cropDef    = r.cropType !== null ? CROP_DATA.get(r.cropType) : null
-  const isUnlocker = cropDef !== null && cropDef !== undefined && cropDef.tier > 1
+  const isUnlocker = cropDef != null && cropDef.tier > 1
 
-  const rowBg = claimed   ? { r: 0.07, g: 0.18, b: 0.07, a: 1 }
-              : claimable ? { r: 0.22, g: 0.16, b: 0.02, a: 1 }
-              :             { r: 0.08, g: 0.07, b: 0.05, a: 1 }
-
-  const badgeBg = claimable ? { r: 0.72, g: 0.52, b: 0.04, a: 1 }
-                : claimed   ? { r: 0.12, g: 0.36, b: 0.12, a: 1 }
-                :             { r: 0.18, g: 0.16, b: 0.12, a: 1 }
-
-  const badgeColor = (claimable || claimed)
-    ? { r: 0.05, g: 0.03, b: 0, a: 1 }
-    : C.textMute
+  const bg = claimed   ? { r: 0.07, g: 0.18, b: 0.07, a: 1 }
+           : claimable ? { r: 0.52, g: 0.37, b: 0.02, a: 1 }
+           :             C.rowBg
 
   return (
     <UiEntity
       uiTransform={{
-        flexDirection: 'row',
+        flexDirection: 'column',
         alignItems: 'center',
-        width: '100%',
-        padding: { top: 14, bottom: 14, left: 16, right: 20 },
-        margin: { bottom: 6 },
+        width: Math.round(220 * scale),
+        height: Math.round(190 * scale),
+        margin: { right: 15, bottom: 15 },
+        padding: { top: 20, bottom: 16, left: 14, right: 14 },
       }}
-      uiBackground={{ color: rowBg }}
+      uiBackground={{ color: bg }}
       onMouseDown={claimable ? () => {
         if (isZooming(zoomKey)) return
         playSound('buttonclick')
@@ -138,64 +125,66 @@ const RewardRow = ({ level }: RewardRowProps) => {
         setTimeout(() => claimReward(r.level), 290)
       } : undefined}
     >
-      {/* Level badge */}
-      <UiEntity
-        uiTransform={{ width: 84, height: 50, alignItems: 'center', justifyContent: 'center', flexShrink: 0, margin: { right: 18 } }}
-        uiBackground={{ color: badgeBg }}
-      >
-        <Label value={`Lv ${r.level}`} fontSize={22} color={badgeColor} textAlign="middle-center" />
-      </UiEntity>
-
-      {/* Main + sub labels */}
-      <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
-        <Label value={r.label} fontSize={24} color={unlocked ? C.textMain : C.textMute} />
-        {isUnlocker && (
-          <Label
-            value={claimed ? `${cropDef!.name} unlocked in shop ✓` : `Unlocks ${cropDef!.name} in shop`}
-            fontSize={18}
-            color={claimed ? C.green : claimable ? C.gold : C.textMute}
-            uiTransform={{ margin: { top: 4 } }}
-          />
-        )}
-      </UiEntity>
-
-      {/* Right-side state label */}
-      {claimed && (
-        <Label value="Claimed ✓" fontSize={20} color={C.green} uiTransform={{ flexShrink: 0 }} />
+      <Label
+        value={`Lv ${r.level}`}
+        fontSize={26}
+        color={claimable ? C.gold : claimed ? C.green : C.textMute}
+      />
+      <Label
+        value={r.label}
+        fontSize={22}
+        color={unlocked ? C.textMain : C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 10 } }}
+      />
+      {isUnlocker && (
+        <Label
+          value={`Unlocks ${cropDef!.name}`}
+          fontSize={17}
+          color={claimed ? C.green : claimable ? C.gold : C.textMute}
+          textAlign="middle-center"
+          uiTransform={{ margin: { top: 5 } }}
+        />
       )}
-      {claimable && (
-        <Label value="Tap to claim  →" fontSize={20} color={C.gold} uiTransform={{ flexShrink: 0 }} />
-      )}
-      {!unlocked && (
-        <Label value={`Reach Level ${r.level}`} fontSize={18} color={C.textMute} uiTransform={{ flexShrink: 0 }} />
-      )}
+      {claimed   && <Label value="Claimed ✓"    fontSize={20} color={C.green}    uiTransform={{ margin: { top: 8 } }} />}
+      {claimable && <Label value="Tap to claim!" fontSize={20} color={C.gold}     uiTransform={{ margin: { top: 8 } }} />}
+      {!unlocked && <Label value={`Level ${r.level}`} fontSize={20} color={C.textMute} uiTransform={{ margin: { top: 8 } }} />}
     </UiEntity>
   )
 }
 
-const TierDivider = ({ title, subtitle }: { title: string; subtitle: string }) => (
-  <UiEntity
-    uiTransform={{ flexDirection: 'row', alignItems: 'center', width: '100%', margin: { top: 24, bottom: 10 } }}
-  >
-    <UiEntity uiTransform={{ flex: 1, height: 2 }} uiBackground={{ color: { r: 0.28, g: 0.24, b: 0.14, a: 1 } }} />
-    <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', margin: { left: 18, right: 18 } }}>
-      <Label value={title} fontSize={22} color={C.gold} textAlign="middle-center" />
-      <Label value={subtitle} fontSize={17} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 3 } }} />
-    </UiEntity>
-    <UiEntity uiTransform={{ flex: 1, height: 2 }} uiBackground={{ color: { r: 0.28, g: 0.24, b: 0.14, a: 1 } }} />
-  </UiEntity>
-)
+const RewardsTab = () => {
+  const page     = rewardsPage.value
+  const lastPage = Math.max(0, Math.ceil(LEVEL_REWARDS.length / REWARDS_PAGE_SIZE) - 1)
+  const slice    = LEVEL_REWARDS.slice(page * REWARDS_PAGE_SIZE, (page + 1) * REWARDS_PAGE_SIZE)
 
-const RewardsTab = () => (
-  <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-    {TIER_SECTIONS.filter((tier) => playerState.level >= tier.visibleFrom).map((tier) => (
-      <UiEntity key={tier.title} uiTransform={{ flexDirection: 'column', width: '100%' }}>
-        <TierDivider title={tier.title} subtitle={tier.subtitle} />
-        {tier.levels.map((lv) => <RewardRow key={lv} level={lv} />)}
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+        {slice.map((r) => <RewardCard key={r.level} reward={r} />)}
       </UiEntity>
-    ))}
-  </UiEntity>
-)
+      {lastPage > 0 && (
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}>
+          <Button
+            value="< Prev"
+            variant="secondary"
+            fontSize={22}
+            uiTransform={{ width: 160, height: 60, margin: { right: 24 } }}
+            onMouseDown={() => { if (rewardsPage.value > 0) { playSound('pagination'); playSound('buttonclick'); rewardsPage.value-- } }}
+          />
+          <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
+          <Button
+            value="Next >"
+            variant="secondary"
+            fontSize={22}
+            uiTransform={{ width: 160, height: 60, margin: { left: 24 } }}
+            onMouseDown={() => { if (rewardsPage.value < lastPage) { playSound('pagination'); playSound('buttonclick'); rewardsPage.value++ } }}
+          />
+        </UiEntity>
+      )}
+    </UiEntity>
+  )
+}
 
 const TAB_LABELS: Record<'stats' | 'rewards' | 'ranking', string> = {
   stats:   'Stats',
