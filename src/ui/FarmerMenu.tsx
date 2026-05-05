@@ -4,7 +4,7 @@ import { ALL_CROP_TYPES, CROP_NAMES, CropType } from '../data/cropData'
 import { CROP_SEED_IMAGES, CROP_HARVEST_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
-import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { saveFarm } from '../services/saveService'
@@ -35,20 +35,18 @@ function collectAll() {
 type SeedGiveCardProps = { key?: string | number; cropType: CropType; playerCount: number; farmerCount: number }
 
 const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps) => {
-  const shakeKey = `farmer_${cropType}`
-  const offsetX  = getShakeOffset(shakeKey)
+  const zoomKey = `farmer_${cropType}`
+  const scale   = getZoomScale(zoomKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 260,
-        height: 290,
+        width: Math.round(260 * scale),
+        height: Math.round(290 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
@@ -77,14 +75,14 @@ const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps)
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58, margin: { right: 10 } }}
-          onMouseDown={() => { playSound('buttonclick'); triggerCardShake(shakeKey); giveSeeds(cropType, 1) }}
+          onMouseDown={() => { playSound('buttonclick'); triggerCardZoom(zoomKey); giveSeeds(cropType, 1) }}
         />
         <Button
           value="All"
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58 }}
-          onMouseDown={() => { playSound('buttonclick'); triggerCardShake(shakeKey); giveSeeds(cropType, playerCount) }}
+          onMouseDown={() => { playSound('buttonclick'); triggerCardZoom(zoomKey); giveSeeds(cropType, playerCount) }}
         />
       </UiEntity>
     </UiEntity>
@@ -167,16 +165,19 @@ export const FarmerMenu = () => {
             variant={playerState.coins >= WORKER_HIRE_COST ? 'primary' : 'secondary'}
             disabled={playerState.coins < WORKER_HIRE_COST}
             fontSize={28}
-            uiTransform={{ width: 400, height: 80 }}
+            uiTransform={{ width: Math.round(400 * getZoomScale('farmer_hire')), height: Math.round(80 * getZoomScale('farmer_hire')) }}
             onMouseDown={() => {
-              if (playerState.coins < WORKER_HIRE_COST) return
+              if (playerState.coins < WORKER_HIRE_COST || isZooming('farmer_hire')) return
               playSound('buttonclick')
-              playerState.coins -= WORKER_HIRE_COST
-              playerState.farmerHired = true
-              playerState.workerOutstandingWages = 0
-              playerState.workerUnpaidDays = 0
-              playerState.workerLastWageProcessedAt = Date.now()
-              saveFarm()
+              triggerCardZoom('farmer_hire')
+              setTimeout(() => {
+                playerState.coins -= WORKER_HIRE_COST
+                playerState.farmerHired = true
+                playerState.workerOutstandingWages = 0
+                playerState.workerUnpaidDays = 0
+                playerState.workerLastWageProcessedAt = Date.now()
+                saveFarm()
+              }, 290)
             }}
           />
         </UiEntity>

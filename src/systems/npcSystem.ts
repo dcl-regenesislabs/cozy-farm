@@ -22,8 +22,9 @@ import { NpcDefinition } from '../data/npcData'
 import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from '../game/questState'
-import { EXCLAMATION_ICON, QUESTION_ICON } from '../data/imagePaths'
+import { EXCLAMATION_ICON, QUESTION_ICON, QUESTION_DONE_ICON } from '../data/imagePaths'
 import { tutorialState, TutorialStep } from '../game/tutorialState'
+import { progressionEventState, progressionEventCallbacks } from '../game/progressionEventState'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
 
@@ -287,12 +288,22 @@ export function getActiveNpcPositions(): Vector3[] {
     })
 }
 
-/** Force the current active NPC to begin departing (walk off scene). */
-export function requestNpcDeparture() {
+/**
+ * Request the active NPC to begin departing.
+ * Pass force=true to bypass the active-quest hold (used by progression events
+ * and tutorial after quest is claimed).
+ */
+export function requestNpcDeparture(force = false) {
   const npc = activeNpcs[0]
-  if (npc && npc.state !== 'leavingToDoor' && npc.state !== 'leavingToSpawn') {
-    startDeparture(npc)
+  if (!npc || npc.state === 'leavingToDoor' || npc.state === 'leavingToSpawn') return
+
+  if (!force) {
+    const questDef = getQuestForNpc(npc.def.id)
+    const qp       = questDef ? getQuestProgress(questDef.id) : undefined
+    if (qp && qp.status === 'active') return
   }
+
+  startDeparture(npc)
 }
 
 /**
@@ -458,7 +469,13 @@ function onNpcClick(entity: Entity) {
     tutorialState.active &&
     MAYOR_CHITCHAT_STEPS.has(tutorialState.step)
 
-  if (mayorInChitchatMode) {
+  const mayorInProgressionEventMode =
+    npc.def.id === 'mayorchen' && progressionEventState.active
+
+  if (mayorInProgressionEventMode) {
+    progressionEventCallbacks.onMayorClicked()
+    return
+  } else if (mayorInChitchatMode) {
     npcDialogState.dialogLine = getRandomChitchat()
     npcDialogState.mode       = 'greeting'
   } else if (!questDef || !qp || qp.status === 'completed') {
@@ -614,20 +631,25 @@ function npcUpdateSystem(dt: number) {
     const questDef = getQuestForNpc(npc.def.id)
     const qp       = questDef ? getQuestProgress(questDef.id) : undefined
 
-    // Suppress the Mayor's quest icon during tutorial steps before he offers the quest
+    // Suppress the Mayor's quest icon during tutorial or progression events
     const hideDuringTutorial =
-      npc.def.id === 'mayorchen' &&
-      tutorialState.active &&
-      tutorialState.step !== 'talk_mayor' &&
-      tutorialState.step !== 'sell_quest'
+      npc.def.id === 'mayorchen' && (
+        progressionEventState.active ||
+        (tutorialState.active &&
+          tutorialState.step !== 'talk_mayor' &&
+          tutorialState.step !== 'sell_quest')
+      )
 
     let iconSrc: string | null = null
     if (!hideDuringTutorial) {
-      if (qp && (qp.status === 'available' || qp.status === 'claimable')) {
+      if (qp && qp.status === 'available') {
         iconSrc = EXCLAMATION_ICON
       } else if (qp && qp.status === 'active') {
         iconSrc = QUESTION_ICON
+      } else if (qp && qp.status === 'claimable') {
+        iconSrc = QUESTION_DONE_ICON
       }
+      // completed → no icon (null)
     }
 
     const t = Transform.getMutable(iconEntity)

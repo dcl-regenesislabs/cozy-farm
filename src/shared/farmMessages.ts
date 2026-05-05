@@ -71,9 +71,10 @@ const FarmStateSchema = Schemas.Map({
   level: Schemas.Int,
 
   // Unlocks
-  cropsUnlocked:      Schemas.Boolean,
-  expansion1Unlocked: Schemas.Boolean,
-  expansion2Unlocked: Schemas.Boolean,
+  cropsUnlocked:       Schemas.Boolean,
+  expansion1Unlocked:  Schemas.Boolean,
+  expansion2Unlocked:  Schemas.Boolean,
+  unlockedPlotGroups:  Schemas.Array(Schemas.String),
 
   // Farmer / worker
   farmerHired:      Schemas.Boolean,
@@ -98,6 +99,14 @@ const FarmStateSchema = Schemas.Map({
   tutorialStep:           Schemas.String,
   tutorialSeedsBought:    Schemas.Int,
   tutorialHarvestMore:    Schemas.Int,
+
+  // Progression events (Level 5 Mayor return, etc.)
+  rotSystemUnlocked:      Schemas.Boolean,
+  progressionEventStep:   Schemas.String,
+
+  // NPC scheduling
+  lastNpcVisitAt:         Schemas.Number,
+  npcScheduleIndex:       Schemas.Int,
 
   // Level rewards claimed
   claimedRewards: Schemas.Array(Schemas.Int),
@@ -129,6 +138,7 @@ const FarmStateSchema = Schemas.Map({
   manureCount:             Schemas.Int,
   pigLastProducedAt:       Schemas.Number,
   totalManureCollected:    Schemas.Int,
+  compostBinUnlocked:      Schemas.Boolean,
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
   // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
@@ -395,10 +405,11 @@ export type FarmStatePayload = {
   harvested: CropCount[]
   xp:       number
   level:    number
-  cropsUnlocked:      boolean
-  expansion1Unlocked: boolean
-  expansion2Unlocked: boolean
-  farmerHired:        boolean
+  cropsUnlocked:       boolean
+  expansion1Unlocked:  boolean
+  expansion2Unlocked:  boolean
+  unlockedPlotGroups:  string[]
+  farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   workerOutstandingWages: number
@@ -415,6 +426,10 @@ export type FarmStatePayload = {
   tutorialSeedsBought: number
   tutorialHarvestMore: number
   claimedRewards: number[]
+  rotSystemUnlocked:      boolean
+  progressionEventStep:   string
+  lastNpcVisitAt:         number
+  npcScheduleIndex:       number
   plotStates:     PlotSaveState[]
   questProgress:  QuestProgressSave[]
   musicSongId:    string
@@ -435,6 +450,7 @@ export type FarmStatePayload = {
   manureCount:             number
   pigLastProducedAt:       number
   totalManureCollected:    number
+  compostBinUnlocked:      boolean
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number

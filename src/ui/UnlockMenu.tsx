@@ -5,6 +5,7 @@ import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetu
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_ICON, SOIL_ICON } from '../data/imagePaths'
 
 const UNLOCK_COST    = 10000
@@ -15,6 +16,7 @@ const BTN_W_BUY      = 220
 const BTN_W_CANCEL   = 180
 const BTN_BOTTOM     = 24
 const BTN_RIGHT      = 24
+const ZOOM_DURATION  = 290
 const SHAKE_DURATION = 320
 
 const BUY_BTN_BG         = { r: 0.17, g: 0.52, b: 0.17, a: 1 }
@@ -22,6 +24,9 @@ const BUY_BTN_BG_DISABLED = { r: 0.22, g: 0.22, b: 0.22, a: 1 }
 
 export const UnlockMenu = () => {
   const canAfford = playerState.coins >= UNLOCK_COST
+  const buyScale  = getZoomScale('unlock_confirm')
+  const buyW      = Math.round(BTN_W_BUY * buyScale)
+  const buyH      = Math.round(BTN_H * buyScale)
 
   return (
     <UiEntity
@@ -119,20 +124,20 @@ export const UnlockMenu = () => {
         uiTransform={{
           positionType: 'absolute',
           position: {
-            right: BTN_RIGHT + BTN_W_CANCEL + 12 - getShakeOffset('unlock_confirm'),
-            bottom: BTN_BOTTOM,
+            right: BTN_RIGHT + BTN_W_CANCEL + 12,
+            bottom: BTN_BOTTOM + Math.round((BTN_H - buyH) / 2),
           },
-          width: BTN_W_BUY,
-          height: BTN_H,
+          width: buyW,
+          height: buyH,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
         }}
         uiBackground={{ color: canAfford ? BUY_BTN_BG : BUY_BTN_BG_DISABLED }}
         onMouseDown={() => {
-          if (!canAfford || isShaking('unlock_confirm')) return
+          if (!canAfford || isZooming('unlock_confirm')) return
           playSound('buttonclick')
-          triggerCardShake('unlock_confirm')
+          triggerCardZoom('unlock_confirm')
           setTimeout(() => {
             playerState.coins -= UNLOCK_COST
             playerState.cropsUnlocked = true
@@ -140,7 +145,7 @@ export const UnlockMenu = () => {
             unlockFarmerPlots()
             spawnFarmer()
             playerState.activeMenu = 'none'
-          }, SHAKE_DURATION)
+          }, ZOOM_DURATION)
         }}
       >
         <Label

@@ -336,7 +336,7 @@ function doFarmerAction() {
     const plantDef = CROP_DATA.get(plantCropType as CropType)!
     setSoilIconDisplay(targetPlot, {
       cropType: plantCropType, waterCount: 0, wateringsRequired: plantDef.wateringsRequired,
-      canWater: false, isReady: false, isPlanting: true, justHarvested: false,
+      canWater: false, isReady: false, isPlanting: true, justHarvested: false, fertilizerType: -1,
     })
     updatePlotHoverText(targetPlot)
   }

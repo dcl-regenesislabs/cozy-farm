@@ -3,6 +3,11 @@ import { QUEST_DEFINITIONS } from '../data/questData'
 import { questProgressMap } from '../game/questState'
 import { playerState } from '../game/gameState'
 import { tutorialState, TUTORIAL_MILESTONES, getTutorialMilestoneStatus } from '../game/tutorialState'
+import {
+  progressionEventState,
+  PROGRESSION_MILESTONES,
+  getProgressionMilestoneStatus,
+} from '../game/progressionEventState'
 import { PanelShell, C } from './PanelShell'
 import { NPC_ROSTER } from '../data/npcData'
 import { MAYOR_DEF } from '../data/npcData'
@@ -89,6 +94,77 @@ const TutorialQuestCard = () => {
   )
 }
 
+// ── Fertilizer tutorial progress card ────────────────────────────────────────
+const ProgressionEventQuestCard = () => {
+  const doneCount = PROGRESSION_MILESTONES.filter(
+    (m) => getProgressionMilestoneStatus(m) === 'done'
+  ).length
+
+  return (
+    <UiEntity
+      uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 15 } }}
+      uiBackground={{ color: { r: 0.06, g: 0.12, b: 0.10, a: 1 } }}
+    >
+      {/* Left accent — green */}
+      <UiEntity
+        uiTransform={{ width: 6, alignSelf: 'stretch', flexShrink: 0 }}
+        uiBackground={{ color: { r: 0.25, g: 0.75, b: 0.35, a: 1 } }}
+      />
+
+      {/* Mayor portrait */}
+      <UiEntity
+        uiTransform={{ width: 80, height: 80, margin: { top: 18, bottom: 18, left: 18 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: MAYOR_DEF.headImage, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+
+      {/* Content */}
+      <UiEntity
+        uiTransform={{
+          flex: 1, flexDirection: 'column',
+          padding: { top: 14, bottom: 14, left: 18, right: 15 },
+        }}
+      >
+        {/* Header row */}
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
+          <Label value="Mayor Chen" fontSize={16} color={{ r: 0.35, g: 0.85, b: 0.5, a: 1 }} />
+          <Label
+            value={`  ${doneCount} / ${PROGRESSION_MILESTONES.length}`}
+            fontSize={15}
+            color={C.textMute}
+          />
+        </UiEntity>
+        <Label
+          value="Fertilizer Tutorial"
+          fontSize={21}
+          color={C.textMain}
+          uiTransform={{ margin: { bottom: 12 } }}
+        />
+
+        {/* Checklist */}
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          {PROGRESSION_MILESTONES.map((m) => {
+            const status = getProgressionMilestoneStatus(m)
+            const icon   = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
+            const color  =
+              status === 'done'    ? C.green :
+              status === 'current' ? C.gold  :
+              C.textMute
+            return (
+              <UiEntity
+                key={m.label}
+                uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 5 } }}
+              >
+                <Label value={icon}    fontSize={15} color={color} uiTransform={{ width: 22 }} />
+                <Label value={m.label} fontSize={16} color={color} />
+              </UiEntity>
+            )
+          })}
+        </UiEntity>
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 export const QuestPanel = () => {
   const visible = QUEST_DEFINITIONS.filter((d) => {
@@ -101,7 +177,10 @@ export const QuestPanel = () => {
       {/* Tutorial progress card — always shown while tutorial is active */}
       {tutorialState.active && <TutorialQuestCard />}
 
-      {visible.length === 0 && !tutorialState.active ? (
+      {/* Fertilizer tutorial card — shown during Level 5 progression event */}
+      {progressionEventState.active && <ProgressionEventQuestCard />}
+
+      {visible.length === 0 && !tutorialState.active && !progressionEventState.active ? (
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Label value="No active quests" fontSize={27} color={C.textMute} textAlign="middle-center" />
           <Label

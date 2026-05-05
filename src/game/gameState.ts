@@ -3,7 +3,7 @@ import { CropType } from '../data/cropData'
 import { FertilizerType } from '../data/fertilizerData'
 import type { MailboxReward } from '../shared/farmMessages'
 
-export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'animals'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'animals' | 'plotGroupUnlock'
 
 export const playerState = {
   coins: 0,
@@ -65,7 +65,19 @@ export const playerState = {
   manureCount: 0,
   pigLastProducedAt: 0,
   totalManureCollected: 0,
+  compostBinUnlocked: false,
+  // Progression events (Level 5 Mayor return, etc.)
+  rotSystemUnlocked: false,
+  progressionEventStep: '',
+  // NPC scheduling
+  lastNpcVisitAt: 0,
+  npcScheduleIndex: 0,
   viewingFarmDisplayName: '',
   // Tracks how many plots this visitor has watered in the current visit session (max 5)
   visitorSessionWaterCount: 0,
+  // Runtime-only: compost bin uses 12s tutorial cycle during the Level 5 event
+  tutorialCompostCycle: false,
+  // Plot group unlock tracking
+  unlockedPlotGroups: [] as string[],      // group names purchased via coins
+  activePlotGroupName: '',                  // set before opening 'plotGroupUnlock' menu
 }

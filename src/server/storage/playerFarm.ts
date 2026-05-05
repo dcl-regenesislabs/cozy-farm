@@ -10,13 +10,18 @@ import { XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3, XP_PLANT, XP_TABL
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 3
+const SCHEMA_VERSION = 4
 const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
 const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
 const VISITOR_WATER_DAILY_LIMIT = 5
 const WORKER_OFFLINE_ACTION_MS = 8_000
 const WORKER_OFFLINE_MAX_ACTIONS = 500_000
+
+function mergeStringArrays(existing: string[], incoming: string[]): string[] {
+  const merged = new Set([...existing, ...incoming])
+  return Array.from(merged)
+}
 
 type LikeLedgerEntry = {
   visitorAddress: string
@@ -41,10 +46,11 @@ export type FarmSaveV1 = {
   harvested:     CropCount[]
   xp:            number
   level:         number
-  cropsUnlocked:      boolean
-  expansion1Unlocked: boolean
-  expansion2Unlocked: boolean
-  farmerHired:        boolean
+  cropsUnlocked:       boolean
+  expansion1Unlocked:  boolean
+  expansion2Unlocked:  boolean
+  unlockedPlotGroups:  string[]
+  farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
   workerOutstandingWages: number
@@ -82,6 +88,11 @@ export type FarmSaveV1 = {
   manureCount:             number
   pigLastProducedAt:       number
   totalManureCollected:    number
+  compostBinUnlocked:      boolean
+  rotSystemUnlocked:       boolean
+  progressionEventStep:    string
+  lastNpcVisitAt:          number
+  npcScheduleIndex:        number
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number
@@ -103,10 +114,11 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     harvested: [],
     xp: 0,
     level: 1,
-    cropsUnlocked: false,
+    cropsUnlocked:      false,
     expansion1Unlocked: false,
     expansion2Unlocked: false,
-    farmerHired: false,
+    unlockedPlotGroups: [],
+    farmerHired:        false,
     farmerSeeds: [],
     farmerInventory: [],
     workerOutstandingWages: 0,
@@ -143,6 +155,11 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     manureCount:             0,
     pigLastProducedAt:       0,
     totalManureCollected:    0,
+    compostBinUnlocked:      false,
+    rotSystemUnlocked:       false,
+    progressionEventStep:    '',
+    lastNpcVisitAt:          0,
+    npcScheduleIndex:        0,
     beautyScore:    0,
     beautySlots:    [0, 0, 0],
     totalLikesReceived: 0,
@@ -180,7 +197,7 @@ function normalizePlotSave(raw: Partial<PlotSaveState>): PlotSaveState {
 // ---------------------------------------------------------------------------
 function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
   const maybe = raw as Partial<FarmSaveV1> | null
-  if (!maybe || maybe.schemaVersion !== SCHEMA_VERSION) return emptyFarm(wallet)
+  if (!maybe || (maybe.schemaVersion ?? 0) < 3) return emptyFarm(wallet)
 
   const safeInt    = (v: unknown, fallback = 0): number =>
     typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : fallback
@@ -198,10 +215,11 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     harvested:     safeArray<CropCount>(maybe.harvested),
     xp:            safeInt(maybe.xp),
     level:         Math.max(1, safeInt(maybe.level, 1)),
-    cropsUnlocked:      safeBool(maybe.cropsUnlocked),
-    expansion1Unlocked: safeBool(maybe.expansion1Unlocked),
-    expansion2Unlocked: safeBool(maybe.expansion2Unlocked),
-    farmerHired:        safeBool(maybe.farmerHired),
+    cropsUnlocked:       safeBool(maybe.cropsUnlocked),
+    expansion1Unlocked:  safeBool(maybe.expansion1Unlocked),
+    expansion2Unlocked:  safeBool(maybe.expansion2Unlocked),
+    unlockedPlotGroups:  safeArray<string>((maybe as any).unlockedPlotGroups),
+    farmerHired:         safeBool(maybe.farmerHired),
     farmerSeeds:      safeArray<CropCount>(maybe.farmerSeeds),
     farmerInventory:  safeArray<CropCount>(maybe.farmerInventory),
     workerOutstandingWages: safeInt(maybe.workerOutstandingWages, 0),
@@ -238,6 +256,11 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     manureCount:             safeInt((maybe as any).manureCount, 0),
     pigLastProducedAt:       safeInt((maybe as any).pigLastProducedAt, 0),
     totalManureCollected:    safeInt((maybe as any).totalManureCollected, 0),
+    compostBinUnlocked:      safeBool((maybe as any).compostBinUnlocked, false),
+    rotSystemUnlocked:       safeBool((maybe as any).rotSystemUnlocked, false),
+    progressionEventStep:    safeStr((maybe as any).progressionEventStep, ''),
+    lastNpcVisitAt:          safeInt((maybe as any).lastNpcVisitAt, 0),
+    npcScheduleIndex:        safeInt((maybe as any).npcScheduleIndex, 0),
     beautyScore:         safeInt(maybe.beautyScore, 0),
     beautySlots:         safeArray<number>(maybe.beautySlots).slice(0, 3).concat([0, 0, 0]).slice(0, 3),
     totalLikesReceived:  safeInt(maybe.totalLikesReceived, 0),
@@ -274,6 +297,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     cropsUnlocked:       save.cropsUnlocked,
     expansion1Unlocked:  save.expansion1Unlocked,
     expansion2Unlocked:  save.expansion2Unlocked,
+    unlockedPlotGroups:  save.unlockedPlotGroups,
     farmerHired:         save.farmerHired,
     farmerSeeds:         save.farmerSeeds,
     farmerInventory:     save.farmerInventory,
@@ -310,6 +334,11 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     manureCount:             save.manureCount,
     pigLastProducedAt:       save.pigLastProducedAt,
     totalManureCollected:    save.totalManureCollected,
+    compostBinUnlocked:      save.compostBinUnlocked,
+    rotSystemUnlocked:       save.rotSystemUnlocked,
+    progressionEventStep:    save.progressionEventStep,
+    lastNpcVisitAt:          save.lastNpcVisitAt,
+    npcScheduleIndex:        save.npcScheduleIndex,
     beautyScore:         save.beautyScore,
     beautySlots:         save.beautySlots,
     totalLikesReceived:  save.totalLikesReceived,
@@ -738,6 +767,7 @@ export class FarmProgressStore {
       cropsUnlocked:       existing.cropsUnlocked || payload.cropsUnlocked,
       expansion1Unlocked:  existing.expansion1Unlocked || payload.expansion1Unlocked,
       expansion2Unlocked:  existing.expansion2Unlocked || payload.expansion2Unlocked,
+      unlockedPlotGroups:  mergeStringArrays(existing.unlockedPlotGroups, payload.unlockedPlotGroups ?? []),
       farmerHired,
       farmerSeeds:         payload.farmerSeeds,
       farmerInventory:     payload.farmerInventory,
@@ -775,6 +805,11 @@ export class FarmProgressStore {
       manureCount:             payload.manureCount ?? 0,
       pigLastProducedAt:       payload.pigLastProducedAt ?? 0,
       totalManureCollected:    payload.totalManureCollected ?? 0,
+      compostBinUnlocked:      payload.compostBinUnlocked ?? existing.compostBinUnlocked,
+      rotSystemUnlocked:       payload.rotSystemUnlocked ?? existing.rotSystemUnlocked,
+      progressionEventStep:    payload.progressionEventStep ?? '',
+      lastNpcVisitAt:          payload.lastNpcVisitAt ?? 0,
+      npcScheduleIndex:        payload.npcScheduleIndex ?? 0,
       // Always recalculate on server — client value is advisory, server is authoritative
       beautyScore:         calculateBeautyScore(payload),
       beautySlots:         (payload.beautySlots ?? [0, 0, 0]).slice(0, 3).concat([0, 0, 0]).slice(0, 3),

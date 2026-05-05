@@ -48,5 +48,13 @@ export const SHOPINGCART_ICON = 'assets/scene/Images/ShopingcartIcon.png'
 export const COINS_ICON       = 'assets/scene/Images/CoinsIcon.png'
 export const DIALOG_ICON      = 'assets/scene/Images/DialogIcon.png'
 export const BOX_CROPS_ICON   = 'assets/scene/Images/BoxcropsIcon.png'
-export const EXCLAMATION_ICON = 'assets/scene/Images/ExclamationIcon.png'
-export const QUESTION_ICON    = 'assets/scene/Images/QuestionIcon.png'
+export const EXCLAMATION_ICON    = 'assets/scene/Images/ExclamationIcon.png'
+export const QUESTION_ICON       = 'assets/scene/Images/QuestionIcon.png'
+export const QUESTION_DONE_ICON  = 'assets/scene/Images/QuestionDoneIcon.png'
+
+export const FERTILIZER_ICON_SRCS: Record<number, string> = {
+  0: 'assets/scene/Images/GrowthBoostFertilizerIcon.png',
+  1: 'assets/scene/Images/YieldBoostFertilizerIcon.png',
+  2: 'assets/scene/Images/WaterSaverFertilizerIcon.png',
+  3: 'assets/scene/Images/RotShieldFertilizerIcon.png',
+}

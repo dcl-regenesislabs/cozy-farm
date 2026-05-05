@@ -14,6 +14,8 @@ import {
 } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { CropType } from '../data/cropData'
+import { FertilizerType } from '../data/fertilizerData'
+import { ORGANIC_WASTE_ICON, FERTILIZER_ICON_SRCS } from '../data/imagePaths'
 
 // ─── Texture paths ────────────────────────────────────────────────────────────
 
@@ -113,6 +115,94 @@ export function spawnHarvestVfx(worldPos: Vector3, cropType: CropType, count: nu
 
     active.push({ entity: e, elapsed: 0, phase: 'rising' })
   }
+}
+
+/**
+ * Spawns a single floating organic waste sprite above `worldPos`.
+ * Same rise-then-shrink animation as normal harvest VFX.
+ */
+export function spawnOrganicWasteVfx(worldPos: Vector3) {
+  const e = engine.addEntity()
+
+  const startPos = Vector3.create(worldPos.x, worldPos.y + 0.6, worldPos.z)
+  const endPos   = Vector3.create(startPos.x, startPos.y + RISE_HEIGHT, startPos.z)
+
+  Transform.create(e, {
+    position: startPos,
+    scale: Vector3.create(SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE),
+  })
+  Billboard.create(e, { billboardMode: BillboardMode.BM_ALL })
+  MeshRenderer.setPlane(e)
+  Material.setPbrMaterial(e, {
+    texture:          Material.Texture.Common({ src: ORGANIC_WASTE_ICON }),
+    emissiveTexture:  Material.Texture.Common({ src: ORGANIC_WASTE_ICON }),
+    emissiveIntensity: 0.8,
+    emissiveColor:    Color4.White(),
+    alphaTest:        0.1,
+    transparencyMode: 2,
+  })
+  Tween.create(e, {
+    mode: Tween.Mode.Move({ start: startPos, end: endPos }),
+    duration: RISE_DURATION,
+    easingFunction: EasingFunction.EF_EASEOUTQUAD,
+  })
+  TweenSequence.create(e, {
+    sequence: [{
+      mode: Tween.Mode.Scale({
+        start: Vector3.create(SPRITE_SIZE, SPRITE_SIZE, SPRITE_SIZE),
+        end: Vector3.Zero(),
+      }),
+      duration: FADE_DURATION,
+      easingFunction: EasingFunction.EF_EASEINQUAD,
+    }],
+  })
+  active.push({ entity: e, elapsed: 0, phase: 'rising' })
+}
+
+/**
+ * Spawns a single large fertilizer icon that rises then shrinks away —
+ * "buff applied" feedback when the player fertilizes a growing crop.
+ */
+export function spawnFertilizerVfx(worldPos: Vector3, fertilizerType: FertilizerType) {
+  const texture = FERTILIZER_ICON_SRCS[fertilizerType]
+  if (!texture) return
+
+  const BUFF_SIZE      = 1.0
+  const BUFF_RISE      = 1400
+  const BUFF_FADE      = 600
+  const BUFF_HEIGHT    = 1.4
+
+  const startPos = Vector3.create(worldPos.x, worldPos.y + 0.8, worldPos.z)
+  const endPos   = Vector3.create(startPos.x, startPos.y + BUFF_HEIGHT, startPos.z)
+
+  const e = engine.addEntity()
+  Transform.create(e, { position: startPos, scale: Vector3.create(BUFF_SIZE, BUFF_SIZE, BUFF_SIZE) })
+  Billboard.create(e, { billboardMode: BillboardMode.BM_ALL })
+  MeshRenderer.setPlane(e)
+  Material.setPbrMaterial(e, {
+    texture:           Material.Texture.Common({ src: texture }),
+    emissiveTexture:   Material.Texture.Common({ src: texture }),
+    emissiveIntensity: 1.0,
+    emissiveColor:     Color4.White(),
+    alphaTest:         0.1,
+    transparencyMode:  2,
+  })
+  Tween.create(e, {
+    mode: Tween.Mode.Move({ start: startPos, end: endPos }),
+    duration: BUFF_RISE,
+    easingFunction: EasingFunction.EF_EASEOUTQUAD,
+  })
+  TweenSequence.create(e, {
+    sequence: [{
+      mode: Tween.Mode.Scale({
+        start: Vector3.create(BUFF_SIZE, BUFF_SIZE, BUFF_SIZE),
+        end: Vector3.Zero(),
+      }),
+      duration: BUFF_FADE,
+      easingFunction: EasingFunction.EF_EASEINQUAD,
+    }],
+  })
+  active.push({ entity: e, elapsed: 0, phase: 'rising' })
 }
 
 // ─── Cleanup system ───────────────────────────────────────────────────────────

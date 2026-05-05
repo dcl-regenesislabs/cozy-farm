@@ -1,10 +1,10 @@
 import { engine, Entity, GltfContainer, InputAction, pointerEventsSystem, Transform, Billboard, BillboardMode, MeshRenderer, MeshCollider, ColliderLayer, Material } from '@dcl/sdk/ecs'
 import { Vector3, Color4 } from '@dcl/sdk/math'
 import { PlotState } from '../components/farmComponents'
-import { handlePlotClick, getWateringStatus } from '../game/actions'
+import { handlePlotClick, getWateringStatus, removeCropModel, removeSoilIcons, removeSoilTimerText } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
-import { skipTutorial } from './tutorialSystem'
+import { skipTutorial, resetFarm } from './tutorialSystem'
 import { playSound } from './sfxSystem'
 import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
@@ -15,6 +15,7 @@ import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/soci
 import { playWateringVfx } from './wateringVfxSystem'
 import { setupCoopClickHandler, setupPenClickHandler, CHICKEN_MODEL, PIG_MODEL } from './animalSystem'
 import { CHICKEN_COOP_CENTRE, PIG_PEN_CENTRE } from '../data/animalData'
+import { PLOT_GROUP_DEFINITIONS, BUY_PLOT_GROUPS, LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -84,12 +85,12 @@ function enablePointerOnGltf(entity: Entity) {
 }
 
 const soilEntities: Entity[] = []
+const plotGroupSignEntities = new Map<string, Entity>()
 let forSaleSignEntity: Entity | null = null
-let forSaleSign2Entity: Entity | null = null
-let forSaleSign3Entity: Entity | null = null
 let computerEntity: Entity | null = null
 let truckEntity: Entity | null = null
 let compostBinEntity: Entity | null = null
+let compostBinOriginalScale: { x: number; y: number; z: number } | null = null
 
 export function setupEntities() {
   // ── Computer ──────────────────────────────────────────────────────────────
@@ -119,7 +120,7 @@ export function setupEntities() {
     )
   }
 
-  // ── For Sale Signs ────────────────────────────────────────────────────────
+  // ── Farmer unlock sign (big 10k sign) ────────────────────────────────────
   forSaleSignEntity = engine.getEntityOrNullByName('For Sale Sign')
   if (forSaleSignEntity) {
     pointerEventsSystem.onPointerDown(
@@ -131,33 +132,14 @@ export function setupEntities() {
     )
   }
 
-  forSaleSign2Entity = engine.getEntityOrNullByName('For Sale Sign_2')
-  if (forSaleSign2Entity) {
-    pointerEventsSystem.onPointerDown(
-      {
-        entity: forSaleSign2Entity,
-        opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
-      },
-      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'expansion1' }
-    )
-  }
-
-  forSaleSign3Entity = engine.getEntityOrNullByName('For Sale Sign_3')
-  if (forSaleSign3Entity) {
-    pointerEventsSystem.onPointerDown(
-      {
-        entity: forSaleSign3Entity,
-        opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock 3 Plots (500 coins)', maxDistance: 8 },
-      },
-      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'expansion2' }
-    )
-  }
+  // ── Plot group For Sale Signs (A–J) ───────────────────────────────────────
+  wireAllPlotGroupSigns()
 
   // ── Soil plots ────────────────────────────────────────────────────────────
-  // First one is named "Soil01.glb", rest are "Soil01.glb_2" through "Soil01.glb_36"
+  // First one is named "Soil01.glb", rest are "Soil01.glb_2" through "Soil01.glb_84"
   const firstSoil = engine.getEntityOrNullByName('Soil01.glb')
   if (firstSoil) soilEntities.push(firstSoil)
-  for (let i = 2; i <= 36; i++) {
+  for (let i = 2; i <= 84; i++) {
     const soil = engine.getEntityOrNullByName(`Soil01.glb_${i}`)
     if (soil) soilEntities.push(soil)
   }
@@ -195,7 +177,7 @@ export function setupEntities() {
     )
   }
 
-  // ── Bed (3 clicks = lose all coins) ─────────────────────────────────────
+  // ── Bed (3 clicks = dev full reset to tutorial start) ────────────────────
   let bedClickCount = 0
   const bed = engine.getEntityOrNullByName('Bed.glb')
   if (bed) {
@@ -207,7 +189,7 @@ export function setupEntities() {
         bedClickCount++
         if (bedClickCount >= 3) {
           bedClickCount = 0
-          playerState.coins = 0
+          resetFarm()
         }
       },
     )
@@ -243,14 +225,16 @@ export function setupEntities() {
   const compostBin = engine.getEntityOrNullByName('CompostBin')
   compostBinEntity = compostBin
   if (compostBin) {
+    const s = Transform.get(compostBin).scale
+    compostBinOriginalScale = { x: s.x, y: s.y, z: s.z }
     enablePointerOnGltf(compostBin)
     pointerEventsSystem.onPointerDown(
       { entity: compostBin, opts: { button: InputAction.IA_POINTER, hoverText: 'Compost Bin', maxDistance: 8 } },
-      () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'compost' }
+      () => { if (isVisiting()) return; if (!playerState.compostBinUnlocked) return; playSound('menu'); playerState.activeMenu = 'compost' }
     )
   }
 
-  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, sign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}, mailbox=${!!mailbox}, compostBin=${!!compostBin}`)
+  console.log(`CozyFarm: Discovered ${soilEntities.length} soil plots, computer=${!!computer}, truck=${!!truck}, farmerSign=${!!forSaleSignEntity}, boombox=${!!boombox}, bed=${!!bed}, mailbox=${!!mailbox}, compostBin=${!!compostBin}`)
 }
 
 export function removeForSaleSign() {
@@ -261,44 +245,24 @@ export function removeForSaleSign() {
   }
 }
 
+/** @deprecated Use hidePlotGroupSign('PlotGroup_Buy_A') instead */
 export function removeForSaleSign2() {
-  if (forSaleSign2Entity) {
-    pointerEventsSystem.removeOnPointerDown(forSaleSign2Entity)
-    engine.removeEntity(forSaleSign2Entity)
-    forSaleSign2Entity = null
-  }
+  hidePlotGroupSign('PlotGroup_Buy_A')
 }
 
+/** @deprecated Use hidePlotGroupSign('PlotGroup_Buy_B') instead */
 export function removeForSaleSign3() {
-  if (forSaleSign3Entity) {
-    pointerEventsSystem.removeOnPointerDown(forSaleSign3Entity)
-    engine.removeEntity(forSaleSign3Entity)
-    forSaleSign3Entity = null
-  }
+  hidePlotGroupSign('PlotGroup_Buy_B')
 }
 
-/** Expansion Pack 1: unlock player-only plots 6–8 (entity names Soil01.glb_7 through _9) */
+/** @deprecated Use unlockPlotGroupByName('PlotGroup_Buy_A') — kept for save migration */
 export function unlockExpansion1Plots() {
-  soilEntities.forEach((entity) => {
-    const plot = PlotState.get(entity)
-    if (plot.plotIndex >= 6 && plot.plotIndex <= 8) {
-      PlotState.getMutable(entity).isUnlocked = true
-      updatePlotHoverText(entity)
-      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
-    }
-  })
+  unlockPlotGroupByName('PlotGroup_Buy_A')
 }
 
-/** Expansion Pack 2: unlock player-only plots 9–11 (entity names Soil01.glb_10 through _12) */
+/** @deprecated Use unlockPlotGroupByName('PlotGroup_Buy_B') — kept for save migration */
 export function unlockExpansion2Plots() {
-  soilEntities.forEach((entity) => {
-    const plot = PlotState.get(entity)
-    if (plot.plotIndex >= 9 && plot.plotIndex <= 11) {
-      PlotState.getMutable(entity).isUnlocked = true
-      updatePlotHoverText(entity)
-      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
-    }
-  })
+  unlockPlotGroupByName('PlotGroup_Buy_B')
 }
 
 /** Farmer zone: unlock plots 12–35 (entity names Soil01.glb_13 through _36) */
@@ -311,6 +275,80 @@ export function unlockFarmerPlots() {
       GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
     }
   })
+}
+
+// ---------------------------------------------------------------------------
+// Plot-group sign wiring (ForSaleSign_A through ForSaleSign_J)
+// ---------------------------------------------------------------------------
+
+function wireAllPlotGroupSigns(): void {
+  for (const def of BUY_PLOT_GROUPS) {
+    if (!def.signName) continue
+    const signEntity = engine.getEntityOrNullByName(def.signName)
+    if (!signEntity) {
+      console.log(`CozyFarm: ForSaleSign '${def.signName}' not found in scene`)
+      continue
+    }
+    enablePointerOnGltf(signEntity)
+    let hoverText = `Unlock 3 Plots — ${def.coinCost} coins`
+    if (def.requiredLevel > 0) hoverText += ` (Level ${def.requiredLevel}+)`
+    pointerEventsSystem.onPointerDown(
+      { entity: signEntity, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
+      () => {
+        if (isVisiting()) return
+        playerState.activePlotGroupName = def.groupName
+        playSound('menu')
+        playerState.activeMenu = 'plotGroupUnlock'
+      }
+    )
+    plotGroupSignEntities.set(def.groupName, signEntity)
+    console.log(`CozyFarm: Wired sign ${def.signName} → ${def.groupName}`)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Group-based unlock (new system — uses Transform.parent to find child soils)
+// ---------------------------------------------------------------------------
+
+/** Unlock all soil plots parented to the named group entity. */
+export function unlockPlotGroupByName(groupName: string): void {
+  const groupEntity = engine.getEntityOrNullByName(groupName)
+  if (!groupEntity) {
+    console.log(`CozyFarm: Group '${groupName}' not found — skipping unlock`)
+    return
+  }
+  let count = 0
+  soilEntities.forEach((entity) => {
+    const t = Transform.getOrNull(entity)
+    if (!t || t.parent !== groupEntity) return
+    PlotState.getMutable(entity).isUnlocked = true
+    updatePlotHoverText(entity)
+    const plot = PlotState.get(entity)
+    if (plot.plotIndex >= 1) GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    count++
+  })
+  console.log(`CozyFarm: Unlocked group '${groupName}' — ${count} plots`)
+}
+
+/** Hide the ForSaleSign for a group (call after purchase or save-restore). */
+export function hidePlotGroupSign(groupName: string): void {
+  const signEntity = plotGroupSignEntities.get(groupName)
+  if (!signEntity) return
+  pointerEventsSystem.removeOnPointerDown(signEntity)
+  Transform.getMutable(signEntity).scale = Vector3.create(0, 0, 0)
+}
+
+/** Auto-unlock all level-gated groups where requiredLevel <= playerLevel. */
+export function checkLevelGroupUnlocks(playerLevel: number, unlockedGroups: string[]): string[] {
+  const newlyUnlocked: string[] = []
+  for (const def of LEVEL_PLOT_GROUPS) {
+    if (playerLevel >= def.requiredLevel && !unlockedGroups.includes(def.groupName)) {
+      unlockPlotGroupByName(def.groupName)
+      newlyUnlocked.push(def.groupName)
+      console.log(`CozyFarm: Auto-unlocked ${def.groupName} at level ${playerLevel}`)
+    }
+  }
+  return newlyUnlocked
 }
 
 /** Tutorial Phase 1: unlock plots 1-2 (total 3 available) */
@@ -461,6 +499,45 @@ export function getTruckEntity(): Entity | null {
 
 export function getCompostBinEntity(): Entity | null {
   return compostBinEntity
+}
+
+/** Dev reset: clear all crop models, re-lock all plots except #0. */
+export function resetSoilPlots(): void {
+  soilEntities.forEach((entity, index) => {
+    const plot = PlotState.getMutable(entity)
+    if (plot.cropType !== -1) removeCropModel(entity)
+    removeSoilIcons(entity)
+    removeSoilTimerText(entity)
+    plot.cropType      = -1
+    plot.growthStage   = 0
+    plot.plantedAt     = 0
+    plot.waterCount    = 0
+    plot.isUnlocked    = index === 0
+    plot.growthStarted = false
+    plot.isReady       = false
+    plot.justHarvested = false
+    plot.isPlanting    = false
+    plot.isWatering    = false
+    plot.isRotten      = false
+    plot.fertilizerType = -1
+    if (index >= 1) {
+      GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
+    } else {
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+  })
+}
+
+/** Show or hide the compost bin 3D model. Call after unlock state is known. */
+export function setCompostBinVisible(visible: boolean) {
+  if (!compostBinEntity) return
+  const t = Transform.getMutable(compostBinEntity)
+  if (visible) {
+    const s = compostBinOriginalScale ?? { x: 3, y: 3, z: 3 }
+    t.scale = Vector3.create(s.x, s.y, s.z)
+  } else {
+    t.scale = Vector3.Zero()
+  }
 }
 
 // ---------------------------------------------------------------------------

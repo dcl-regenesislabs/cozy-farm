@@ -1,11 +1,12 @@
 import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
-import { buySeed, buyDog, buyOrnament } from '../game/actions'
+import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
-import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON } from '../data/imagePaths'
+import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
-import { triggerCardShake, getShakeOffset } from './cardShakeSystem'
+import { progressionEventState } from '../game/progressionEventState'
+import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { BEAUTY_OBJECTS, RARITY_COLOR, RARITY_LABEL } from '../data/beautyObjectData'
 import { isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
@@ -14,7 +15,7 @@ import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/sav
 import { GRAIN_BUY_PRICE, GRAIN_BULK_COUNT, GRAIN_BULK_PRICE } from '../data/animalData'
 import { buyGrain } from '../systems/animalSystem'
 
-const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'debug' }
+const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'fertilizers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
 
 // 5 cards per row × 2 rows = 10 per page
@@ -59,20 +60,18 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
   const def       = CROP_DATA.get(cropType)!
   const canAfford = playerState.coins >= def.seedCost
   const imgSrc    = CROP_SEED_IMAGES[cropType]
-  const shakeKey  = `shop_${cropType}`
-  const offsetX   = getShakeOffset(shakeKey)
+  const zoomKey   = `shop_${cropType}`
+  const scale     = getZoomScale(zoomKey)
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 245,
+        width: Math.round(200 * scale),
+        height: Math.round(245 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: unlocked ? C.rowBg : { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
     >
@@ -94,7 +93,7 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
         <BuyButton
           cost={def.seedCost}
           canAfford={canAfford}
-          onPress={() => { triggerCardShake(shakeKey); buySeed(cropType, 1) }}
+          onPress={() => { triggerCardZoom(zoomKey); buySeed(cropType, 1) }}
         />
       ) : (
         <Label value="Locked" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
@@ -105,19 +104,17 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
 
 const DogCard = () => {
   const canAfford = playerState.coins >= 500
-  const offsetX   = getShakeOffset('shop_dog')
+  const scale     = getZoomScale('shop_dog')
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 245,
+        width: Math.round(200 * scale),
+        height: Math.round(245 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
@@ -129,7 +126,7 @@ const DogCard = () => {
       {playerState.dogOwned ? (
         <Label value="Owned" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
-        <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardShake('shop_dog'); buyDog() }} />
+        <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardZoom('shop_dog'); buyDog() }} />
       )}
     </UiEntity>
   )
@@ -138,19 +135,17 @@ const DogCard = () => {
 const ChickenCoopCard = () => {
   const unlocked = playerState.chickenCoopUnlocked
   const locked   = !unlocked && playerState.level < 8
-  const offsetX  = getShakeOffset('shop_chicken')
+  const scale    = getZoomScale('shop_chicken')
 
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 265,
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
@@ -234,8 +229,8 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
   const full      = !hasEmptySlot()
   const canAfford = playerState.coins >= def.price
   const canBuy    = !placed && !full && canAfford
-  const shakeKey  = `shop_ornament_${objectId}`
-  const offsetX   = getShakeOffset(shakeKey)
+  const zoomKey   = `shop_ornament_${objectId}`
+  const scale     = getZoomScale(zoomKey)
   const rarityCol = RARITY_COLOR[def.rarity]
 
   return (
@@ -243,12 +238,10 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: 200,
-        height: 265,
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
         margin: { right: 12, bottom: 12 },
         padding: { top: 12, bottom: 12, left: 10, right: 10 },
-        positionType: 'relative',
-        position: { left: offsetX },
       }}
       uiBackground={{ color: C.rowBg }}
     >
@@ -276,7 +269,7 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
         <BuyButton
           cost={def.price}
           canAfford={canAfford}
-          onPress={() => { triggerCardShake(shakeKey); buyOrnament(objectId) }}
+          onPress={() => { triggerCardZoom(zoomKey); buyOrnament(objectId) }}
         />
       )}
     </UiEntity>
@@ -448,6 +441,81 @@ const DebugPanel = () => (
   </UiEntity>
 )
 
+const FertilizersPanel = () => {
+  const owned      = playerState.compostBinUnlocked
+  const canAfford  = playerState.coins >= COMPOST_BIN_PRICE
+  // Compost bin is only purchasable once the Level 5 progression event has started
+  const binEnabled = owned || progressionEventState.active || playerState.rotSystemUnlocked
+  const zoomKey   = 'shop_compostbin'
+  const scale     = getZoomScale(zoomKey)
+
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+      <Label
+        value="Composting & Fertilizers"
+        fontSize={28}
+        color={C.header}
+        uiTransform={{ margin: { bottom: 16 } }}
+      />
+      <Label
+        value="Unlock the Compost Bin to turn rotten crops into powerful fertilizers."
+        fontSize={21}
+        color={C.textMute}
+        uiTransform={{ margin: { bottom: 20 } }}
+      />
+
+      {/* Compost Bin card */}
+      <UiEntity
+        uiTransform={{
+          flexDirection: 'column',
+          alignItems: 'center',
+          width: Math.round(220 * scale),
+          padding: { top: 14, bottom: 14, left: 12, right: 12 },
+        }}
+        uiBackground={{ color: C.rowBg }}
+      >
+        <UiEntity
+          uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+          uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+        <Label value="Compost Bin" fontSize={24} color={C.textMain} textAlign="middle-center" />
+        <Label
+          value="Turn rotten crops into fertilizers"
+          fontSize={17}
+          color={C.textMute}
+          textAlign="middle-center"
+          uiTransform={{ margin: { top: 4, bottom: 6 } }}
+        />
+        {owned ? (
+          <Label value="Owned ✓" fontSize={21} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
+        ) : binEnabled ? (
+          <BuyButton
+            cost={COMPOST_BIN_PRICE}
+            canAfford={canAfford}
+            onPress={() => { triggerCardZoom(zoomKey); buyCompostBin() }}
+          />
+        ) : (
+          <Label value="Unlocks at Level 5" fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
+        )}
+      </UiEntity>
+
+      {owned && (
+        <UiEntity
+          uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 16 } }}
+          uiBackground={{ color: { r: 0.07, g: 0.18, b: 0.07, a: 1 } }}
+        >
+          <Label
+            value="Compost Bin unlocked — visit it on your farm to start composting rotten crops."
+            fontSize={20}
+            color={C.green}
+            textAlign="middle-left"
+          />
+        </UiEntity>
+      )}
+    </UiEntity>
+  )
+}
+
 export const ShopMenu = () => {
   const tutorialActive = tutorialState.active
 
@@ -499,6 +567,13 @@ export const ShopMenu = () => {
           fontSize={24}
           uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'workers' }}
+        />
+        <Button
+          value="Fertilizers"
+          variant={tab === 'fertilizers' ? 'primary' : 'secondary'}
+          fontSize={24}
+          uiTransform={{ width: 220, height: 68, margin: { right: 12 } }}
+          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'fertilizers' }}
         />
         {WORKER_DEBUG_ENABLED && (
           <Button
@@ -579,6 +654,8 @@ export const ShopMenu = () => {
       )}
 
       {tab === 'workers' && <WorkerPanel />}
+
+      {tab === 'fertilizers' && <FertilizersPanel />}
 
       {WORKER_DEBUG_ENABLED && tab === 'debug' && <DebugPanel />}
 

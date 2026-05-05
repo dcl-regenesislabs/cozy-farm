@@ -7,6 +7,7 @@ import { registryCallbacks } from '../services/saveService'
 import { requestCollectMailbox, socialUiCallbacks } from '../services/socialService'
 import { PlayerEntry, PlayerRegistryResponse, type MailboxReward } from '../shared/farmMessages'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
 import { formatPlayerLabel } from '../utils/playerLabel'
 import { PanelShell, C } from './PanelShell'
 
@@ -150,7 +151,7 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
       />
 
       <UiEntity
-        uiTransform={{ width: 150, height: 46, alignItems: 'center', justifyContent: 'center' }}
+        uiTransform={{ width: Math.round(150 * getZoomScale(`mailbox_visit_${entry.address}`)), height: Math.round(46 * getZoomScale(`mailbox_visit_${entry.address}`)), alignItems: 'center', justifyContent: 'center' }}
         uiBackground={{
           color: isVisiting
             ? { r: 0.18, g: 0.40, b: 0.18, a: 1 }
@@ -158,6 +159,7 @@ const FarmerCard = ({ entry, isVisiting, isError }: CardProps) => (
         }}
         onMouseDown={!isVisiting ? () => {
           playSound('buttonclick')
+          triggerCardZoom(`mailbox_visit_${entry.address}`)
           state.visitingAddr      = entry.address
           state.errorAddr         = ''
           playerState.activeMenu  = 'none'
@@ -347,13 +349,14 @@ const MailboxTab = () => {
           uiTransform={{ width: 320 }}
         />
         <UiEntity
-          uiTransform={{ width: 190, height: 48, alignItems: 'center', justifyContent: 'center' }}
+          uiTransform={{ width: Math.round(190 * getZoomScale('mailbox_collect')), height: Math.round(48 * getZoomScale('mailbox_collect')), alignItems: 'center', justifyContent: 'center' }}
           uiBackground={{ color: canCollect ? { r: 0.20, g: 0.55, b: 0.20, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
           onMouseDown={canCollect ? () => {
             playSound('buttonclick')
+            triggerCardZoom('mailbox_collect')
             state.collecting  = true
             state.mailboxHint = ''
-            requestCollectMailbox()
+            setTimeout(requestCollectMailbox, 290)
           } : undefined}
         >
           <Label
