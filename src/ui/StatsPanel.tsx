@@ -3,7 +3,7 @@ import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { CROP_DATA } from '../data/cropData'
-import { PanelShell, C } from './PanelShell'
+import { PanelShell, PaginationBar, C } from './PanelShell'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { LeaderboardContent } from './LeaderboardPanel'
@@ -88,7 +88,7 @@ const StatsTab = () => {
   )
 }
 
-const REWARDS_PAGE_SIZE = 8
+const REWARDS_PAGE_SIZE = 10
 const rewardsPage = { value: 0 }
 
 type RewardCardProps = { key?: string | number; reward: (typeof LEVEL_REWARDS)[number] }
@@ -159,29 +159,16 @@ const RewardsTab = () => {
   const slice    = LEVEL_REWARDS.slice(page * REWARDS_PAGE_SIZE, (page + 1) * REWARDS_PAGE_SIZE)
 
   return (
-    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', flex: 1 }}>
+      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', flex: 1, alignContent: 'flex-start' }}>
         {slice.map((r) => <RewardCard key={r.level} reward={r} />)}
       </UiEntity>
-      {lastPage > 0 && (
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}>
-          <Button
-            value="< Prev"
-            variant="secondary"
-            fontSize={22}
-            uiTransform={{ width: 160, height: 60, margin: { right: 24 } }}
-            onMouseDown={() => { if (rewardsPage.value > 0) { playSound('pagination'); playSound('buttonclick'); rewardsPage.value-- } }}
-          />
-          <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
-          <Button
-            value="Next >"
-            variant="secondary"
-            fontSize={22}
-            uiTransform={{ width: 160, height: 60, margin: { left: 24 } }}
-            onMouseDown={() => { if (rewardsPage.value < lastPage) { playSound('pagination'); playSound('buttonclick'); rewardsPage.value++ } }}
-          />
-        </UiEntity>
-      )}
+      <PaginationBar
+        page={page}
+        lastPage={lastPage}
+        onPrev={() => { if (rewardsPage.value > 0) rewardsPage.value-- }}
+        onNext={() => { if (rewardsPage.value < lastPage) rewardsPage.value++ }}
+      />
     </UiEntity>
   )
 }

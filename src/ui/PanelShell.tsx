@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playSound } from '../systems/sfxSystem'
+import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 
 export const C = {
   panelBg:  { r: 0.09, g: 0.07, b: 0.04, a: 0.97 },
@@ -22,6 +23,93 @@ type Props = {
   title: string
   onClose?: () => void
   children?: ReactEcs.JSX.ReactNode
+}
+
+// ---------------------------------------------------------------------------
+// Shared pagination bar — fixed height so layout never shifts.
+// Always rendered; Prev/Next are visually disabled when at the boundary.
+// Both buttons use the card zoom animation for consistent tactile feedback.
+// ---------------------------------------------------------------------------
+type PaginationBarProps = {
+  page:     number
+  lastPage: number
+  onPrev:   () => void
+  onNext:   () => void
+}
+
+const PREV_KEY = 'pag_prev'
+const NEXT_KEY = 'pag_next'
+
+export const PaginationBar = ({ page, lastPage, onPrev, onNext }: PaginationBarProps) => {
+  const canPrev   = page > 0
+  const canNext   = page < lastPage
+  const prevScale = getZoomScale(PREV_KEY)
+  const nextScale = getZoomScale(NEXT_KEY)
+
+  const activeBg   = C.rowBg
+  const disabledBg = { r: 0.10, g: 0.09, b: 0.06, a: 1 }
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: '100%',
+        height: 76,
+        flexShrink: 0,
+        margin: { top: 8 },
+      }}
+    >
+      <UiEntity
+        uiTransform={{
+          width: Math.round(160 * prevScale),
+          height: Math.round(60 * prevScale),
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: { right: 24 },
+        }}
+        uiBackground={{ color: canPrev ? activeBg : disabledBg }}
+        onMouseDown={canPrev ? () => {
+          if (isZooming(PREV_KEY)) return
+          playSound('pagination')
+          playSound('buttonclick')
+          triggerCardZoom(PREV_KEY)
+          setTimeout(onPrev, 290)
+        } : undefined}
+      >
+        <Label value="< Prev" fontSize={22} color={canPrev ? C.textMain : C.textMute} textAlign="middle-center" />
+      </UiEntity>
+
+      <Label
+        value={`${page + 1} / ${lastPage + 1}`}
+        fontSize={24}
+        color={C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ width: 110 }}
+      />
+
+      <UiEntity
+        uiTransform={{
+          width: Math.round(160 * nextScale),
+          height: Math.round(60 * nextScale),
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: { left: 24 },
+        }}
+        uiBackground={{ color: canNext ? activeBg : disabledBg }}
+        onMouseDown={canNext ? () => {
+          if (isZooming(NEXT_KEY)) return
+          playSound('pagination')
+          playSound('buttonclick')
+          triggerCardZoom(NEXT_KEY)
+          setTimeout(onNext, 290)
+        } : undefined}
+      >
+        <Label value="Next >" fontSize={22} color={canNext ? C.textMain : C.textMute} textAlign="middle-center" />
+      </UiEntity>
+    </UiEntity>
+  )
 }
 
 export const PanelShell = ({ title, onClose, children }: Props) => (

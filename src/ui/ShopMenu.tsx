@@ -4,7 +4,7 @@ import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON, PIG_ICON } from '../data/imagePaths'
-import { PanelShell, C } from './PanelShell'
+import { PanelShell, PaginationBar, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { progressionEventState } from '../game/progressionEventState'
 import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
@@ -318,15 +318,6 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
   )
 }
 
-const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => (
-  <UiEntity
-    uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}
-  >
-    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onPrev() }} />
-    <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
-    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onNext() }} />
-  </UiEntity>
-)
 
 const WorkerPanel = () => {
   if (!playerState.cropsUnlocked) {
@@ -634,33 +625,31 @@ export const ShopMenu = () => {
 
       {/* Seeds tab */}
       {tab === 'seeds' && (
-        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', flex: 1 }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', flex: 1, alignContent: 'flex-start' }}>
             {seedSlice.map(({ ct, unlocked, unlockLevel }) => (
               <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} unlockLevel={unlockLevel} />
             ))}
+            {lockedCrops.length > 0 && !tutorialActive && (
+              <UiEntity
+                uiTransform={{ width: '100%', padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 4 } }}
+                uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
+              >
+                <Label
+                  value="Higher-tier seeds unlock as you level up — claim level rewards in the Stats panel"
+                  fontSize={20}
+                  color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
+                  textAlign="middle-center"
+                />
+              </UiEntity>
+            )}
           </UiEntity>
-          {seedLast > 0 && (
-            <PaginationBar
-              page={seedPage}
-              lastPage={seedLast}
-              onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
-              onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
-            />
-          )}
-          {lockedCrops.length > 0 && !tutorialActive && (
-            <UiEntity
-              uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
-              uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
-            >
-              <Label
-                value="Higher-tier seeds unlock as you level up — claim level rewards in the Stats panel"
-                fontSize={20}
-                color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
-                textAlign="middle-center"
-              />
-            </UiEntity>
-          )}
+          <PaginationBar
+            page={seedPage}
+            lastPage={seedLast}
+            onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
+            onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
+          />
         </UiEntity>
       )}
 
