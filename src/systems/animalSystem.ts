@@ -21,7 +21,9 @@ import {
   CHICKEN_WANDER_RADIUS, PIG_WANDER_RADIUS,
   CHICKEN_COOP_CENTRE, PIG_PEN_CENTRE,
   VEGGIE_SCRAP_CHANCE,
+  CHICKEN_COOP_MODEL, PIG_PEN_MODEL,
 } from '../data/animalData'
+import { removeChickenTeaser, removePigTeaser } from './interactionSetup'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -351,6 +353,7 @@ export function unlockChickenCoop(): void {
   if (playerState.chickenCoopUnlocked) return
   playerState.chickenCoopUnlocked   = true
   playerState.chickenLastProducedAt = Date.now()
+  removeChickenTeaser()
   spawnChickens()
   console.log('[AnimalSystem] Chicken Coop unlocked!')
 }
@@ -359,6 +362,7 @@ export function unlockPigPen(): void {
   if (playerState.pigPenUnlocked) return
   playerState.pigPenUnlocked    = true
   playerState.pigLastProducedAt = Date.now()
+  removePigTeaser()
   spawnPigs()
   console.log('[AnimalSystem] Pig Pen unlocked!')
 }
@@ -398,17 +402,34 @@ export function spawnPigs(): void {
 
 export function setupCoopClickHandler(coopEntity: Entity): void {
   pointerEventsSystem.onPointerDown(
-    { entity: coopEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Chicken Coop' } },
+    {
+      entity: coopEntity,
+      opts: {
+        button: InputAction.IA_POINTER,
+        hoverText: playerState.chickenCoopUnlocked ? 'Open Chicken Coop' : 'Chicken Coop (Level 8)',
+      },
+    },
     () => { playerState.activeMenu = 'animals' },
   )
 }
 
 export function setupPenClickHandler(penEntity: Entity): void {
   pointerEventsSystem.onPointerDown(
-    { entity: penEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Pig Pen' } },
+    {
+      entity: penEntity,
+      opts: {
+        button: InputAction.IA_POINTER,
+        hoverText: playerState.pigPenUnlocked ? 'Open Pig Pen' : 'Pig Pen (Level 12)',
+      },
+    },
     () => { playerState.activeMenu = 'animals' },
   )
 }
+
+// ---------------------------------------------------------------------------
+// Building model paths re-exported so interactionSetup can use them
+// ---------------------------------------------------------------------------
+export { CHICKEN_COOP_MODEL, PIG_PEN_MODEL }
 
 // ---------------------------------------------------------------------------
 // Init — call once from index.ts (client side)

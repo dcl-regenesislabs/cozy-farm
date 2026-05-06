@@ -2,7 +2,7 @@ import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
-import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON } from '../data/imagePaths'
+import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON, PIG_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { progressionEventState } from '../game/progressionEventState'
@@ -163,6 +163,46 @@ const ChickenCoopCard = () => {
       )}
       <Label
         value="Produces eggs every 6h"
+        fontSize={17}
+        color={C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 6 } }}
+      />
+    </UiEntity>
+  )
+}
+
+const PigPenCard = () => {
+  const unlocked = playerState.pigPenUnlocked
+  const locked   = !unlocked && playerState.level < 12
+  const scale    = getZoomScale('shop_pig')
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value="Pig Pen" fontSize={23} color={C.textMain} textAlign="middle-center" />
+      {unlocked ? (
+        <Label value="Active" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : locked ? (
+        <Label value="🔒 Level 12" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : (
+        <Label value="Unlocked!" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      )}
+      <Label
+        value="Produces manure every 8h"
         fontSize={17}
         color={C.textMute}
         textAlign="middle-center"
@@ -624,6 +664,7 @@ export const ShopMenu = () => {
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
             <DogCard />
             <ChickenCoopCard />
+            <PigPenCard />
           </UiEntity>
           {playerState.chickenCoopUnlocked && <GrainShopSection />}
         </UiEntity>

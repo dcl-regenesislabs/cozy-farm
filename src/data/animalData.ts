@@ -69,8 +69,13 @@ export const GRAIN_BULK_PRICE  = 65   // coins for 5 (saves 10 coins)
 export const VEGGIE_SCRAP_CHANCE = 0.30   // 30 %
 
 // ---------------------------------------------------------------------------
-// Model paths (re-exported for convenience)
+// Model paths
 // ---------------------------------------------------------------------------
+// Buildings (always visible in scene — gallinero / corral)
+export const CHICKEN_COOP_MODEL = 'assets/scene/Models/ChickenCoop/ChickenCoop.glb'
+export const PIG_PEN_MODEL      = 'assets/scene/Models/PigPen/PigPen.glb'
+
+// Animals (spawned as wanderers only after unlock)
 export const CHICKEN_MODEL = 'assets/scene/Models/Animals/Chicken01.glb'
 export const PIG_MODEL     = 'assets/scene/Models/Animals/Pig01.glb'
 
@@ -85,6 +90,10 @@ export const ANIMAL_PAUSE_MAX      = 8.0
 export const ANIMAL_SCALE_CHICKEN  = 0.55
 export const ANIMAL_SCALE_PIG      = 0.65
 
-// Hardcoded spawn centre — adjust if the Creator Hub places the buildings differently
-export const CHICKEN_COOP_CENTRE = { x: 22, y: 0, z: 50 }
-export const PIG_PEN_CENTRE      = { x: 30, y: 0, z: 50 }
+// Wander centre — matches Creator Hub building positions
+export const CHICKEN_COOP_CENTRE = { x: 8.27,  y: 0, z: 6.22 }
+export const PIG_PEN_CENTRE      = { x: 42,    y: 0, z: 7.25 }
+
+// Teaser positions — behind the house
+export const CHICKEN_TEASER_POS  = { x: 27.12, y: 0, z: 57.25 }
+export const PIG_TEASER_POS      = { x: 29.12, y: 0, z: 57.25 }

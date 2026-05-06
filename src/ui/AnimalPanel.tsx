@@ -208,16 +208,46 @@ const PigSection = () => {
 // Main panel
 // ---------------------------------------------------------------------------
 
+const LockedSection = ({ label, level }: { label: string; level: number }) => (
+  <UiEntity
+    uiTransform={{
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: '100%',
+      padding: { top: 30, bottom: 30, left: 20, right: 20 },
+      margin: { bottom: 16 },
+    }}
+    uiBackground={{ color: { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
+  >
+    <Label value={`🔒  ${label}`} fontSize={28} color={C.textMute} textAlign="middle-center" />
+    <Label
+      value={`Unlocks at Level ${level}`}
+      fontSize={21}
+      color={C.textMute}
+      textAlign="middle-center"
+      uiTransform={{ margin: { top: 10 } }}
+    />
+  </UiEntity>
+)
+
 export const AnimalPanel = () => {
-  const showPig = playerState.pigPenUnlocked
+  const chickenUnlocked = playerState.chickenCoopUnlocked
+  const showPig         = playerState.pigPenUnlocked
 
   return (
     <PanelShell title="Livestock" onClose={() => { playerState.activeMenu = 'none' }}>
       <UiEntity
         uiTransform={{ flexDirection: 'column', width: '100%', overflow: 'scroll' }}
       >
-        <GrainRow />
-        <ChickenSection />
+        {chickenUnlocked ? (
+          <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+            <GrainRow />
+            <ChickenSection />
+          </UiEntity>
+        ) : (
+          <LockedSection label="Chicken Coop" level={8} />
+        )}
         {showPig && <PigSection />}
         {!showPig && (
           <UiEntity
