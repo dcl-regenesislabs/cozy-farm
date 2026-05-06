@@ -127,6 +127,17 @@ const FarmStateSchema = Schemas.Map({
   fertilizers:             Schemas.Array(FertilizerCountSchema),
   compostWasteCount:       Schemas.Int,
   compostLastCollectedAt:  Schemas.Number,
+  // Animal system
+  chickenCoopUnlocked:     Schemas.Boolean,
+  grainCount:              Schemas.Int,
+  eggsCount:               Schemas.Int,
+  chickenLastProducedAt:   Schemas.Number,
+  totalEggsCollected:      Schemas.Int,
+  pigPenUnlocked:          Schemas.Boolean,
+  vegetableScraps:         Schemas.Int,
+  manureCount:             Schemas.Int,
+  pigLastProducedAt:       Schemas.Number,
+  totalManureCollected:    Schemas.Int,
   compostBinUnlocked:      Schemas.Boolean,
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
@@ -428,6 +439,17 @@ export type FarmStatePayload = {
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
   compostLastCollectedAt:  number
+  // Animal system
+  chickenCoopUnlocked:     boolean
+  grainCount:              number
+  eggsCount:               number
+  chickenLastProducedAt:   number
+  totalEggsCollected:      number
+  pigPenUnlocked:          boolean
+  vegetableScraps:         number
+  manureCount:             number
+  pigLastProducedAt:       number
+  totalManureCollected:    number
   compostBinUnlocked:      boolean
   beautyScore:    number
   beautySlots:    number[]

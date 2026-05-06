@@ -19,6 +19,7 @@ import { JukeboxMenu }  from './ui/JukeboxMenu'
 import { MailboxMenu }      from './ui/MailboxMenu'
 import { CompostBinMenu }  from './ui/CompostBinMenu'
 import { LeaderboardPanel } from './ui/LeaderboardPanel'
+import { AnimalPanel }     from './ui/AnimalPanel'
 import { VisitHud }         from './ui/VisitHud'
 
 export function setupUi() {
@@ -53,6 +54,7 @@ const MainUi = () => (
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
     {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
     {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
+    {playerState.activeMenu === 'animals'   && <AnimalPanel />}
 
     {/* Leaderboard panel */}
     {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}

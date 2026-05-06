@@ -3,7 +3,7 @@ import { CropType } from '../data/cropData'
 import { FertilizerType } from '../data/fertilizerData'
 import type { MailboxReward } from '../shared/farmMessages'
 
-export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'plotGroupUnlock'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'animals' | 'plotGroupUnlock'
 
 export const playerState = {
   coins: 0,
@@ -54,6 +54,17 @@ export const playerState = {
   fertilizers: new Map<FertilizerType, number>(),
   compostWasteCount: 0,
   compostLastCollectedAt: 0,
+  // Animal system
+  chickenCoopUnlocked: false,
+  grainCount: 0,
+  eggsCount: 0,
+  chickenLastProducedAt: 0,
+  totalEggsCollected: 0,
+  pigPenUnlocked: false,
+  vegetableScraps: 0,
+  manureCount: 0,
+  pigLastProducedAt: 0,
+  totalManureCollected: 0,
   compostBinUnlocked: false,
   // Progression events (Level 5 Mayor return, etc.)
   rotSystemUnlocked: false,

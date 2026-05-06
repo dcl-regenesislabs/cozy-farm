@@ -48,6 +48,7 @@ export enum EntityNames {
   NPCSpawn01_4 = "NPCSpawn01_4",
   NPCSpawn01_5 = "NPCSpawn01_5",
   PigPen_glb = "PigPen.glb",
+  Plane = "Plane",
   PlotGroup_Buy_A = "PlotGroup_Buy_A",
   PlotGroup_Buy_B = "PlotGroup_Buy_B",
   PlotGroup_Buy_C = "PlotGroup_Buy_C",

@@ -2,7 +2,7 @@ import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
-import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, ORGANIC_WASTE_ICON } from '../data/imagePaths'
+import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON, PIG_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { progressionEventState } from '../game/progressionEventState'
@@ -12,6 +12,8 @@ import { BEAUTY_OBJECTS, RARITY_COLOR, RARITY_LABEL } from '../data/beautyObject
 import { isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 import { WORKER_DAILY_WAGE, WORKER_DEBUG_ENABLED, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/saveService'
+import { GRAIN_BUY_PRICE, GRAIN_BULK_COUNT, GRAIN_BULK_PRICE } from '../data/animalData'
+import { buyGrain } from '../systems/animalSystem'
 
 const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'fertilizers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
@@ -126,6 +128,137 @@ const DogCard = () => {
       ) : (
         <BuyButton cost={500} canAfford={canAfford} onPress={() => { triggerCardZoom('shop_dog'); buyDog() }} />
       )}
+    </UiEntity>
+  )
+}
+
+const ChickenCoopCard = () => {
+  const unlocked = playerState.chickenCoopUnlocked
+  const locked   = !unlocked && playerState.level < 8
+  const scale    = getZoomScale('shop_chicken')
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value="Chicken Coop" fontSize={23} color={C.textMain} textAlign="middle-center" />
+      {unlocked ? (
+        <Label value="Active" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : locked ? (
+        <Label value={`🔒 Level 8`} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : (
+        <Label value="Unlocked!" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      )}
+      <Label
+        value="Produces eggs every 6h"
+        fontSize={17}
+        color={C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 6 } }}
+      />
+    </UiEntity>
+  )
+}
+
+const PigPenCard = () => {
+  const unlocked = playerState.pigPenUnlocked
+  const locked   = !unlocked && playerState.level < 12
+  const scale    = getZoomScale('shop_pig')
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value="Pig Pen" fontSize={23} color={C.textMain} textAlign="middle-center" />
+      {unlocked ? (
+        <Label value="Active" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : locked ? (
+        <Label value="🔒 Level 12" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : (
+        <Label value="Unlocked!" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      )}
+      <Label
+        value="Produces manure every 8h"
+        fontSize={17}
+        color={C.textMute}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: 6 } }}
+      />
+    </UiEntity>
+  )
+}
+
+const GrainShopSection = () => {
+  const canAfford1    = playerState.coins >= GRAIN_BUY_PRICE
+  const canAffordBulk = playerState.coins >= GRAIN_BULK_PRICE
+
+  const GrainBtn = ({ label, cost, amount, canAfford }: { label: string; cost: number; amount: number; canAfford: boolean }) => (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        width: 185,
+        height: 50,
+        margin: { right: 10 },
+      }}
+      uiBackground={{ color: canAfford ? { r: 0.2, g: 0.55, b: 0.2, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
+      onMouseDown={canAfford ? () => { playSound('buttonclick'); buyGrain(amount, cost) } : undefined}
+    >
+      <Label value={label} fontSize={20} color={canAfford ? C.textMain : C.textMute} textAlign="middle-center" />
+      <UiEntity
+        uiTransform={{ width: 26, height: 26, margin: { left: 6 } }}
+        uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+    </UiEntity>
+  )
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        width: '100%',
+        padding: { top: 14, bottom: 14, left: 16, right: 16 },
+        margin: { top: 8 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
+        <UiEntity
+          uiTransform={{ width: 36, height: 36, margin: { right: 10 } }}
+          uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+        <Label value="Grain" fontSize={26} color={C.header} uiTransform={{ flex: 1 }} />
+        <Label value={`In stock: ${playerState.grainCount}`} fontSize={22} color={C.orange} />
+      </UiEntity>
+      <UiEntity uiTransform={{ flexDirection: 'row' }}>
+        <GrainBtn label={`1 grain — ${GRAIN_BUY_PRICE}`} cost={GRAIN_BUY_PRICE} amount={1} canAfford={canAfford1} />
+        <GrainBtn label={`${GRAIN_BULK_COUNT} grain — ${GRAIN_BULK_PRICE}`} cost={GRAIN_BULK_PRICE} amount={GRAIN_BULK_COUNT} canAfford={canAffordBulk} />
+      </UiEntity>
     </UiEntity>
   )
 }
@@ -527,8 +660,13 @@ export const ShopMenu = () => {
 
       {/* Pets tab */}
       {tab === 'pets' && (
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-          <DogCard />
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+            <DogCard />
+            <ChickenCoopCard />
+            <PigPenCard />
+          </UiEntity>
+          {playerState.chickenCoopUnlocked && <GrainShopSection />}
         </UiEntity>
       )}
 
