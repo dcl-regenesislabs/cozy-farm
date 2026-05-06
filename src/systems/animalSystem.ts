@@ -177,17 +177,16 @@ export function catchUpAnimalProduction(): void {
         (now - playerState.chickenLastProducedAt) / chickenDef.cycleDurationMs,
       )
       if (cyclesMissed > 0) {
-        const grainsAvailable = playerState.grainCount
-        const cycles = Math.min(cyclesMissed, grainsAvailable)
-        for (let i = 0; i < cycles; i++) {
+        const maxCycles = Math.min(cyclesMissed, playerState.grainCount)
+        let actualCycles = 0
+        for (let i = 0; i < maxCycles; i++) {
+          if (playerState.eggsCount >= chickenDef.maxStockpile) break
           const yield_ = chickenDef.productYieldMin +
             Math.floor(Math.random() * (chickenDef.productYieldMax - chickenDef.productYieldMin + 1))
-          playerState.eggsCount = Math.min(
-            playerState.eggsCount + yield_,
-            chickenDef.maxStockpile,
-          )
+          playerState.eggsCount = Math.min(playerState.eggsCount + yield_, chickenDef.maxStockpile)
+          actualCycles++
         }
-        playerState.grainCount           -= cycles
+        playerState.grainCount           -= actualCycles
         playerState.chickenLastProducedAt = now - ((now - playerState.chickenLastProducedAt) % chickenDef.cycleDurationMs)
       }
     } else if (playerState.chickenLastProducedAt === 0) {
@@ -202,14 +201,11 @@ export function catchUpAnimalProduction(): void {
         (now - playerState.pigLastProducedAt) / pigDef.cycleDurationMs,
       )
       if (cyclesMissed > 0) {
-        // Pigs consume veggie scraps first, then grain
-        let feedAvailable = playerState.vegetableScraps + playerState.grainCount
-        const cycles = Math.min(cyclesMissed, feedAvailable)
-        for (let i = 0; i < cycles; i++) {
-          playerState.manureCount = Math.min(
-            playerState.manureCount + 1,
-            pigDef.maxStockpile,
-          )
+        const feedAvailable = playerState.vegetableScraps + playerState.grainCount
+        const maxCycles = Math.min(cyclesMissed, feedAvailable)
+        for (let i = 0; i < maxCycles; i++) {
+          if (playerState.manureCount >= pigDef.maxStockpile) break
+          playerState.manureCount++
           if (playerState.vegetableScraps > 0) {
             playerState.vegetableScraps -= 1
           } else {
