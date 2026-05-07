@@ -30,8 +30,7 @@ import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
 import { initCompostBinVfx } from './systems/compostBinVfx'
 import { initBeautySpotSystem } from './systems/beautySpotSystem'
-import { initAnimalSystem, catchUpAnimalProduction, unlockChickenCoop, unlockPigPen } from './systems/animalSystem'
-import { initAnimalBuildings } from './systems/interactionSetup'
+import { initAnimalBuildings } from './systems/animalSystem'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 
@@ -60,12 +59,6 @@ export function main() {
   initSocialService()
   initVisitorWaterFeedback()
   initAnimalBuildings()
-
-  // Level-gated animal unlocks
-  onLevelUp((newLevel: number) => {
-    if (newLevel === 8)  unlockChickenCoop()
-    if (newLevel === 12) unlockPigPen()
-  })
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

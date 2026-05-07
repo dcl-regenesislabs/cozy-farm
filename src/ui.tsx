@@ -19,7 +19,9 @@ import { JukeboxMenu }  from './ui/JukeboxMenu'
 import { MailboxMenu }      from './ui/MailboxMenu'
 import { CompostBinMenu }  from './ui/CompostBinMenu'
 import { LeaderboardPanel } from './ui/LeaderboardPanel'
-import { AnimalPanel }     from './ui/AnimalPanel'
+import { ChickenCoopPanel } from './ui/ChickenCoopPanel'
+import { PigPenPanel }      from './ui/PigPenPanel'
+import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
 
 export function setupUi() {
@@ -54,7 +56,9 @@ const MainUi = () => (
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
     {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
     {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
-    {playerState.activeMenu === 'animals'   && <AnimalPanel />}
+    {playerState.activeMenu === 'chickenCoop' && <ChickenCoopPanel />}
+    {playerState.activeMenu === 'pigPen'      && <PigPenPanel />}
+    {playerState.activeMenu === 'feedBowl'  && <FeedBowlMenu />}
 
     {/* Leaderboard panel */}
     {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}

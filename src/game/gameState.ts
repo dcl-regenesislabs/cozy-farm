@@ -1,9 +1,12 @@
 import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
 import { FertilizerType } from '../data/fertilizerData'
-import type { MailboxReward } from '../shared/farmMessages'
+import type { ChickenDataPayload, PigDataPayload, MailboxReward } from '../shared/farmMessages'
 
-export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'animals' | 'plotGroupUnlock'
+export type ChickenData = ChickenDataPayload
+export type PigData     = PigDataPayload
+
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'chickenCoop' | 'pigPen' | 'plotGroupUnlock' | 'feedBowl'
 
 export const playerState = {
   coins: 0,
@@ -56,17 +59,21 @@ export const playerState = {
   compostWasteCount: 0,
   compostLastCollectedAt: 0,
   // Animal system
-  chickenCoopUnlocked: false,
-  grainCount: 0,
-  eggsCount: 0,
-  chickenLastProducedAt: 0,
-  totalEggsCollected: 0,
-  pigPenUnlocked: false,
-  vegetableScraps: 0,
-  manureCount: 0,
-  pigLastProducedAt: 0,
-  totalManureCollected: 0,
+  chickenCoopOwned:   false,
+  chickens:           [] as ChickenData[],
+  chickenFoodInBowl:  0,
+  chickenCoopDirtyAt: 0,
+  pigPenOwned:        false,
+  pigs:               [] as PigData[],
+  pigFoodInBowl:      0,
+  pigPenDirtyAt:      0,
+  grainCount:         0,
+  veggieScrapCount:   0,
+  eggsCount:          0,
+  pigMeatCount:       0,
   compostBinUnlocked: false,
+  // UI routing for feed bowl panel
+  activeFeedBowl:     null as 'chicken' | 'pig' | null,
   // Progression events (Level 5 Mayor return, etc.)
   rotSystemUnlocked: false,
   progressionEventStep: '',

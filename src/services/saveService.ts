@@ -23,7 +23,7 @@ import { LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
-import { catchUpAnimalProduction, initAnimalSystem } from '../systems/animalSystem'
+import { initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
 
@@ -137,17 +137,19 @@ export function buildSavePayload(): FarmStatePayload {
     fertilizers:             fertMapToArray(playerState.fertilizers),
     compostWasteCount:       playerState.compostWasteCount,
     compostLastCollectedAt:  playerState.compostLastCollectedAt,
-    chickenCoopUnlocked:     playerState.chickenCoopUnlocked,
-    grainCount:              playerState.grainCount,
-    eggsCount:               playerState.eggsCount,
-    chickenLastProducedAt:   playerState.chickenLastProducedAt,
-    totalEggsCollected:      playerState.totalEggsCollected,
-    pigPenUnlocked:          playerState.pigPenUnlocked,
-    vegetableScraps:         playerState.vegetableScraps,
-    manureCount:             playerState.manureCount,
-    pigLastProducedAt:       playerState.pigLastProducedAt,
-    totalManureCollected:    playerState.totalManureCollected,
-    compostBinUnlocked:      playerState.compostBinUnlocked,
+    chickenCoopOwned:    playerState.chickenCoopOwned,
+    chickens:            playerState.chickens,
+    chickenFoodInBowl:   playerState.chickenFoodInBowl,
+    chickenCoopDirtyAt:  playerState.chickenCoopDirtyAt,
+    pigPenOwned:         playerState.pigPenOwned,
+    pigs:                playerState.pigs,
+    pigFoodInBowl:       playerState.pigFoodInBowl,
+    pigPenDirtyAt:       playerState.pigPenDirtyAt,
+    grainCount:          playerState.grainCount,
+    veggieScrapCount:    playerState.veggieScrapCount,
+    eggsCount:           playerState.eggsCount,
+    pigMeatCount:        playerState.pigMeatCount,
+    compostBinUnlocked:  playerState.compostBinUnlocked,
     rotSystemUnlocked:       playerState.rotSystemUnlocked,
     progressionEventStep:    playerState.progressionEventStep,
     lastNpcVisitAt:          playerState.lastNpcVisitAt,
@@ -280,16 +282,18 @@ function applyPayload(payload: FarmStatePayload): void {
   }
 
   // ── Animal system ─────────────────────────────────────────────────────────
-  playerState.chickenCoopUnlocked   = payload.chickenCoopUnlocked ?? false
-  playerState.grainCount            = payload.grainCount ?? 0
-  playerState.eggsCount             = payload.eggsCount ?? 0
-  playerState.chickenLastProducedAt = payload.chickenLastProducedAt ?? 0
-  playerState.totalEggsCollected    = payload.totalEggsCollected ?? 0
-  playerState.pigPenUnlocked        = payload.pigPenUnlocked ?? false
-  playerState.vegetableScraps       = payload.vegetableScraps ?? 0
-  playerState.manureCount           = payload.manureCount ?? 0
-  playerState.pigLastProducedAt     = payload.pigLastProducedAt ?? 0
-  playerState.totalManureCollected  = payload.totalManureCollected ?? 0
+  playerState.chickenCoopOwned   = payload.chickenCoopOwned ?? false
+  playerState.chickens           = payload.chickens ?? []
+  playerState.chickenFoodInBowl  = payload.chickenFoodInBowl ?? 0
+  playerState.chickenCoopDirtyAt = payload.chickenCoopDirtyAt ?? 0
+  playerState.pigPenOwned        = payload.pigPenOwned ?? false
+  playerState.pigs               = payload.pigs ?? []
+  playerState.pigFoodInBowl      = payload.pigFoodInBowl ?? 0
+  playerState.pigPenDirtyAt      = payload.pigPenDirtyAt ?? 0
+  playerState.grainCount         = payload.grainCount ?? 0
+  playerState.veggieScrapCount   = payload.veggieScrapCount ?? 0
+  playerState.eggsCount          = payload.eggsCount ?? 0
+  playerState.pigMeatCount       = payload.pigMeatCount ?? 0
 
   // ── Restore in-progress plots ─────────────────────────────────────────────
   restorePlotStates(payload.plotStates)
@@ -298,8 +302,7 @@ function applyPayload(payload: FarmStatePayload): void {
   playerState.beautySlots = payload.beautySlots ?? [0, 0, 0]
   applyBeautySlots(playerState.beautySlots)
 
-  // ── Animal offline catch-up then start the runtime system ─────────────────
-  catchUpAnimalProduction()
+  // ── Start animal runtime system (catch-up runs inside) ───────────────────
   initAnimalSystem()
 
   farmLoaded = true

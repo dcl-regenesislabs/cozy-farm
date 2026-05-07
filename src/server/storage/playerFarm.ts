@@ -1,5 +1,5 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, PlotSaveState, CropCount, FertilizerCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
+import type { FarmStatePayload, ChickenDataPayload, PigDataPayload, PlotSaveState, CropCount, FertilizerCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
 import { calculateBeautyScore } from '../../game/beautyScore'
 import { WORKER_DAILY_WAGE, WORKER_DAY_MS } from '../../shared/worker'
 import { CROP_DATA, CropType } from '../../data/cropData'
@@ -11,7 +11,7 @@ import { XP_HARVEST_TIER1, XP_HARVEST_TIER2, XP_HARVEST_TIER3, XP_PLANT, XP_TABL
 // Storage keys + schema version
 // ---------------------------------------------------------------------------
 const FARM_KEY = 'farm_v1'
-const SCHEMA_VERSION = 4
+const SCHEMA_VERSION = 5
 const LIKE_COOLDOWN_MS = 24 * 60 * 60 * 1000
 const LIKE_LEDGER_TTL_MS = 14 * LIKE_COOLDOWN_MS
 const WATER_LEDGER_TTL_MS = 7 * 24 * 60 * 60 * 1000
@@ -100,17 +100,19 @@ export type FarmSaveV1 = {
   compostWasteCount:       number
   compostLastCollectedAt:  number
   // Animal system
-  chickenCoopUnlocked:     boolean
-  grainCount:              number
-  eggsCount:               number
-  chickenLastProducedAt:   number
-  totalEggsCollected:      number
-  pigPenUnlocked:          boolean
-  vegetableScraps:         number
-  manureCount:             number
-  pigLastProducedAt:       number
-  totalManureCollected:    number
-  compostBinUnlocked:      boolean
+  chickenCoopOwned:    boolean
+  chickens:            ChickenDataPayload[]
+  chickenFoodInBowl:   number
+  chickenCoopDirtyAt:  number
+  pigPenOwned:         boolean
+  pigs:                PigDataPayload[]
+  pigFoodInBowl:       number
+  pigPenDirtyAt:       number
+  grainCount:          number
+  veggieScrapCount:    number
+  eggsCount:           number
+  pigMeatCount:        number
+  compostBinUnlocked:  boolean
   rotSystemUnlocked:       boolean
   progressionEventStep:    string
   lastNpcVisitAt:          number
@@ -168,17 +170,19 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     fertilizers:             [],
     compostWasteCount:       0,
     compostLastCollectedAt:  0,
-    chickenCoopUnlocked:     false,
-    grainCount:              0,
-    eggsCount:               0,
-    chickenLastProducedAt:   0,
-    totalEggsCollected:      0,
-    pigPenUnlocked:          false,
-    vegetableScraps:         0,
-    manureCount:             0,
-    pigLastProducedAt:       0,
-    totalManureCollected:    0,
-    compostBinUnlocked:      false,
+    chickenCoopOwned:    false,
+    chickens:            [],
+    chickenFoodInBowl:   0,
+    chickenCoopDirtyAt:  0,
+    pigPenOwned:         false,
+    pigs:                [],
+    pigFoodInBowl:       0,
+    pigPenDirtyAt:       0,
+    grainCount:          0,
+    veggieScrapCount:    0,
+    eggsCount:           0,
+    pigMeatCount:        0,
+    compostBinUnlocked:  false,
     rotSystemUnlocked:       false,
     progressionEventStep:    '',
     lastNpcVisitAt:          0,
@@ -220,7 +224,7 @@ function normalizePlotSave(raw: Partial<PlotSaveState>): PlotSaveState {
 // ---------------------------------------------------------------------------
 function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
   const maybe = raw as Partial<FarmSaveV1> | null
-  if (!maybe || (maybe.schemaVersion ?? 0) < 3) return emptyFarm(wallet)
+  if (!maybe || (maybe.schemaVersion ?? 0) < 5) return emptyFarm(wallet)
 
   const safeInt    = (v: unknown, fallback = 0): number =>
     typeof v === 'number' && Number.isFinite(v) ? Math.floor(v) : fallback
@@ -273,17 +277,19 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     fertilizers:             safeArray<FertilizerCount>((maybe as any).fertilizers),
     compostWasteCount:       safeInt((maybe as any).compostWasteCount, 0),
     compostLastCollectedAt:  safeInt((maybe as any).compostLastCollectedAt, 0),
-    chickenCoopUnlocked:     safeBool((maybe as any).chickenCoopUnlocked),
-    grainCount:              safeInt((maybe as any).grainCount, 0),
-    eggsCount:               safeInt((maybe as any).eggsCount, 0),
-    chickenLastProducedAt:   safeInt((maybe as any).chickenLastProducedAt, 0),
-    totalEggsCollected:      safeInt((maybe as any).totalEggsCollected, 0),
-    pigPenUnlocked:          safeBool((maybe as any).pigPenUnlocked),
-    vegetableScraps:         safeInt((maybe as any).vegetableScraps, 0),
-    manureCount:             safeInt((maybe as any).manureCount, 0),
-    pigLastProducedAt:       safeInt((maybe as any).pigLastProducedAt, 0),
-    totalManureCollected:    safeInt((maybe as any).totalManureCollected, 0),
-    compostBinUnlocked:      safeBool((maybe as any).compostBinUnlocked, false),
+    chickenCoopOwned:    safeBool((maybe as any).chickenCoopOwned),
+    chickens:            safeArray<ChickenDataPayload>((maybe as any).chickens),
+    chickenFoodInBowl:   safeInt((maybe as any).chickenFoodInBowl, 0),
+    chickenCoopDirtyAt:  safeInt((maybe as any).chickenCoopDirtyAt, 0),
+    pigPenOwned:         safeBool((maybe as any).pigPenOwned),
+    pigs:                safeArray<PigDataPayload>((maybe as any).pigs),
+    pigFoodInBowl:       safeInt((maybe as any).pigFoodInBowl, 0),
+    pigPenDirtyAt:       safeInt((maybe as any).pigPenDirtyAt, 0),
+    grainCount:          safeInt((maybe as any).grainCount, 0),
+    veggieScrapCount:    safeInt((maybe as any).veggieScrapCount, 0),
+    eggsCount:           safeInt((maybe as any).eggsCount, 0),
+    pigMeatCount:        safeInt((maybe as any).pigMeatCount, 0),
+    compostBinUnlocked:  safeBool((maybe as any).compostBinUnlocked, false),
     rotSystemUnlocked:       safeBool((maybe as any).rotSystemUnlocked, false),
     progressionEventStep:    safeStr((maybe as any).progressionEventStep, ''),
     lastNpcVisitAt:          safeInt((maybe as any).lastNpcVisitAt, 0),
@@ -352,17 +358,19 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     fertilizers:             save.fertilizers,
     compostWasteCount:       save.compostWasteCount,
     compostLastCollectedAt:  save.compostLastCollectedAt,
-    chickenCoopUnlocked:     save.chickenCoopUnlocked,
-    grainCount:              save.grainCount,
-    eggsCount:               save.eggsCount,
-    chickenLastProducedAt:   save.chickenLastProducedAt,
-    totalEggsCollected:      save.totalEggsCollected,
-    pigPenUnlocked:          save.pigPenUnlocked,
-    vegetableScraps:         save.vegetableScraps,
-    manureCount:             save.manureCount,
-    pigLastProducedAt:       save.pigLastProducedAt,
-    totalManureCollected:    save.totalManureCollected,
-    compostBinUnlocked:      save.compostBinUnlocked,
+    chickenCoopOwned:    save.chickenCoopOwned,
+    chickens:            save.chickens,
+    chickenFoodInBowl:   save.chickenFoodInBowl,
+    chickenCoopDirtyAt:  save.chickenCoopDirtyAt,
+    pigPenOwned:         save.pigPenOwned,
+    pigs:                save.pigs,
+    pigFoodInBowl:       save.pigFoodInBowl,
+    pigPenDirtyAt:       save.pigPenDirtyAt,
+    grainCount:          save.grainCount,
+    veggieScrapCount:    save.veggieScrapCount,
+    eggsCount:           save.eggsCount,
+    pigMeatCount:        save.pigMeatCount,
+    compostBinUnlocked:  save.compostBinUnlocked,
     rotSystemUnlocked:       save.rotSystemUnlocked,
     progressionEventStep:    save.progressionEventStep,
     lastNpcVisitAt:          save.lastNpcVisitAt,
@@ -827,16 +835,18 @@ export class FarmProgressStore {
       fertilizers:             payload.fertilizers ?? [],
       compostWasteCount:       payload.compostWasteCount ?? 0,
       compostLastCollectedAt:  payload.compostLastCollectedAt ?? 0,
-      chickenCoopUnlocked:     existing.chickenCoopUnlocked || (payload.chickenCoopUnlocked ?? false),
-      grainCount:              payload.grainCount ?? 0,
-      eggsCount:               payload.eggsCount ?? 0,
-      chickenLastProducedAt:   payload.chickenLastProducedAt ?? 0,
-      totalEggsCollected:      payload.totalEggsCollected ?? 0,
-      pigPenUnlocked:          existing.pigPenUnlocked || (payload.pigPenUnlocked ?? false),
-      vegetableScraps:         payload.vegetableScraps ?? 0,
-      manureCount:             payload.manureCount ?? 0,
-      pigLastProducedAt:       payload.pigLastProducedAt ?? 0,
-      totalManureCollected:    payload.totalManureCollected ?? 0,
+      chickenCoopOwned:    existing.chickenCoopOwned || (payload.chickenCoopOwned ?? false),
+      chickens:            payload.chickens ?? [],
+      chickenFoodInBowl:   payload.chickenFoodInBowl ?? 0,
+      chickenCoopDirtyAt:  payload.chickenCoopDirtyAt ?? 0,
+      pigPenOwned:         existing.pigPenOwned || (payload.pigPenOwned ?? false),
+      pigs:                payload.pigs ?? [],
+      pigFoodInBowl:       payload.pigFoodInBowl ?? 0,
+      pigPenDirtyAt:       payload.pigPenDirtyAt ?? 0,
+      grainCount:          payload.grainCount ?? 0,
+      veggieScrapCount:    payload.veggieScrapCount ?? 0,
+      eggsCount:           payload.eggsCount ?? 0,
+      pigMeatCount:        payload.pigMeatCount ?? 0,
       compostBinUnlocked:      payload.compostBinUnlocked ?? existing.compostBinUnlocked,
       rotSystemUnlocked:       payload.rotSystemUnlocked ?? existing.rotSystemUnlocked,
       progressionEventStep:    payload.progressionEventStep ?? '',
