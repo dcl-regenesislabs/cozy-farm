@@ -51,6 +51,8 @@ export const playerState = {
   mailboxSeenCount: 0,
   socialToastText: '',
   socialToastExpiresAt: 0,
+  levelUpToastText: '',
+  levelUpToastExpiresAt: 0,
   // Visit mode — null means viewing own farm, address means visiting someone else
   viewingFarm: null as string | null,
   // Fertilizer system

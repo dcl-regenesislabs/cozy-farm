@@ -18,12 +18,17 @@ export const TopHud = () => {
   const liveSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
   const showSocialToast = DEBUG_SOCIAL_TOAST || liveSocialToast
   const socialToastText = DEBUG_SOCIAL_TOAST ? DEBUG_SOCIAL_TOAST_TEXT : playerState.socialToastText
+  const showLevelUpToast = playerState.levelUpToastText !== '' && Date.now() < playerState.levelUpToastExpiresAt
   const showWorkerAlert = playerState.farmerHired && playerState.workerOutstandingWages > 0
   const workerDebtDays = getWorkerDebtDays(playerState.workerOutstandingWages)
 
   if (!DEBUG_SOCIAL_TOAST && !showSocialToast && playerState.socialToastText !== '') {
     playerState.socialToastText = ''
     playerState.socialToastExpiresAt = 0
+  }
+  if (!showLevelUpToast && playerState.levelUpToastText !== '') {
+    playerState.levelUpToastText = ''
+    playerState.levelUpToastExpiresAt = 0
   }
 
   return (
@@ -47,6 +52,28 @@ export const TopHud = () => {
           color={{ r: 0.88, g: 1, b: 0.84, a: 1 }}
           textAlign="middle-center"
           uiTransform={{ width: 390, height: 24 }}
+        />
+      </UiEntity>
+    )}
+    {showLevelUpToast && (
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 140, left: 720 },
+          width: 540,
+          height: 64,
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: { left: 14, right: 14 },
+        }}
+        uiBackground={{ color: { r: 0.18, g: 0.10, b: 0.02, a: 0.96 } }}
+      >
+        <Label
+          value={playerState.levelUpToastText}
+          fontSize={26}
+          color={{ r: 1, g: 0.86, b: 0.32, a: 1 }}
+          textAlign="middle-center"
+          uiTransform={{ width: 510, height: 32 }}
         />
       </UiEntity>
     )}

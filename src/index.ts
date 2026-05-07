@@ -106,6 +106,13 @@ export function main() {
       initProgressionEventsSystem()
       progressionEventCallbacks.onMayorClicked = getProgressionEventMayorClickHandler()
 
+      // Show a 4-second HUD banner whenever the player levels up.
+      onLevelUp((newLevel) => {
+        console.log('CozyFarm: Level up toast →', newLevel)
+        playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
+        playerState.levelUpToastExpiresAt = Date.now() + 4000
+      })
+
       // After the progression event (Level 5 Mayor return) is done, start NPC rotation
       setOnProgressionEventComplete(() => startRegularNpcRotation())
 
