@@ -6,13 +6,15 @@ import { navAnim, triggerBtnAnim, BTN_BASE } from './navAnimSystem'
 import { playSound } from '../systems/sfxSystem'
 import { tutorialNavState } from '../game/tutorialState'
 import { isVisiting } from '../services/visitService'
+import { badges, clearBadge, type BadgeKey } from '../game/badgeSystem'
+import { BadgeDot } from './BadgeDot'
 
-type NavBtn = { src: string; menu: MenuType }
+type NavBtn = { src: string; menu: MenuType; badge: BadgeKey | null }
 
 const BUTTONS: NavBtn[] = [
-  { src: BTN_INVENTORY, menu: 'inventory' },
-  { src: BTN_FARM,      menu: 'farm'      },
-  { src: BTN_QUESTS,    menu: 'quests'    },
+  { src: BTN_INVENTORY, menu: 'inventory', badge: null     },
+  { src: BTN_FARM,      menu: 'farm',      badge: 'farm'   },
+  { src: BTN_QUESTS,    menu: 'quests',    badge: 'quests' },
 ]
 
 type AnimKey = 'inventory' | 'farm' | 'quests' | 'stats'
@@ -48,17 +50,21 @@ export const BottomNav = () => (
             triggerBtnAnim(btn.menu as AnimKey)
             if (playerState.activeMenu !== btn.menu) playSound('menu')
             else playSound('buttonclick')
+            if (btn.badge) clearBadge(btn.badge)
             playerState.activeMenu = playerState.activeMenu === btn.menu ? 'none' : btn.menu
           }}
         >
           {/* Icon — size driven by pop animation / tutorial bounce */}
-          <UiEntity
-            uiTransform={{ width: size, height: size }}
-            uiBackground={{
-              texture: { src: btn.src, wrapMode: 'clamp' },
-              textureMode: 'stretch',
-            }}
-          />
+          <UiEntity uiTransform={{ width: size, height: size }}>
+            <UiEntity
+              uiTransform={{ width: size, height: size }}
+              uiBackground={{
+                texture: { src: btn.src, wrapMode: 'clamp' },
+                textureMode: 'stretch',
+              }}
+            />
+            {btn.badge && badges.has(btn.badge) && <BadgeDot />}
+          </UiEntity>
           {/* Active indicator: golden bar below the icon */}
           <UiEntity
             uiTransform={{ width: BTN_BASE, height: 5, margin: { top: 6 } }}

@@ -2,8 +2,9 @@ import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
+import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { CROP_SEED_IMAGES, COINS_IMAGE, DOG01_ICON, CHICKEN_ICON, GRAIN_ICON, ORGANIC_WASTE_ICON, PIG_ICON } from '../data/imagePaths'
-import { PanelShell, C } from './PanelShell'
+import { PanelShell, PaginationBar, C } from './PanelShell'
 import { tutorialState } from '../game/tutorialState'
 import { progressionEventState } from '../game/progressionEventState'
 import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
@@ -12,11 +13,16 @@ import { BEAUTY_OBJECTS, RARITY_COLOR, RARITY_LABEL } from '../data/beautyObject
 import { isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 import { WORKER_DAILY_WAGE, WORKER_DEBUG_ENABLED, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { requestDebugWorkerAction, requestPayWorkerWages } from '../services/saveService'
-import { GRAIN_BUY_PRICE, GRAIN_BULK_COUNT, GRAIN_BULK_PRICE } from '../data/animalData'
-import { buyGrain } from '../systems/animalSystem'
+import { GRAIN_BUY_PRICE, GRAIN_BULK_COUNT, GRAIN_BULK_PRICE, ANIMAL_BUY_PRICE, MAX_ANIMALS_PER_BUILDING, CHICKEN_COOP_UNLOCK_LEVEL, PIG_PEN_UNLOCK_LEVEL, BUILDING_BUY_PRICE } from '../data/animalData'
+import { buyGrain, buyAnimal, purchaseBuilding } from '../systems/animalSystem'
+import { BadgeDot } from './BadgeDot'
 
 const shopTab  = { value: 'seeds' as 'seeds' | 'pets' | 'ornaments' | 'workers' | 'fertilizers' | 'debug' }
 const shopPage = { seeds: 0, pets: 0 }
+
+// Cleared to false each session; set true when player first visits the fertilizers tab
+// after the rot system unlocks, so the dot only shows until they've acknowledged it.
+let fertilizerTabSeen = false
 
 // 5 cards per row × 2 rows = 10 per page
 const SHOP_PAGE_SIZE = 10
@@ -54,14 +60,15 @@ const BuyButton = ({ cost, canAfford, onPress }: BuyButtonProps) => (
   </UiEntity>
 )
 
-type ShopCardProps = { key?: string | number; cropType: CropType; unlocked: boolean }
+type ShopCardProps = { key?: string | number; cropType: CropType; unlocked: boolean; unlockLevel?: number }
 
-const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
+const ShopCard = ({ cropType, unlocked, unlockLevel }: ShopCardProps) => {
   const def       = CROP_DATA.get(cropType)!
   const canAfford = playerState.coins >= def.seedCost
   const imgSrc    = CROP_SEED_IMAGES[cropType]
   const zoomKey   = `shop_${cropType}`
   const scale     = getZoomScale(zoomKey)
+  const lockLabel = unlockLevel ? `Unlock at Level ${unlockLevel}` : 'Locked'
 
   return (
     <UiEntity
@@ -96,7 +103,7 @@ const ShopCard = ({ cropType, unlocked }: ShopCardProps) => {
           onPress={() => { triggerCardZoom(zoomKey); buySeed(cropType, 1) }}
         />
       ) : (
-        <Label value="Locked" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+        <Label value={lockLabel} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       )}
     </UiEntity>
   )
@@ -133,9 +140,13 @@ const DogCard = () => {
 }
 
 const ChickenCoopCard = () => {
-  const unlocked = playerState.chickenCoopUnlocked
-  const locked   = !unlocked && playerState.level < 8
-  const scale    = getZoomScale('shop_chicken')
+  const owned   = playerState.chickenCoopOwned
+  const locked  = !owned && playerState.level < CHICKEN_COOP_UNLOCK_LEVEL
+  const levelMet = playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL
+  const canAffordBuilding = playerState.coins >= BUILDING_BUY_PRICE
+  const canAffordAnimal   = playerState.coins >= ANIMAL_BUY_PRICE
+  const atMax   = playerState.chickens.length >= MAX_ANIMALS_PER_BUILDING
+  const scale   = getZoomScale('shop_chicken')
 
   return (
     <UiEntity
@@ -154,28 +165,27 @@ const ChickenCoopCard = () => {
         uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
       <Label value="Chicken Coop" fontSize={23} color={C.textMain} textAlign="middle-center" />
-      {unlocked ? (
-        <Label value="Active" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
-      ) : locked ? (
-        <Label value={`🔒 Level 8`} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      {locked ? (
+        <Label value={`Locked — Level ${CHICKEN_COOP_UNLOCK_LEVEL}`} fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : !owned ? (
+        <BuyButton cost={BUILDING_BUY_PRICE} canAfford={canAffordBuilding} onPress={() => { triggerCardZoom('shop_chicken'); purchaseBuilding('chicken') }} />
+      ) : atMax ? (
+        <Label value={`Full (${MAX_ANIMALS_PER_BUILDING}/${MAX_ANIMALS_PER_BUILDING})`} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
-        <Label value="Unlocked!" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+        <BuyButton cost={ANIMAL_BUY_PRICE} canAfford={canAffordAnimal} onPress={() => { triggerCardZoom('shop_chicken'); buyAnimal('chicken') }} />
       )}
-      <Label
-        value="Produces eggs every 6h"
-        fontSize={17}
-        color={C.textMute}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 6 } }}
-      />
     </UiEntity>
   )
 }
 
 const PigPenCard = () => {
-  const unlocked = playerState.pigPenUnlocked
-  const locked   = !unlocked && playerState.level < 12
-  const scale    = getZoomScale('shop_pig')
+  const owned   = playerState.pigPenOwned
+  const locked  = !owned && playerState.level < PIG_PEN_UNLOCK_LEVEL
+  const levelMet = playerState.level >= PIG_PEN_UNLOCK_LEVEL
+  const canAffordBuilding = playerState.coins >= BUILDING_BUY_PRICE
+  const canAffordAnimal   = playerState.coins >= ANIMAL_BUY_PRICE
+  const atMax   = playerState.pigs.length >= MAX_ANIMALS_PER_BUILDING
+  const scale   = getZoomScale('shop_pig')
 
   return (
     <UiEntity
@@ -194,71 +204,67 @@ const PigPenCard = () => {
         uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
       <Label value="Pig Pen" fontSize={23} color={C.textMain} textAlign="middle-center" />
-      {unlocked ? (
-        <Label value="Active" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
-      ) : locked ? (
-        <Label value="🔒 Level 12" fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      {locked ? (
+        <Label value={`Locked — Level ${PIG_PEN_UNLOCK_LEVEL}`} fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+      ) : !owned ? (
+        <BuyButton cost={BUILDING_BUY_PRICE} canAfford={canAffordBuilding} onPress={() => { triggerCardZoom('shop_pig'); purchaseBuilding('pig') }} />
+      ) : atMax ? (
+        <Label value={`Full (${MAX_ANIMALS_PER_BUILDING}/${MAX_ANIMALS_PER_BUILDING})`} fontSize={20} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
       ) : (
-        <Label value="Unlocked!" fontSize={20} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+        <BuyButton cost={ANIMAL_BUY_PRICE} canAfford={canAffordAnimal} onPress={() => { triggerCardZoom('shop_pig'); buyAnimal('pig') }} />
       )}
-      <Label
-        value="Produces manure every 8h"
-        fontSize={17}
-        color={C.textMute}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 6 } }}
-      />
     </UiEntity>
   )
 }
 
-const GrainShopSection = () => {
-  const canAfford1    = playerState.coins >= GRAIN_BUY_PRICE
-  const canAffordBulk = playerState.coins >= GRAIN_BULK_PRICE
-
-  const GrainBtn = ({ label, cost, amount, canAfford }: { label: string; cost: number; amount: number; canAfford: boolean }) => (
-    <UiEntity
-      uiTransform={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        width: 185,
-        height: 50,
-        margin: { right: 10 },
-      }}
-      uiBackground={{ color: canAfford ? { r: 0.2, g: 0.55, b: 0.2, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
-      onMouseDown={canAfford ? () => { playSound('buttonclick'); buyGrain(amount, cost) } : undefined}
-    >
-      <Label value={label} fontSize={20} color={canAfford ? C.textMain : C.textMute} textAlign="middle-center" />
-      <UiEntity
-        uiTransform={{ width: 26, height: 26, margin: { left: 6 } }}
-        uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-      />
-    </UiEntity>
-  )
-
+const GrainCard = () => {
+  const canAfford = playerState.coins >= GRAIN_BUY_PRICE
+  const scale     = getZoomScale('shop_grain_1')
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
-        width: '100%',
-        padding: { top: 14, bottom: 14, left: 16, right: 16 },
-        margin: { top: 8 },
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
       }}
       uiBackground={{ color: C.rowBg }}
     >
-      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
-        <UiEntity
-          uiTransform={{ width: 36, height: 36, margin: { right: 10 } }}
-          uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-        <Label value="Grain" fontSize={26} color={C.header} uiTransform={{ flex: 1 }} />
-        <Label value={`In stock: ${playerState.grainCount}`} fontSize={22} color={C.orange} />
-      </UiEntity>
-      <UiEntity uiTransform={{ flexDirection: 'row' }}>
-        <GrainBtn label={`1 grain — ${GRAIN_BUY_PRICE}`} cost={GRAIN_BUY_PRICE} amount={1} canAfford={canAfford1} />
-        <GrainBtn label={`${GRAIN_BULK_COUNT} grain — ${GRAIN_BULK_PRICE}`} cost={GRAIN_BULK_PRICE} amount={GRAIN_BULK_COUNT} canAfford={canAffordBulk} />
-      </UiEntity>
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value="Grain" fontSize={23} color={C.textMain} textAlign="middle-center" />
+      <Label value="1 unit" fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 2, bottom: 4 } }} />
+      <BuyButton cost={GRAIN_BUY_PRICE} canAfford={canAfford} onPress={() => { triggerCardZoom('shop_grain_1'); buyGrain(1, GRAIN_BUY_PRICE) }} />
+    </UiEntity>
+  )
+}
+
+const GrainBulkCard = () => {
+  const canAfford = playerState.coins >= GRAIN_BULK_PRICE
+  const scale     = getZoomScale('shop_grain_bulk')
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(265 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <UiEntity
+        uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value="Grain (Bulk)" fontSize={22} color={C.textMain} textAlign="middle-center" />
+      <Label value={`${GRAIN_BULK_COUNT} units`} fontSize={18} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 2, bottom: 4 } }} />
+      <BuyButton cost={GRAIN_BULK_PRICE} canAfford={canAfford} onPress={() => { triggerCardZoom('shop_grain_bulk'); buyGrain(GRAIN_BULK_COUNT, GRAIN_BULK_PRICE) }} />
     </UiEntity>
   )
 }
@@ -316,15 +322,6 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
   )
 }
 
-const PaginationBar = ({ page, lastPage, onPrev, onNext }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => (
-  <UiEntity
-    uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 12 } }}
-  >
-    <Button value="< Prev" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { right: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onPrev() }} />
-    <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={24} color={C.textMute} textAlign="middle-center" uiTransform={{ width: 100 }} />
-    <Button value="Next >" variant="secondary" fontSize={22} uiTransform={{ width: 160, height: 60, margin: { left: 24 } }} onMouseDown={() => { playSound('pagination'); playSound('buttonclick'); onNext() }} />
-  </UiEntity>
-)
 
 const WorkerPanel = () => {
   if (!playerState.cropsUnlocked) {
@@ -561,16 +558,20 @@ export const ShopMenu = () => {
 
   const visibleCrops = ALL_CROP_TYPES.filter((ct) => {
     if (tutorialActive) return ct === CropType.Onion
-    const def = CROP_DATA.get(ct)!
-    return def.tier === 1 || playerState.cropsUnlocked
+    return playerState.unlockedCrops.has(ct)
   })
-  const lockedCrops = tutorialActive ? [] : ALL_CROP_TYPES.filter((ct) => {
-    const def = CROP_DATA.get(ct)!
-    return def.tier > 1 && !playerState.cropsUnlocked
-  })
+  const lockedCrops = tutorialActive ? [] : ALL_CROP_TYPES.filter((ct) => !playerState.unlockedCrops.has(ct))
+
+  const cropUnlockLevel = (ct: CropType): number | undefined => {
+    const r = LEVEL_REWARDS.find((r) => r.cropType === ct && (r.type === 'seeds' || r.type === 'unlock_crop'))
+    return r?.level
+  }
 
   const tab      = shopTab.value
-  const allSeeds = [...visibleCrops.map(ct => ({ ct, unlocked: true })), ...lockedCrops.map(ct => ({ ct, unlocked: false }))]
+  const allSeeds = [
+    ...visibleCrops.map((ct) => ({ ct, unlocked: true, unlockLevel: undefined as number | undefined })),
+    ...lockedCrops.map((ct) => ({ ct, unlocked: false, unlockLevel: cropUnlockLevel(ct) })),
+  ]
   const seedPage  = shopPage.seeds
   const seedLast  = Math.max(0, Math.ceil(allSeeds.length / SHOP_PAGE_SIZE) - 1)
   const seedSlice = allSeeds.slice(seedPage * SHOP_PAGE_SIZE, (seedPage + 1) * SHOP_PAGE_SIZE)
@@ -608,13 +609,20 @@ export const ShopMenu = () => {
           uiTransform={{ width: 200, height: 68, margin: { right: 12 } }}
           onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'workers' }}
         />
-        <Button
-          value="Fertilizers"
-          variant={tab === 'fertilizers' ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 220, height: 68, margin: { right: 12 } }}
-          onMouseDown={() => { playSound('buttonclick'); shopTab.value = 'fertilizers' }}
-        />
+        <UiEntity uiTransform={{ margin: { right: 12 } }}>
+          <Button
+            value="Fertilizers"
+            variant={tab === 'fertilizers' ? 'primary' : 'secondary'}
+            fontSize={24}
+            uiTransform={{ width: 220, height: 68 }}
+            onMouseDown={() => {
+              playSound('buttonclick')
+              fertilizerTabSeen = true
+              shopTab.value = 'fertilizers'
+            }}
+          />
+          {playerState.rotSystemUnlocked && !fertilizerTabSeen && <BadgeDot />}
+        </UiEntity>
         {WORKER_DEBUG_ENABLED && (
           <Button
             value="Debug"
@@ -628,33 +636,31 @@ export const ShopMenu = () => {
 
       {/* Seeds tab */}
       {tab === 'seeds' && (
-        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-            {seedSlice.map(({ ct, unlocked }) => (
-              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} />
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', flex: 1 }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', flex: 1, alignContent: 'flex-start' }}>
+            {seedSlice.map(({ ct, unlocked, unlockLevel }) => (
+              <ShopCard key={`${unlocked ? 'u' : 'l'}${ct}`} cropType={ct} unlocked={unlocked} unlockLevel={unlockLevel} />
             ))}
+            {lockedCrops.length > 0 && !tutorialActive && (
+              <UiEntity
+                uiTransform={{ width: '100%', padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 4 } }}
+                uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
+              >
+                <Label
+                  value="Higher-tier seeds unlock as you level up — claim level rewards in the Stats panel"
+                  fontSize={20}
+                  color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
+                  textAlign="middle-center"
+                />
+              </UiEntity>
+            )}
           </UiEntity>
-          {seedLast > 0 && (
-            <PaginationBar
-              page={seedPage}
-              lastPage={seedLast}
-              onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
-              onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
-            />
-          )}
-          {!playerState.cropsUnlocked && !tutorialActive && (
-            <UiEntity
-              uiTransform={{ padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
-              uiBackground={{ color: { r: 0.18, g: 0.12, b: 0.04, a: 1 } }}
-            >
-              <Label
-                value="Tier 2 & 3 seeds are locked — visit the For Sale Sign to unlock them"
-                fontSize={20}
-                color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
-                textAlign="middle-center"
-              />
-            </UiEntity>
-          )}
+          <PaginationBar
+            page={seedPage}
+            lastPage={seedLast}
+            onPrev={() => { if (shopPage.seeds > 0) shopPage.seeds-- }}
+            onNext={() => { if (shopPage.seeds < seedLast) shopPage.seeds++ }}
+          />
         </UiEntity>
       )}
 
@@ -665,8 +671,9 @@ export const ShopMenu = () => {
             <DogCard />
             <ChickenCoopCard />
             <PigPenCard />
+            {(playerState.chickenCoopOwned || playerState.pigPenOwned) && <GrainCard />}
+            {(playerState.chickenCoopOwned || playerState.pigPenOwned) && <GrainBulkCard />}
           </UiEntity>
-          {playerState.chickenCoopUnlocked && <GrainShopSection />}
         </UiEntity>
       )}
 

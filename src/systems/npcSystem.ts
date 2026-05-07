@@ -279,6 +279,19 @@ export function getNpcEntity(npcId: string): Entity | null {
   return activeNpcs.find((n) => n.def.id === npcId)?.entity ?? null
 }
 
+export function getActiveNpcCount(): number {
+  return activeNpcs.length
+}
+
+/** Force all currently active NPCs to depart immediately (used by progression events). */
+export function departAllActiveNpcs() {
+  for (const npc of activeNpcs) {
+    if (npc.state !== 'leavingToDoor' && npc.state !== 'leavingToSpawn') {
+      startDeparture(npc)
+    }
+  }
+}
+
 export function getActiveNpcPositions(): Vector3[] {
   return activeNpcs
     .filter(n => n.state === 'wandering' || n.state === 'pauseWander' || n.state === 'talkAtDoor')
