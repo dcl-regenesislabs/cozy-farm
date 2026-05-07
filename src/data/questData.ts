@@ -13,7 +13,8 @@ export interface QuestDefinition {
   target:      number
   rewardCoins: number
   rewardXp:    number
-  requiresRotSystem?: boolean  // if true, quest is hidden until rotSystemUnlocked
+  requiresRotSystem?: boolean             // if true, quest is hidden until rotSystemUnlocked
+  prerequisite?: { minLevel?: number }   // quest is skipped until conditions are met
 }
 
 export const QUEST_DEFINITIONS: QuestDefinition[] = [
@@ -28,6 +29,7 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
     description: "Hmph. If you can water your crops 10 times without making a mess, I'll admit you know what you're doing.",
     type: 'water_total', cropType: null, target: 10,
     rewardCoins: 40, rewardXp: 50,
+    prerequisite: { minLevel: 3 },
   },
   {
     id: 'marco', npcName: 'Marco', title: 'Harvest 10 crops total',
@@ -40,6 +42,7 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
     description: "I need fresh tomatoes for tonight's restaurant special. Can you bring me 3? I'll pay generously!",
     type: 'harvest_crop', cropType: CropType.Tomato, target: 3,
     rewardCoins: 100, rewardXp: 75,
+    prerequisite: { minLevel: 5 },
   },
   {
     id: 'dave', npcName: 'Dave', title: 'Plant 8 seeds',

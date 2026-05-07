@@ -168,12 +168,30 @@ function checkCompletion(def: QuestDefinition, qp: QuestProgress): void {
 
 /** Returns the most relevant quest + progress for an NPC (active > claimable > available).
  *  Skips requiresRotSystem quests if rot system not yet unlocked. */
+export function isQuestPrerequisiteMet(def: QuestDefinition): boolean {
+  if (def.requiresRotSystem && !playerState.rotSystemUnlocked) return false
+  if (def.prerequisite?.minLevel && playerState.level < def.prerequisite.minLevel) return false
+  return true
+}
+
+/** Returns true if all of this NPC's pending (non-completed) quests have unmet prerequisites.
+ *  Used by the scheduler to skip NPCs that have nothing to offer yet. */
+export function hasOnlyBlockedQuestsForNpc(npcId: string): boolean {
+  const candidates = QUEST_DEFINITIONS.filter((d) => (d.npcId ?? d.id) === npcId)
+  const pending = candidates.filter((def) => {
+    const qp = questProgressMap.get(def.id)
+    return qp && qp.status !== 'completed'
+  })
+  if (pending.length === 0) return false  // all completed — allow generic greeting visit
+  return pending.every((def) => !isQuestPrerequisiteMet(def))
+}
+
 export function getActiveQuestForNpc(npcId: string): { def: QuestDefinition; qp: QuestProgress } | undefined {
   const candidates = QUEST_DEFINITIONS.filter((d) => (d.npcId ?? d.id) === npcId)
   const priority: QuestStatus[] = ['active', 'claimable', 'available']
   for (const status of priority) {
     for (const def of candidates) {
-      if (def.requiresRotSystem && !playerState.rotSystemUnlocked) continue
+      if (!isQuestPrerequisiteMet(def)) continue
       const qp = questProgressMap.get(def.id)
       if (qp && qp.status === status) return { def, qp }
     }

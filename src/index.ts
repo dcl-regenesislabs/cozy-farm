@@ -24,7 +24,7 @@ import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { initVisitService } from './services/visitService'
 import { initSocialService } from './services/socialService'
-import { getActiveQuestForNpc } from './game/questState'
+import { getActiveQuestForNpc, hasOnlyBlockedQuestsForNpc } from './game/questState'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
@@ -127,9 +127,13 @@ export function main() {
           ...REGULAR_NPC_ROSTER,
           ...(playerState.rotSystemUnlocked ? [MAYOR_DEF] : []),
         ]
-        const eligible = allNpcs.filter(
-          (npc) => playerState.level >= (NPC_SCHEDULE[npc.id]?.minLevel ?? 1)
-        )
+        const eligible = allNpcs.filter((npc) => {
+          if (playerState.level < (NPC_SCHEDULE[npc.id]?.minLevel ?? 1)) return false
+          // Skip NPC if all their pending quests have unmet prerequisites.
+          // If all quests are already completed, still allow the visit (generic greeting).
+          if (hasOnlyBlockedQuestsForNpc(npc.id)) return false
+          return true
+        })
         if (eligible.length === 0) return
 
         const nextNpc = eligible[playerState.npcScheduleIndex % eligible.length]
