@@ -24,7 +24,7 @@ import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { initVisitService } from './services/visitService'
 import { initSocialService } from './services/socialService'
-import { getActiveQuestForNpc } from './game/questState'
+import { getActiveQuestForNpc, hasOnlyBlockedQuestsForNpc } from './game/questState'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
@@ -115,7 +115,10 @@ export function main() {
         return [
           ...REGULAR_NPC_ROSTER,
           ...(playerState.rotSystemUnlocked ? [MAYOR_DEF] : []),
-        ].filter((npc) => playerState.level >= (NPC_SCHEDULE[npc.id]?.minLevel ?? 1))
+        ].filter((npc) =>
+          playerState.level >= (NPC_SCHEDULE[npc.id]?.minLevel ?? 1) &&
+          !hasOnlyBlockedQuestsForNpc(npc.id)
+        )
       }
 
       // Spawn every eligible NPC that has an available/active quest and isn't already in the scene.
