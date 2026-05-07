@@ -13,8 +13,6 @@ import { isVisiting } from '../services/visitService'
 import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/socialService'
 import { playWateringVfx } from './wateringVfxSystem'
-import { setupCoopClickHandler, setupPenClickHandler, CHICKEN_COOP_MODEL, PIG_PEN_MODEL } from './animalSystem'
-import { CHICKEN_COOP_CENTRE, PIG_PEN_CENTRE, CHICKEN_MODEL, PIG_MODEL, CHICKEN_TEASER_POS, PIG_TEASER_POS, ANIMAL_SCALE_CHICKEN, ANIMAL_SCALE_PIG } from '../data/animalData'
 import { PLOT_GROUP_DEFINITIONS, BUY_PLOT_GROUPS, LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
@@ -222,7 +220,7 @@ export function setupEntities() {
   }
 
   // ── Compost Bin ───────────────────────────────────────────────────────────
-  const compostBin = engine.getEntityOrNullByName('CompostBin')
+  const compostBin = engine.getEntityOrNullByName('CompostBin.glb')
   compostBinEntity = compostBin
   if (compostBin) {
     const s = Transform.get(compostBin).scale
@@ -540,67 +538,4 @@ export function setCompostBinVisible(visible: boolean) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Chicken Coop + Pig Pen — spawned from code until placed via Creator Hub
-// ---------------------------------------------------------------------------
-
-let chickenCoopEntity: Entity | null = null
-let pigPenEntity: Entity | null = null
-let chickenTeaserEntity: Entity | null = null
-let pigTeaserEntity: Entity | null = null
-
-export function initAnimalBuildings(): void {
-  // Find scene-placed buildings (placed via Creator Hub, same pattern as truck/computer)
-  chickenCoopEntity = engine.getEntityOrNullByName('ChickenCoop.glb')
-  if (chickenCoopEntity) {
-    enablePointerOnGltf(chickenCoopEntity)
-    setupCoopClickHandler(chickenCoopEntity)
-  }
-
-  pigPenEntity = engine.getEntityOrNullByName('PigPen.glb')
-  if (pigPenEntity) {
-    enablePointerOnGltf(pigPenEntity)
-    setupPenClickHandler(pigPenEntity)
-  }
-
-  // Teaser animals — visible behind the house until unlocked
-  if (!playerState.chickenCoopUnlocked) {
-    chickenTeaserEntity = engine.addEntity()
-    GltfContainer.create(chickenTeaserEntity, { src: CHICKEN_MODEL })
-    Transform.create(chickenTeaserEntity, {
-      position: Vector3.create(CHICKEN_TEASER_POS.x, CHICKEN_TEASER_POS.y, CHICKEN_TEASER_POS.z),
-      scale:    Vector3.create(ANIMAL_SCALE_CHICKEN, ANIMAL_SCALE_CHICKEN, ANIMAL_SCALE_CHICKEN),
-    })
-    MeshCollider.setBox(chickenTeaserEntity, ColliderLayer.CL_POINTER)
-    pointerEventsSystem.onPointerDown(
-      { entity: chickenTeaserEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock me! (Level 8)', maxDistance: 8 } },
-      () => { playerState.activeMenu = 'animals' },
-    )
-  }
-
-  if (!playerState.pigPenUnlocked) {
-    pigTeaserEntity = engine.addEntity()
-    GltfContainer.create(pigTeaserEntity, { src: PIG_MODEL })
-    Transform.create(pigTeaserEntity, {
-      position: Vector3.create(PIG_TEASER_POS.x, PIG_TEASER_POS.y, PIG_TEASER_POS.z),
-      scale:    Vector3.create(ANIMAL_SCALE_PIG, ANIMAL_SCALE_PIG, ANIMAL_SCALE_PIG),
-    })
-    MeshCollider.setBox(pigTeaserEntity, ColliderLayer.CL_POINTER)
-    pointerEventsSystem.onPointerDown(
-      { entity: pigTeaserEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Unlock me! (Level 12)', maxDistance: 8 } },
-      () => { playerState.activeMenu = 'animals' },
-    )
-  }
-}
-
-export function removeChickenTeaser(): void {
-  if (!chickenTeaserEntity) return
-  engine.removeEntity(chickenTeaserEntity)
-  chickenTeaserEntity = null
-}
-
-export function removePigTeaser(): void {
-  if (!pigTeaserEntity) return
-  engine.removeEntity(pigTeaserEntity)
-  pigTeaserEntity = null
-}
+// Animal buildings are now managed by animalSystem.ts → initAnimalBuildings()

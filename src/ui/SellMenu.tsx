@@ -6,8 +6,8 @@ import { CROP_HARVEST_IMAGES, COINS_IMAGE, EGG_ICON } from '../data/imagePaths'
 import { PanelShell, C } from './PanelShell'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
-import { sellEggs } from '../systems/animalSystem'
-import { ANIMAL_DATA, AnimalType } from '../data/animalData'
+import { sellEggs, sellPigMeat } from '../systems/animalSystem'
+import { EGG_SELL_PRICE, PIG_MEAT_SELL_PRICE } from '../data/animalData'
 
 const ZOOM_DURATION = 290
 
@@ -83,8 +83,7 @@ const ZOOM_DURATION_EGG = 290
 
 const EggSellCard = () => {
   const count      = playerState.eggsCount
-  const def        = ANIMAL_DATA.get(AnimalType.Chicken)!
-  const totalValue = def.productSellPrice * count
+  const totalValue = EGG_SELL_PRICE * count
   const zoomKey    = 'sell_eggs'
   const scale      = getZoomScale(zoomKey)
 
@@ -150,16 +149,17 @@ const EggSellCard = () => {
 
 export const SellMenu = () => {
   const harvestedCrops = ALL_CROP_TYPES.filter((ct) => (playerState.harvested.get(ct) ?? 0) > 0)
-  const hasEggs        = playerState.chickenCoopUnlocked && playerState.eggsCount > 0
-  const eggDef         = ANIMAL_DATA.get(AnimalType.Chicken)!
-  const eggValue       = eggDef.productSellPrice * playerState.eggsCount
+  const hasEggs    = playerState.chickenCoopOwned && playerState.eggsCount > 0
+  const hasMeat    = playerState.pigMeatCount > 0
+  const eggValue   = EGG_SELL_PRICE * playerState.eggsCount
+  const meatValue  = PIG_MEAT_SELL_PRICE * playerState.pigMeatCount
 
   const totalCropValue = harvestedCrops.reduce((sum, ct) => {
     const def = CROP_DATA.get(ct)!
     return sum + def.sellPrice * (playerState.harvested.get(ct) ?? 0)
   }, 0)
-  const totalValue = totalCropValue + (hasEggs ? eggValue : 0)
-  const hasAnything = harvestedCrops.length > 0 || hasEggs
+  const totalValue = totalCropValue + (hasEggs ? eggValue : 0) + (hasMeat ? meatValue : 0)
+  const hasAnything = harvestedCrops.length > 0 || hasEggs || hasMeat
 
   return (
     <PanelShell title="Sell Crops" onClose={() => { playerState.activeMenu = 'none' }}>
@@ -200,8 +200,50 @@ export const SellMenu = () => {
             <SellCard key={ct} cropType={ct} count={playerState.harvested.get(ct)!} />
           ))}
           {hasEggs && <EggSellCard />}
+          {hasMeat && <PigMeatSellCard />}
         </UiEntity>
       )}
     </PanelShell>
+  )
+}
+
+const PigMeatSellCard = () => {
+  const count      = playerState.pigMeatCount
+  const totalValue = PIG_MEAT_SELL_PRICE * count
+  const zoomKey    = 'sell_pig_meat'
+  const scale      = getZoomScale(zoomKey)
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: Math.round(200 * scale),
+        height: Math.round(245 * scale),
+        margin: { right: 12, bottom: 12 },
+        padding: { top: 12, bottom: 12, left: 10, right: 10 },
+      }}
+      uiBackground={{ color: C.rowBg }}
+    >
+      <Label value="🥩" fontSize={64} textAlign="middle-center" uiTransform={{ width: 108, height: 108, margin: { bottom: 10 } }} />
+      <Label value="Pig Meat" fontSize={22} color={C.textMain} textAlign="middle-center" />
+      <Label value={`x${count}`} fontSize={22} color={C.orange} textAlign="middle-center" uiTransform={{ margin: { top: 4 } }} />
+      <UiEntity
+        uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 175, height: 58, margin: { top: 10 } }}
+        uiBackground={{ color: { r: 0.15, g: 0.45, b: 0.15, a: 1 } }}
+        onMouseDown={() => {
+          if (isZooming(zoomKey)) return
+          playSound('buttonclick')
+          triggerCardZoom(zoomKey)
+          setTimeout(() => sellPigMeat(count), ZOOM_DURATION)
+        }}
+      >
+        <Label value={`${totalValue}`} fontSize={24} color={C.gold} textAlign="middle-center" uiTransform={{ margin: { right: 8 } }} />
+        <UiEntity
+          uiTransform={{ width: 34, height: 34 }}
+          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+      </UiEntity>
+    </UiEntity>
   )
 }

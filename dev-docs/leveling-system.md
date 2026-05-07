@@ -2,7 +2,7 @@
 
 ## Overview
 
-Players earn Experience Points (XP) through farming actions and completing quests. XP accumulates into **Levels** (1–20) that unlock new features, plot groups, and crop tiers.
+Players earn Experience Points (XP) through farming actions and completing quests. XP accumulates into **Levels** (1–100) that unlock new features, plot groups, and crop tiers. Current content is designed around levels 1–25; higher levels are implemented and working but reward content will be added as the game grows.
 
 ---
 
@@ -23,30 +23,37 @@ Players earn Experience Points (XP) through farming actions and completing quest
 
 ## Level Table
 
+Only levels with rewards or plot unlocks are shown. The full XP curve runs to level 100.
+
 | Level | XP (cumulative) | Plot Groups Auto-Unlocked | Level Reward |
 |---|---|---|---|
 | 1 | 0 | PlotGroup_Starter, PlotGroup_TutorialA | — |
 | 2 | 100 | — | +5 Onion Seeds |
 | 3 | 250 | — | +5 Potato Seeds |
 | 4 | 500 | — | — |
-| 5 | 900 | **PlotGroup_Level_5** | +3 Tomato Seeds |
+| 5 | 900 | **PlotGroup_Level_5** | +3 Tomato Seeds *(unlocks Tomato in shop)* |
 | 6 | 1,400 | — | — |
-| 7 | 2,100 | — | +3 Carrot Seeds |
+| 7 | 2,100 | — | +3 Carrot Seeds *(unlocks Carrot in shop)* |
 | 8 | 3,000 | — | — |
 | 9 | 4,200 | — | — |
 | 10 | 5,700 | **PlotGroup_Level_10** | +500 Coins |
 | 11 | 7,500 | — | — |
-| 12 | 9,600 | — | +5 Corn Seeds |
+| 12 | 9,600 | — | +5 Corn Seeds *(unlocks Corn in shop)* |
 | 13 | 12,000 | — | — |
 | 14 | 14,800 | — | — |
-| 15 | 18,000 | **PlotGroup_Level_15** | +3 Lavender Seeds |
+| 15 | 18,000 | **PlotGroup_Level_15** | +3 Lavender Seeds *(unlocks Lavender in shop)* |
 | 16 | 21,600 | — | — |
 | 17 | 25,500 | — | — |
 | 18 | 30,000 | — | +1000 Coins |
 | 19 | 35,000 | — | — |
-| 20 | 41,000 | **PlotGroup_Level_20** | — |
+| 20 | 41,000 | **PlotGroup_Level_20** | +3 Pumpkin Seeds *(unlocks Pumpkin in shop)* |
+| 21–24 | generated | — | — |
+| 25 | ~73,000 | — | +3 Sunflower Seeds *(unlocks Sunflower in shop)* |
+| 26–100 | generated | — | More rewards planned |
 
-Level rewards are claimed manually from the Farmer Profile panel. Plot groups auto-unlock instantly on level-up — no manual claim needed.
+**XP curve:** levels 1–20 are hand-tuned. Levels 21–100 are generated at ~5% cost growth per level off the last known cost (6,000 XP/level at 20), reaching ~300K XP/level at the cap. The generator lives at the top of `src/shared/leveling.ts`.
+
+Level rewards are claimed manually in the Profile panel (Rewards tab). Plot groups auto-unlock instantly on level-up — no manual claim needed.
 
 Note: PlotGroup_Buy_C/D require Level 5, E/F require Level 10, G/H require Level 15, I/J require Level 20. These are **not** auto-unlocked — they still require a coin purchase. The level just removes the lock on the ForSaleSign.
 
@@ -77,9 +84,9 @@ When a player levels up:
 
 - `addXp(amount)` in `src/systems/levelingSystem.ts` is the single entry point.
 - Level gates for purchasable plot groups are enforced in `PlotGroupUnlockMenu.tsx` — buy button is disabled if `playerState.level < def.requiredLevel`.
-- Crop tier gates (TODO) will be enforced in `PlantMenu.tsx` / `ShopMenu.tsx`.
+- Crop tier gates are enforced via `playerState.unlockedCrops` in `PlantMenu.tsx` and `ShopMenu.tsx`. See `crop-progression.md` for details.
 - XP is cumulative — the table uses total XP thresholds, not deltas.
-- Max level is determined by `XP_TABLE.length` in `src/shared/leveling.ts`.
+- Max level is determined by `XP_TABLE.length` in `src/shared/leveling.ts` (currently 100).
 
 ---
 

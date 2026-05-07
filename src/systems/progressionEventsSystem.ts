@@ -3,7 +3,7 @@ import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
 import { progressionEventState, type ProgressionEventStep } from '../game/progressionEventState'
 import { onLevelUp } from './levelingSystem'
-import { initNpcSystem, requestNpcDeparture, walkNpcToPosition } from './npcSystem'
+import { initNpcSystem, requestNpcDeparture, departAllActiveNpcs, walkNpcToPosition } from './npcSystem'
 import { MAYOR_DEF } from '../data/npcData'
 import { setCompostBinVisible, getCompostBinEntity, getSoilEntities } from './interactionSetup'
 import { playSound } from './sfxSystem'
@@ -261,7 +261,7 @@ function completeProgressionChain(): void {
     () => {
       playerState.activeMenu     = 'none'
       progressionEventState.active = false
-      requestNpcDeparture(true)
+      departAllActiveNpcs()
     }
   )
 }
@@ -337,7 +337,7 @@ function resumeProgressionEvent(): void {
 function triggerLevel5Event(): void {
   progressionEventState.active     = true
 
-  requestNpcDeparture(true)
+  departAllActiveNpcs()
 
   initNpcSystem(MAYOR_DEF, () => {
     progressionEventState.active = false

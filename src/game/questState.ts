@@ -2,6 +2,7 @@ import { QUEST_DEFINITIONS, QuestDefinition } from '../data/questData'
 import { CropType } from '../data/cropData'
 import { playerState } from './gameState'
 import { addXp } from '../systems/levelingSystem'
+import { showBadge } from './badgeSystem'
 
 export type QuestStatus = 'available' | 'active' | 'claimable' | 'completed'
 
@@ -155,6 +156,7 @@ export function onSell(amount: number): void {
 function checkCompletion(def: QuestDefinition, qp: QuestProgress): void {
   if (qp.status === 'active' && qp.current >= def.target) {
     qp.status = 'claimable'
+    showBadge('quests')
     console.log(`CozyFarm Quest: "${def.title}" ready to claim — talk to ${def.npcName}!`)
     const cb = onQuestClaimableCb
     onQuestClaimableCb = null

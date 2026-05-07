@@ -2,9 +2,9 @@
 
 ## Overview
 
-Crops are organized into three tiers. Tier 1 is available from the start of the game. Tier 2 and Tier 3 unlock through level milestones — the level reward system delivers starter seeds and the shop gates purchasing until the player's level qualifies.
+Crops are organized into three tiers. Tier 1 is available from the start of the game. Tier 2 and Tier 3 unlock through level milestones — the level reward system delivers starter seeds and simultaneously unlocks purchasing in the shop.
 
-> **Status (as of 2026-05):** Tier gating is designed but not yet enforced in the shop UI. All crops are currently purchasable regardless of level. Implementing the gate requires adding `unlockedCrops: Set<CropType>` to `playerState` and filtering the shop. This is marked as a TODO.
+> **Status (as of 2026-05):** Tier gating is fully implemented. Claiming a tier 2/3 seeds reward adds the crop to `playerState.unlockedCrops`, which gates both `ShopMenu.tsx` (buy) and `PlantMenu.tsx` (plant). Existing saves are migrated automatically via `normalizeFarm()` in `playerFarm.ts`.
 
 ---
 
@@ -30,14 +30,14 @@ Crops are organized into three tiers. Tier 1 is available from the start of the 
 |---|---|---|
 | 2 | +5 Onion Seeds | — |
 | 3 | +5 Potato Seeds | — |
-| 5 | +3 Tomato Seeds | Tier 2 unlock gate (shop should allow Tomato purchase) |
-| 7 | +3 Carrot Seeds | Shop allows Carrot |
+| 5 | +3 Tomato Seeds | Unlocks Tomato in shop |
+| 7 | +3 Carrot Seeds | Unlocks Carrot in shop |
 | 10 | +500 Coins | — |
-| 12 | +5 Corn Seeds | Shop allows Corn |
-| 15 | +3 Lavender Seeds | Tier 3 unlock gate |
+| 12 | +5 Corn Seeds | Unlocks Corn in shop |
+| 15 | +3 Lavender Seeds | Unlocks Lavender in shop (Tier 3 gate) |
 | 18 | +1000 Coins | — |
-
-Pumpkin and Sunflower seed rewards / unlock levels are TBD — candidates are level 17 and 19, or via special quest chains.
+| 20 | +3 Pumpkin Seeds | Unlocks Pumpkin in shop |
+| 25 | +3 Sunflower Seeds | Unlocks Sunflower in shop |
 
 ---
 
@@ -51,14 +51,19 @@ The level gate means a player cannot meaningfully farm Tier 2 until they've put 
 
 ---
 
-## Implementing the Shop Gate (TODO)
+## How the Shop Gate Works
 
-1. Add `unlockedCrops: Set<CropType>` to `playerState` in `gameState.ts`.
-2. Tier 1 crops are always in the set (initialized at start).
-3. In `levelRewardData.ts`, add a new reward type `'unlock_crop'` alongside `'seeds'` and `'coins'`.
-4. The level reward claim flow adds the crop to `unlockedCrops`.
-5. In `PlantMenu.tsx` (or wherever seeds are listed), filter out crops not in `unlockedCrops` or display them grayed-out with "Unlock at Level X".
-6. `unlockedCrops` should be persisted in the save (as `string[]` of CropType values).
+`playerState.unlockedCrops` is a `Set<CropType>` that drives all gating. Tier 1 crops are always in the set. Tier 2/3 crops are added when their level reward is claimed.
+
+**Claim flow** (`src/ui/StatsPanel.tsx` → `claimReward()`):
+- When a `seeds` reward for a tier 2/3 crop is claimed, the crop is added to `unlockedCrops` in addition to the seeds being granted.
+- The `'unlock_crop'` reward type also exists for future standalone unlock entries.
+
+**Shop gate** (`src/ui/ShopMenu.tsx`): locked cards show "Unlock at Level X" sourced from `LEVEL_REWARDS`.
+
+**Plant gate** (`src/ui/PlantMenu.tsx`): seeds for locked crops are hidden even if the player has them in inventory.
+
+**Persistence**: `unlockedCrops` is saved as `number[]` through the standard 4-file pattern. On load, `normalizeFarm()` in `playerFarm.ts` calls `deriveUnlockedCrops()` which merges the saved array with unlocks implied by `claimedRewards` — so old saves migrate correctly without wiping data.
 
 ---
 

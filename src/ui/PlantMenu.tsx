@@ -50,7 +50,9 @@ const SeedCard = ({ cropType, count }: SeedCardProps) => {
 }
 
 export const PlantMenu = () => {
-  const availableSeeds = ALL_CROP_TYPES.filter((ct) => (playerState.seeds.get(ct) ?? 0) > 0)
+  const availableSeeds = ALL_CROP_TYPES.filter(
+    (ct) => (playerState.seeds.get(ct) ?? 0) > 0 && playerState.unlockedCrops.has(ct),
+  )
 
   const onClose = () => {
     playerState.activeMenu       = 'none'

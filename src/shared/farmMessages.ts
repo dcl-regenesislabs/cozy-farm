@@ -54,6 +54,24 @@ const FertilizerCountSchema = Schemas.Map({
 })
 
 // ---------------------------------------------------------------------------
+// Animal save data — per-individual
+// ---------------------------------------------------------------------------
+const ChickenDataSchema = Schemas.Map({
+  id:        Schemas.String,
+  lastEggAt: Schemas.Number,
+})
+
+const PigDataSchema = Schemas.Map({
+  id:            Schemas.String,
+  purchasedAt:   Schemas.Number,
+  bornAt:        Schemas.Number,       // 0 = not a piglet (purchased as adult)
+  becameAdultAt: Schemas.Number,       // 0 = not yet adult (still growing)
+  feedScore:     Schemas.Number,
+  lastBreedAt:   Schemas.Number,
+  lastManureAt:  Schemas.Number,       // per-pig production timer
+})
+
+// ---------------------------------------------------------------------------
 // Full farm state payload — sent server → client on load, client → server on save
 // ---------------------------------------------------------------------------
 const FarmStateSchema = Schemas.Map({
@@ -75,6 +93,7 @@ const FarmStateSchema = Schemas.Map({
   expansion1Unlocked:  Schemas.Boolean,
   expansion2Unlocked:  Schemas.Boolean,
   unlockedPlotGroups:  Schemas.Array(Schemas.String),
+  unlockedCrops:       Schemas.Array(Schemas.Int),
 
   // Farmer / worker
   farmerHired:      Schemas.Boolean,
@@ -128,17 +147,19 @@ const FarmStateSchema = Schemas.Map({
   compostWasteCount:       Schemas.Int,
   compostLastCollectedAt:  Schemas.Number,
   // Animal system
-  chickenCoopUnlocked:     Schemas.Boolean,
-  grainCount:              Schemas.Int,
-  eggsCount:               Schemas.Int,
-  chickenLastProducedAt:   Schemas.Number,
-  totalEggsCollected:      Schemas.Int,
-  pigPenUnlocked:          Schemas.Boolean,
-  vegetableScraps:         Schemas.Int,
-  manureCount:             Schemas.Int,
-  pigLastProducedAt:       Schemas.Number,
-  totalManureCollected:    Schemas.Int,
-  compostBinUnlocked:      Schemas.Boolean,
+  chickenCoopOwned:    Schemas.Boolean,
+  chickens:            Schemas.Array(ChickenDataSchema),
+  chickenFoodInBowl:   Schemas.Int,
+  chickenCoopDirtyAt:  Schemas.Number,
+  pigPenOwned:         Schemas.Boolean,
+  pigs:                Schemas.Array(PigDataSchema),
+  pigFoodInBowl:       Schemas.Int,
+  pigPenDirtyAt:       Schemas.Number,
+  grainCount:          Schemas.Int,
+  veggieScrapCount:    Schemas.Int,
+  eggsCount:           Schemas.Int,
+  pigMeatCount:        Schemas.Int,
+  compostBinUnlocked:  Schemas.Boolean,
   // Beauty score — calculated on save, stored for leaderboard
   beautyScore: Schemas.Int,
   // Beauty decoration slots — 3 slots, each holds an objectId (0 = empty)
@@ -398,6 +419,21 @@ export type PlayerRegistryResponse = {
   page:       number
 }
 
+export type ChickenDataPayload = {
+  id:        string
+  lastEggAt: number
+}
+
+export type PigDataPayload = {
+  id:            string
+  purchasedAt:   number
+  bornAt:        number   // 0 = not a piglet
+  becameAdultAt: number   // 0 = not yet adult
+  feedScore:     number
+  lastBreedAt:   number
+  lastManureAt:  number   // per-pig production timer
+}
+
 export type FarmStatePayload = {
   wallet:   string
   coins:    number
@@ -409,6 +445,7 @@ export type FarmStatePayload = {
   expansion1Unlocked:  boolean
   expansion2Unlocked:  boolean
   unlockedPlotGroups:  string[]
+  unlockedCrops:       number[]
   farmerHired:         boolean
   farmerSeeds:      CropCount[]
   farmerInventory:  CropCount[]
@@ -440,17 +477,19 @@ export type FarmStatePayload = {
   compostWasteCount:       number
   compostLastCollectedAt:  number
   // Animal system
-  chickenCoopUnlocked:     boolean
-  grainCount:              number
-  eggsCount:               number
-  chickenLastProducedAt:   number
-  totalEggsCollected:      number
-  pigPenUnlocked:          boolean
-  vegetableScraps:         number
-  manureCount:             number
-  pigLastProducedAt:       number
-  totalManureCollected:    number
-  compostBinUnlocked:      boolean
+  chickenCoopOwned:    boolean
+  chickens:            ChickenDataPayload[]
+  chickenFoodInBowl:   number
+  chickenCoopDirtyAt:  number
+  pigPenOwned:         boolean
+  pigs:                PigDataPayload[]
+  pigFoodInBowl:       number
+  pigPenDirtyAt:       number
+  grainCount:          number
+  veggieScrapCount:    number
+  eggsCount:           number
+  pigMeatCount:        number
+  compostBinUnlocked:  boolean
   beautyScore:    number
   beautySlots:    number[]
   totalLikesReceived: number

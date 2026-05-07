@@ -10,6 +10,7 @@ import { getRotTimeMs } from '../game/rotUtils'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer } from '../data/fertilizerData'
 import { playSound } from '../systems/sfxSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
+import { BadgeDot } from './BadgeDot'
 
 // 4 cols × 2 rows = 8 per page
 const PLOTS_PER_PAGE = 8
@@ -326,6 +327,9 @@ export const FarmPanel = () => {
   const homePlots      = soilEntities.slice(0, 12)
   const expansionPlots = soilEntities.slice(12)
 
+  const homeHasReady      = homePlots.some(e => PlotState.getOrNull(e)?.isReady)
+  const expansionHasReady = expansionPlots.some(e => PlotState.getOrNull(e)?.isReady)
+
   const tab       = farmTab.value
   const isPlotTab = tab === 'home' || tab === 'expansion'
   const plots     = tab === 'expansion' ? expansionPlots : homePlots
@@ -339,27 +343,35 @@ export const FarmPanel = () => {
 
       {/* Tab row */}
       <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 20 } }}>
-        <Button
-          value="My Farm"
-          variant={tab === 'home' ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 220, height: 70, margin: { right: 14 } }}
-          onMouseDown={() => { farmTab.value = 'home' }}
-        />
-        <Button
-          value="Expansion"
-          variant={tab === 'expansion' ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 220, height: 70, margin: { right: 14 } }}
-          onMouseDown={() => { farmTab.value = 'expansion' }}
-        />
-        <Button
-          value="Compost Bin"
-          variant={tab === 'compost' ? 'primary' : 'secondary'}
-          fontSize={24}
-          uiTransform={{ width: 220, height: 70 }}
-          onMouseDown={() => { farmTab.value = 'compost' }}
-        />
+        <UiEntity uiTransform={{ margin: { right: 14 } }}>
+          <Button
+            value="My Farm"
+            variant={tab === 'home' ? 'primary' : 'secondary'}
+            fontSize={24}
+            uiTransform={{ width: 220, height: 70 }}
+            onMouseDown={() => { farmTab.value = 'home' }}
+          />
+          {homeHasReady && <BadgeDot />}
+        </UiEntity>
+        <UiEntity uiTransform={{ margin: { right: 14 } }}>
+          <Button
+            value="Expansion"
+            variant={tab === 'expansion' ? 'primary' : 'secondary'}
+            fontSize={24}
+            uiTransform={{ width: 220, height: 70 }}
+            onMouseDown={() => { farmTab.value = 'expansion' }}
+          />
+          {expansionHasReady && <BadgeDot />}
+        </UiEntity>
+        <UiEntity>
+          <Button
+            value="Compost Bin"
+            variant={tab === 'compost' ? 'primary' : 'secondary'}
+            fontSize={24}
+            uiTransform={{ width: 220, height: 70 }}
+            onMouseDown={() => { farmTab.value = 'compost' }}
+          />
+        </UiEntity>
       </UiEntity>
 
       {/* Compost tab */}

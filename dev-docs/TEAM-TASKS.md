@@ -37,21 +37,7 @@ See `CLAUDE.md` for the full architecture overview and save-field checklist.
 
 ### 🔴 High Priority
 
-#### 1. Crop Tier Gate in Shop
-**Doc:** `dev-docs/crop-progression.md`
-
-Tier 2 and Tier 3 crops are currently purchasable/plantable at any level. The gate needs to be enforced.
-
-**What to do:**
-1. Add `unlockedCrops: Set<CropType>` to `playerState` (`gameState.ts`). Tier 1 always starts unlocked.
-2. Add a new reward type `'unlock_crop'` to `levelRewardData.ts` entries at the appropriate levels (see crop-progression.md for the schedule).
-3. In the level reward claim flow, add the crop to `unlockedCrops`.
-4. In `PlantMenu.tsx` and `ShopMenu.tsx`, filter or gray out crops not yet in `unlockedCrops`.
-5. Persist `unlockedCrops` in the save (string[] of CropType numbers) — follow the 4-file pattern in CLAUDE.md.
-
----
-
-#### 2. Quest Prerequisites (fix impossible quests)
+#### 1. Quest Prerequisites (fix impossible quests)
 **Doc:** `dev-docs/quest-system.md`
 
 Lily offers a Tomato quest before players can grow Tomatoes. Gerald's Water quest can appear very early.
@@ -140,6 +126,10 @@ Currently the hover text is "Unlock 3 Plots — 500 coins". Could show a richer 
 
 ## Completed (recently)
 
+- ✅ **Crop tier gate** — `unlockedCrops: Set<CropType>` in playerState; tier 2/3 crops gated in `ShopMenu.tsx` and `PlantMenu.tsx`; persisted via 4-file save pattern; old saves migrate via `deriveUnlockedCrops()` in `playerFarm.ts`
+- ✅ **Pumpkin + Sunflower unlock levels** — Pumpkin at level 20, Sunflower at level 25; both get +3 seed rewards same as other crops
+- ✅ **Endless leveling (level 100)** — XP table extended to 100; levels 1–20 unchanged, 21–100 generated at ~5% cost growth; `buildXpTable()` in `src/shared/leveling.ts`
+- ✅ **Rewards tab redesign** — three tier sections (Starter / Advanced / Prestige) with reveal mechanic (each tier visible once player is within 3 levels of its first reward); rows show unlock sub-label for shop crops
 - ✅ Plot group system wired — `PlotGroup_Starter` through `PlotGroup_Buy_J`, ForSaleSign_A–J, level auto-unlocks
 - ✅ Save field `unlockedPlotGroups` added (client + server)
 - ✅ Soil scan extended to 84 entities

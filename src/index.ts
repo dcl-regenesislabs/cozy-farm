@@ -13,7 +13,7 @@ import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
 import './systems/mailboxIndicatorSystem'
-import { initNpcSystem, getNpcEntity } from './systems/npcSystem'
+import { initNpcSystem, getNpcEntity, getActiveNpcCount } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER, NPC_SCHEDULE } from './data/npcData'
 import { playerState } from './game/gameState'
 import { initTutorialSystem } from './systems/tutorialSystem'
@@ -30,9 +30,9 @@ import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
 import { initCompostBinVfx } from './systems/compostBinVfx'
 import { initBeautySpotSystem } from './systems/beautySpotSystem'
-import { initAnimalSystem, catchUpAnimalProduction, unlockChickenCoop, unlockPigPen } from './systems/animalSystem'
-import { initAnimalBuildings } from './systems/interactionSetup'
+import { initAnimalBuildings } from './systems/animalSystem'
 import { onLevelUp } from './systems/levelingSystem'
+import { recomputeStartupBadges } from './game/badgeSystem'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -59,12 +59,6 @@ export function main() {
   initSocialService()
   initVisitorWaterFeedback()
   initAnimalBuildings()
-
-  // Level-gated animal unlocks
-  onLevelUp((newLevel: number) => {
-    if (newLevel === 8)  unlockChickenCoop()
-    if (newLevel === 12) unlockPigPen()
-  })
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.
@@ -106,6 +100,7 @@ export function main() {
     // Tutorial and NPC systems start inside onLoaded so they see the
     // restored state (tutorialComplete, tutorialStep, etc.) before firing.
     initSaveService(() => {
+      recomputeStartupBadges()
       initTutorialSystem()
 
       initProgressionEventsSystem()
@@ -116,28 +111,47 @@ export function main() {
 
       // ── NPC Scheduling ─────────────────────────────────────────────────────
 
-      function onNpcDeparted() {
-        playerState.lastNpcVisitAt = Date.now()
-        playerState.npcScheduleIndex++
-        scheduleNextNpcVisit()
-      }
-
-      function scheduleNextNpcVisit() {
-        const allNpcs = [
+      function getAllEligibleNpcs() {
+        return [
           ...REGULAR_NPC_ROSTER,
           ...(playerState.rotSystemUnlocked ? [MAYOR_DEF] : []),
-        ]
-        const eligible = allNpcs.filter((npc) => {
-          if (playerState.level < (NPC_SCHEDULE[npc.id]?.minLevel ?? 1)) return false
-          // Skip NPC if all their pending quests have unmet prerequisites.
-          // If all quests are already completed, still allow the visit (generic greeting).
-          if (hasOnlyBlockedQuestsForNpc(npc.id)) return false
-          return true
+        ].filter((npc) =>
+          playerState.level >= (NPC_SCHEDULE[npc.id]?.minLevel ?? 1) &&
+          !hasOnlyBlockedQuestsForNpc(npc.id)
+        )
+      }
+
+      // Spawn every eligible NPC that has an available/active quest and isn't already in the scene.
+      function spawnPendingQuestNpcs() {
+        for (const npc of getAllEligibleNpcs()) {
+          if (getNpcEntity(npc.id) !== null) continue
+          const result = getActiveQuestForNpc(npc.id)
+          if (result && (result.qp.status === 'available' || result.qp.status === 'active')) {
+            initNpcSystem(npc, () => onNpcDeparted(npc.id))
+          }
+        }
+      }
+
+      function onNpcDeparted(npcId: string) {
+        playerState.lastNpcVisitAt = Date.now()
+        // Immediately spawn any NPCs whose quests are now available or active.
+        spawnPendingQuestNpcs()
+        // If nobody is left, fall back to the chit-chat rotation.
+        if (getActiveNpcCount() === 0) {
+          playerState.npcScheduleIndex++
+          scheduleNextChitchatVisit()
+        }
+      }
+
+      // Schedule a time-gapped social visit for an NPC with no pending quest.
+      function scheduleNextChitchatVisit() {
+        const eligible = getAllEligibleNpcs().filter((npc) => {
+          const result = getActiveQuestForNpc(npc.id)
+          return !result || result.qp.status === 'completed'
         })
         if (eligible.length === 0) return
 
         const nextNpc = eligible[playerState.npcScheduleIndex % eligible.length]
-
         const timeSinceLast = playerState.lastNpcVisitAt > 0
           ? (Date.now() - playerState.lastNpcVisitAt) / 1000
           : 0
@@ -150,29 +164,20 @@ export function main() {
           t -= dt
           if (t > 0) return
           engine.removeSystem(npcScheduler)
-          initNpcSystem(nextNpc, onNpcDeparted)
+          // Guard: NPC may have been spawned with a quest while the timer was running.
+          if (getNpcEntity(nextNpc.id) !== null) return
+          initNpcSystem(nextNpc, () => onNpcDeparted(nextNpc.id))
         })
 
-        console.log(`CozyFarm: Next NPC (${nextNpc.name}) in ${Math.round(t)}s`)
+        console.log(`CozyFarm: Next chit-chat NPC (${nextNpc.name}) in ${Math.round(t)}s`)
       }
 
       function startRegularNpcRotation() {
-        // If player reconnected with an active quest NPC, spawn that NPC immediately
-        const allNpcs = [
-          ...REGULAR_NPC_ROSTER,
-          ...(playerState.rotSystemUnlocked ? [MAYOR_DEF] : []),
-        ]
-        const activeQuestNpc = allNpcs.find((npc) => {
-          const result = getActiveQuestForNpc(npc.id)
-          return result && result.qp.status === 'active'
-        })
-
-        if (activeQuestNpc) {
-          initNpcSystem(activeQuestNpc, onNpcDeparted)
-          return
+        // Spawn all NPCs with available/active quests immediately; fall back to rotation otherwise.
+        spawnPendingQuestNpcs()
+        if (getActiveNpcCount() === 0) {
+          scheduleNextChitchatVisit()
         }
-
-        scheduleNextNpcVisit()
         console.log('CozyFarm: Regular NPC rotation started')
       }
 
