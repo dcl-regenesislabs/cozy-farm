@@ -1,7 +1,7 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
 import { PanelShell, C } from './PanelShell'
-import { EGG_CYCLE_MS, CHICKEN_COOP_UNLOCK_LEVEL, BUILDING_BUY_PRICE, getDirtIntervalMs } from '../data/animalData'
+import { EGG_CYCLE_MS, CHICKEN_COOP_UNLOCK_LEVEL, BUILDING_BUY_PRICE, getDirtIntervalMs, DIRT_BASE_INTERVAL_MS } from '../data/animalData'
 import { EGG_ICON, CHICKEN_ICON, MANURE_ICON, COINS_IMAGE } from '../data/imagePaths'
 import { purchaseBuilding } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
@@ -87,11 +87,15 @@ const ChickenTile = ({ index, lastEggAt, now }: ChickenTileProps) => {
   )
 }
 
-const DirtTile = ({ now }: { now: number }) => {
-  const isDirty  = playerState.chickenCoopDirtyAt > 0
-  const barPct   = isDirty ? 100 : 0
-  const barColor = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.textMute
-  const tileBg   = isDirty ? { r: 0.22, g: 0.14, b: 0.04, a: 1 } : { r: 0.11, g: 0.14, b: 0.09, a: 1 }
+const DirtTile = ({ now: _now }: { now: number }) => {
+  const isDirty   = playerState.chickenCoopDirtyAt > 0
+  const count     = playerState.chickens.length
+  const interval  = count > 0 ? getDirtIntervalMs(count) : DIRT_BASE_INTERVAL_MS
+  const accumMs   = playerState.coopDirtAccumMs
+  const barPct    = isDirty ? 100 : Math.min(100, Math.floor((accumMs / interval) * 100))
+  const barColor  = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.gold
+  const tileBg    = isDirty ? { r: 0.22, g: 0.14, b: 0.04, a: 1 } : { r: 0.11, g: 0.14, b: 0.09, a: 1 }
+  const remaining = Math.max(0, interval - accumMs)
 
   return (
     <UiEntity
@@ -125,11 +129,10 @@ const DirtTile = ({ now }: { now: number }) => {
             uiBackground={{ color: barColor }}
           />
         </UiEntity>
-        {isDirty && (
-          <Label value="Click the dirt pile in the scene"
-            fontSize={15} color={C.textMute}
-            textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
-        )}
+        <Label
+          value={isDirty ? 'Click the dirt pile in the scene' : (count > 0 ? `Next mess in ${formatMs(remaining)}` : 'No chickens')}
+          fontSize={15} color={C.textMute}
+          textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
       </UiEntity>
     </UiEntity>
   )
@@ -195,6 +198,10 @@ export const ChickenCoopPanel = () => {
     return (
       <PanelShell title="Chicken Coop" onClose={() => { playerState.activeMenu = 'none' }}>
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
+          <UiEntity
+            uiTransform={{ width: 90, height: 90, margin: { bottom: 16 }, flexShrink: 0 }}
+            uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch', color: levelMet ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 } }}
+          />
           {!levelMet ? (
             <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
               <Label value="Locked" fontSize={32} color={C.textMute} textAlign="middle-center" />
@@ -228,7 +235,7 @@ export const ChickenCoopPanel = () => {
   }
 
   return (
-    <PanelShell title="🐔 Chicken Coop" onClose={() => { playerState.activeMenu = 'none' }}>
+    <PanelShell title="Chicken Coop" onClose={() => { playerState.activeMenu = 'none' }}>
       <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
 
         <EggsTile />

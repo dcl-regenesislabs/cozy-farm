@@ -802,34 +802,31 @@ function dirtSystem(): void {
 // Dirt timer — simplified: trigger dirt periodically using a module-level timer
 // ---------------------------------------------------------------------------
 
-let coopDirtAccumMs  = 0
-let penDirtAccumMs   = 0
-
 function dirtAccumulatorSystem(dt: number): void {
   const dtMs = dt * 1000
 
   if (playerState.chickenCoopOwned && playerState.chickens.length > 0 && playerState.chickenCoopDirtyAt === 0) {
-    coopDirtAccumMs += dtMs
+    playerState.coopDirtAccumMs += dtMs
     const interval = getDirtIntervalMs(playerState.chickens.length)
-    if (coopDirtAccumMs >= interval) {
-      coopDirtAccumMs             = 0
+    if (playerState.coopDirtAccumMs >= interval) {
+      playerState.coopDirtAccumMs    = 0
       playerState.chickenCoopDirtyAt = Date.now()
       updateBuildingVisuals()
     }
   } else {
-    coopDirtAccumMs = 0
+    playerState.coopDirtAccumMs = 0
   }
 
   if (playerState.pigPenOwned && playerState.pigs.length > 0 && playerState.pigPenDirtyAt === 0) {
-    penDirtAccumMs += dtMs
+    playerState.penDirtAccumMs += dtMs
     const interval = getDirtIntervalMs(playerState.pigs.length)
-    if (penDirtAccumMs >= interval) {
-      penDirtAccumMs           = 0
-      playerState.pigPenDirtyAt = Date.now()
+    if (playerState.penDirtAccumMs >= interval) {
+      playerState.penDirtAccumMs = 0
+      playerState.pigPenDirtyAt  = Date.now()
       updateBuildingVisuals()
     }
   } else {
-    penDirtAccumMs = 0
+    playerState.penDirtAccumMs = 0
   }
 }
 

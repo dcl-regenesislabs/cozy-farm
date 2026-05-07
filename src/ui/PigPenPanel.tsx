@@ -3,7 +3,7 @@ import { playerState } from '../game/gameState'
 import { PanelShell, C } from './PanelShell'
 import {
   PIG_CYCLE_MS, PIG_HARVEST_AGE_MS, PIG_PEN_UNLOCK_LEVEL, BUILDING_BUY_PRICE,
-  MAX_ANIMALS_PER_BUILDING, getPigStage, PIG_BREED_COOLDOWN,
+  MAX_ANIMALS_PER_BUILDING, getPigStage, PIG_BREED_COOLDOWN, getDirtIntervalMs, DIRT_BASE_INTERVAL_MS,
 } from '../data/animalData'
 import { PIG_ICON, MANURE_ICON, COINS_IMAGE } from '../data/imagePaths'
 import { breedPigs, harvestPig, purchaseBuilding } from '../systems/animalSystem'
@@ -140,12 +140,16 @@ const PigTile = ({ pig, index, now }: PigTileProps) => {
 // Dirt tile — uses MANURE_ICON
 // ---------------------------------------------------------------------------
 
-const DirtTile = ({ now }: { now: number }) => {
-  const isDirty  = playerState.pigPenDirtyAt > 0
-  const barPct   = isDirty ? 100 : 0
-  const barColor = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.textMute
-  const tileBg   = isDirty ? { r: 0.22, g: 0.14, b: 0.04, a: 1 } : { r: 0.11, g: 0.14, b: 0.09, a: 1 }
-  const hasFood  = playerState.pigFoodInBowl > 0
+const DirtTile = ({ now: _now }: { now: number }) => {
+  const isDirty   = playerState.pigPenDirtyAt > 0
+  const count     = playerState.pigs.length
+  const interval  = count > 0 ? getDirtIntervalMs(count) : DIRT_BASE_INTERVAL_MS
+  const accumMs   = playerState.penDirtAccumMs
+  const barPct    = isDirty ? 100 : Math.min(100, Math.floor((accumMs / interval) * 100))
+  const barColor  = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.gold
+  const tileBg    = isDirty ? { r: 0.22, g: 0.14, b: 0.04, a: 1 } : { r: 0.11, g: 0.14, b: 0.09, a: 1 }
+  const hasFood   = playerState.pigFoodInBowl > 0
+  const remaining = Math.max(0, interval - accumMs)
 
   return (
     <UiEntity
@@ -180,11 +184,10 @@ const DirtTile = ({ now }: { now: number }) => {
         <UiEntity uiTransform={{ width: '100%', height: 10 }} uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}>
           <UiEntity uiTransform={{ width: `${barPct}%`, height: '100%' }} uiBackground={{ color: barColor }} />
         </UiEntity>
-        {isDirty && (
-          <Label value="Click the dirt pile in the scene"
-            fontSize={15} color={C.textMute}
-            textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
-        )}
+        <Label
+          value={isDirty ? 'Click the dirt pile in the scene' : (count > 0 ? `Next mess in ${formatMs(remaining)}` : 'No pigs')}
+          fontSize={15} color={C.textMute}
+          textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
       </UiEntity>
     </UiEntity>
   )

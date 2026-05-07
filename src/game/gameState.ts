@@ -72,6 +72,9 @@ export const playerState = {
   eggsCount:          0,
   pigMeatCount:       0,
   compostBinUnlocked: false,
+  // Runtime-only: dirt accumulator progress (not saved, resets each session)
+  coopDirtAccumMs:    0,
+  penDirtAccumMs:     0,
   // UI routing for feed bowl panel
   activeFeedBowl:     null as 'chicken' | 'pig' | null,
   // Progression events (Level 5 Mayor return, etc.)

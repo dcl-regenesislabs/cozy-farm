@@ -37,26 +37,32 @@ export const PIG_HARVEST_AGE_MS  =  7 * 24 * 60 * 60 * 1000  // 7 days as adult 
 export const PIG_BREED_COOLDOWN  = 24 * 60 * 60 * 1000       // 24h between breeds per pig
 
 export function getPigStage(pig: PigData, now = Date.now()): PigStage {
-  if (pig.bornAt !== null && pig.becameAdultAt === null) {
+  if (pig.bornAt !== null && pig.bornAt !== 0 && (pig.becameAdultAt === null || pig.becameAdultAt === 0)) {
     const age = now - pig.bornAt
     if (age < PIGLET_STAGE_MS)     return 'piglet'
     if (age < ADOLESCENT_STAGE_MS) return 'adolescent'
     return 'adult'   // will be promoted to adult next tick
   }
-  const adultAt = pig.becameAdultAt ?? pig.purchasedAt
+  const adultAt = pig.becameAdultAt || pig.purchasedAt
   if (now - adultAt >= PIG_HARVEST_AGE_MS) return 'harvestable'
   return 'adult'
 }
 
 export function getPigScale(feedScore: number): number {
   const t = Math.min(1, feedScore / 50)
-  return 0.65 + t * 0.20   // 0.65 → 0.85
+  return 0.65 + t * 1.35   // 0.65 → 2.0
 }
 
 export function getPigletScale(pig: PigData, now = Date.now()): number {
   const stage = getPigStage(pig, now)
-  if (stage === 'piglet')      return 0.35
-  if (stage === 'adolescent')  return 0.50
+  if (stage === 'piglet') return 0.20
+  if (stage === 'adolescent') {
+    const born     = pig.bornAt ?? now
+    const elapsed  = Math.max(0, now - born - PIGLET_STAGE_MS)
+    const duration = ADOLESCENT_STAGE_MS - PIGLET_STAGE_MS
+    const t        = Math.min(1, elapsed / duration)
+    return 0.20 + t * 0.45   // 0.20 → 0.65
+  }
   return getPigScale(pig.feedScore)
 }
 
