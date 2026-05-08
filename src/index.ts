@@ -121,13 +121,15 @@ export function main() {
         )
       }
 
-      // Spawn every eligible NPC that has an available/active quest and isn't already in the scene.
+      // Spawn the next eligible NPC that has a pending quest — one at a time.
       function spawnPendingQuestNpcs() {
+        if (getActiveNpcCount() > 0) return   // already someone in the scene
         for (const npc of getAllEligibleNpcs()) {
           if (getNpcEntity(npc.id) !== null) continue
           const result = getActiveQuestForNpc(npc.id)
           if (result && (result.qp.status === 'available' || result.qp.status === 'active')) {
             initNpcSystem(npc, () => onNpcDeparted(npc.id))
+            return   // one at a time
           }
         }
       }
