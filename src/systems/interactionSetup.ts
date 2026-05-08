@@ -288,8 +288,13 @@ function wireAllPlotGroupSigns(): void {
       continue
     }
     enablePointerOnGltf(signEntity)
-    let hoverText = `Unlock 3 Plots — ${def.coinCost} coins`
-    if (def.requiredLevel > 0) hoverText += ` (Level ${def.requiredLevel}+)`
+    const parts = [
+      'Expand Farm',
+      `+3 plots`,
+      `${def.coinCost} coins`,
+    ]
+    if (def.requiredLevel > 0) parts.push(`Lv ${def.requiredLevel}+`)
+    const hoverText = parts.join('  •  ')
     pointerEventsSystem.onPointerDown(
       { entity: signEntity, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {

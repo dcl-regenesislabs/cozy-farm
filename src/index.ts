@@ -12,6 +12,7 @@ import './systems/farmerSystem'
 import './systems/harvestVfxSystem'
 import './systems/levelRewardSystem'
 import './systems/xpFloatSystem'
+import './systems/levelUpVfxSystem'
 import './systems/mailboxIndicatorSystem'
 import { initNpcSystem, getNpcEntity, getActiveNpcCount } from './systems/npcSystem'
 import { MAYOR_DEF, REGULAR_NPC_ROSTER, NPC_SCHEDULE } from './data/npcData'
@@ -105,6 +106,13 @@ export function main() {
 
       initProgressionEventsSystem()
       progressionEventCallbacks.onMayorClicked = getProgressionEventMayorClickHandler()
+
+      // Show a 4-second HUD banner whenever the player levels up.
+      onLevelUp((newLevel) => {
+        console.log('CozyFarm: Level up toast →', newLevel)
+        playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
+        playerState.levelUpToastExpiresAt = Date.now() + 4000
+      })
 
       // After the progression event (Level 5 Mayor return) is done, start NPC rotation
       setOnProgressionEventComplete(() => startRegularNpcRotation())
