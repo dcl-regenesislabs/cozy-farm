@@ -363,15 +363,17 @@ export function skipTutorial() {
   tutorialState.active = false
   tutorialState.step   = 'complete'
   playerState.coins    = 20000
-  playerState.seeds.set(CropType.Onion, 5)
+  playerState.seeds.set(CropType.Onion, 10)
+  playerState.seeds.set(CropType.Tomato, 5)
   ALL_FERTILIZER_TYPES.forEach((f) => playerState.fertilizers.set(f, 2))
   playerState.organicWaste = 10
+  playerState.grainCount   = 10   // grain for chicken testing
   playerState.activeMenu = 'none'
   setArrowTarget(null)
   tutorialCallbacks.unlockSoilsAll6()
   requestNpcDeparture()
-  addXp(900)  // bring player to level 5, firing level-up callbacks to trigger progression events
-  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks)')
+  addXp(3000)  // brings player to level 8 — unlocks Chicken Coop + all quest prerequisites
+  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks) — level 8, 20k coins, grain x10')
 }
 
 // ---------------------------------------------------------------------------
