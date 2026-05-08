@@ -7,6 +7,7 @@ import { FertilizerType, ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { CROP_HARVEST_IMAGES, WATERINGCAN_ICON, WATER_ICON, WATER_DRY_ICON, HAND_ICON, ORGANIC_WASTE_ICON, FERTILIZER_ICON_SRCS } from '../data/imagePaths'
 import { playerState } from './gameState'
+import { isVisiting } from '../services/visitService'
 import { updatePlotHoverText, setCompostBinVisible } from '../systems/interactionSetup'
 import { playSeedVfx } from '../systems/seedVfxSystem'
 import { playWateringVfx } from '../systems/wateringVfxSystem'
@@ -212,6 +213,9 @@ function hasFertilizersAvailable(): boolean {
 }
 
 export function handlePlotClick(entity: Entity) {
+  // Visitors can never trigger owner actions — defense-in-depth guard
+  if (isVisiting()) return
+
   const plot = PlotState.get(entity)
 
   if (!plot.isUnlocked) return
