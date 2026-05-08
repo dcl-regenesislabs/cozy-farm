@@ -27,10 +27,11 @@ export function initVisitorWaterFeedback(): void {
     const entity = soilEntities.find(
       (e) => PlotState.get(e).plotIndex === data.plotIndex
     )
-    if (!data.success) {
-      visitSessionWateredPlots.delete(data.plotIndex)
+    if (entity) {
+      PlotState.getMutable(entity).isWatering = false
+      if (!data.success) visitSessionWateredPlots.delete(data.plotIndex)
+      updatePlotHoverText(entity)
     }
-    if (entity) updatePlotHoverText(entity)
   }
 }
 
