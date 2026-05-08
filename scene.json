@@ -316,7 +316,11 @@
     "projectId": "d5069751-c2e5-4b1c-8674-6715a25711c8"
   },
   "worldConfiguration": {
-    "name": "yiffer.dcl.eth"
+    "name": "pepino.dcl.eth"
   },
-  "authoritativeMultiplayer": true
+  "authoritativeMultiplayer": true,
+   "logsPermissions": [
+    "0xb8c4df381c6c305758f806c3aa71f37aabbcbd92",
+    "0xc502975b49398f9754AFC4E9693Cf0e1594f3275"
+  ]
 }
