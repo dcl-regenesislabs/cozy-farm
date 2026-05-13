@@ -24,6 +24,7 @@ import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
 import { initAnimalSystem } from '../systems/animalSystem'
+import { animalTutorialState } from '../game/animalTutorialState'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
 
@@ -152,6 +153,8 @@ export function buildSavePayload(): FarmStatePayload {
     compostBinUnlocked:  playerState.compostBinUnlocked,
     rotSystemUnlocked:       playerState.rotSystemUnlocked,
     progressionEventStep:    playerState.progressionEventStep,
+    chickenTutorialStep:     playerState.chickenTutorialStep,
+    pigTutorialStep:         playerState.pigTutorialStep,
     lastNpcVisitAt:          playerState.lastNpcVisitAt,
     npcScheduleIndex:        playerState.npcScheduleIndex,
     beautyScore:         0,
@@ -261,6 +264,17 @@ function applyPayload(payload: FarmStatePayload): void {
   setCompostBinVisible(playerState.compostBinUnlocked)
   playerState.rotSystemUnlocked    = (payload as any).rotSystemUnlocked ?? false
   playerState.progressionEventStep = (payload as any).progressionEventStep ?? ''
+  playerState.chickenTutorialStep  = (payload as any).chickenTutorialStep ?? ''
+  playerState.pigTutorialStep      = (payload as any).pigTutorialStep ?? ''
+
+  // Restore animal tutorial state so initAnimalTutorialSystem can resume
+  const cStep = playerState.chickenTutorialStep
+  animalTutorialState.chickenStep   = cStep as any
+  animalTutorialState.chickenActive = cStep !== '' && cStep !== 'complete'
+  const pStep = playerState.pigTutorialStep
+  animalTutorialState.pigStep   = pStep as any
+  animalTutorialState.pigActive = pStep !== '' && pStep !== 'complete'
+
   playerState.lastNpcVisitAt       = (payload as any).lastNpcVisitAt ?? 0
   playerState.npcScheduleIndex     = (payload as any).npcScheduleIndex ?? 0
 

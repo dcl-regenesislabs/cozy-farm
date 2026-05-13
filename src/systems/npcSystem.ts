@@ -25,6 +25,7 @@ import { getQuestForNpc, getQuestProgress, acceptQuest, claimQuestReward } from 
 import { EXCLAMATION_ICON, QUESTION_ICON, QUESTION_DONE_ICON } from '../data/imagePaths'
 import { tutorialState, TutorialStep } from '../game/tutorialState'
 import { progressionEventState, progressionEventCallbacks } from '../game/progressionEventState'
+import { animalTutorialState, animalTutorialCallbacks } from '../game/animalTutorialState'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
 
@@ -485,8 +486,15 @@ function onNpcClick(entity: Entity) {
   const mayorInProgressionEventMode =
     npc.def.id === 'mayorchen' && progressionEventState.active
 
+  const mayorInAnimalTutorial =
+    npc.def.id === 'mayorchen' &&
+    (animalTutorialState.chickenActive || animalTutorialState.pigActive)
+
   if (mayorInProgressionEventMode) {
     progressionEventCallbacks.onMayorClicked()
+    return
+  } else if (mayorInAnimalTutorial) {
+    animalTutorialCallbacks.onMayorClicked?.()
     return
   } else if (mayorInChitchatMode) {
     npcDialogState.dialogLine = getRandomChitchat()
@@ -648,6 +656,8 @@ function npcUpdateSystem(dt: number) {
     const hideDuringTutorial =
       npc.def.id === 'mayorchen' && (
         progressionEventState.active ||
+        animalTutorialState.chickenActive ||
+        animalTutorialState.pigActive ||
         (tutorialState.active &&
           tutorialState.step !== 'talk_mayor' &&
           tutorialState.step !== 'sell_quest')

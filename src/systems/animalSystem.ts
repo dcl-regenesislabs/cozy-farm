@@ -12,6 +12,7 @@ import {
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
 import type { ChickenData, PigData } from '../game/gameState'
+import { animalTutorialCallbacks } from '../game/animalTutorialState'
 import { addXp } from './levelingSystem'
 import { playSound } from './sfxSystem'
 import { spawnOrganicWasteVfx } from './harvestVfxSystem'
@@ -323,6 +324,15 @@ export function initAnimalBuildings(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Entity accessors for tutorial arrow system
+// ---------------------------------------------------------------------------
+
+export function getEmptyCoopEntity(): Entity | null { return emptyCoopEntity }
+export function getEmptyPenEntity():  Entity | null { return emptyPenEntity  }
+export function getCoopFoodEntity():  Entity | null { return coopFood        }
+export function getPenFoodEntity():   Entity | null { return penFood         }
+
+// ---------------------------------------------------------------------------
 // Purchase a building (called when player clicks AnimalBuildingEmpty)
 // ---------------------------------------------------------------------------
 
@@ -342,8 +352,10 @@ export function purchaseBuilding(type: 'chicken' | 'pig'): void {
   playerState.coins -= BUILDING_BUY_PRICE
   if (type === 'chicken') {
     playerState.chickenCoopOwned = true
+    animalTutorialCallbacks.onCoopPurchased()
   } else {
     playerState.pigPenOwned = true
+    animalTutorialCallbacks.onPenPurchased()
   }
   playSound('buttonclick')
   updateBuildingVisuals()
@@ -365,6 +377,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     const chicken: ChickenData = { id: newId(), lastEggAt: now }
     playerState.chickens.push(chicken)
     spawnChickenWanderer(chicken, playerState.chickens.length - 1)
+    if (playerState.chickens.length === 1) animalTutorialCallbacks.onFirstChickenBought()
     console.log(`[AnimalSystem] buyAnimal chicken — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
     return true
@@ -383,6 +396,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     }
     playerState.pigs.push(pig)
     spawnPigWanderer(pig, now, playerState.pigs.length - 1)
+    if (playerState.pigs.length === 1) animalTutorialCallbacks.onFirstPigBought()
     console.log(`[AnimalSystem] buyAnimal pig — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
     return true
@@ -504,6 +518,7 @@ export function depositFoodInBowl(type: 'chicken' | 'pig', grainAmount: number, 
       playerState.harvested.set(cropType as any, current - amount)
       playerState.chickenFoodInBowl += amount
     }
+    animalTutorialCallbacks.onCoopFed()
   } else {
     if (!playerState.pigPenOwned) return false
     if (grainAmount > 0) {
@@ -519,6 +534,7 @@ export function depositFoodInBowl(type: 'chicken' | 'pig', grainAmount: number, 
       // Depositing crops to pig pen feeds their feedScore
       for (const pig of playerState.pigs) pig.feedScore += amount
     }
+    animalTutorialCallbacks.onPenFed()
   }
   updateBuildingVisuals()
   playSound('buttonclick')
