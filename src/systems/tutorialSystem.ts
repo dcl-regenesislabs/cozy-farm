@@ -13,6 +13,8 @@ import { PlotState } from '../components/farmComponents'
 import { playSound } from './sfxSystem'
 import { initTutorialArrow, setArrowTarget } from './tutorialArrowSystem'
 import { progressionEventState } from '../game/progressionEventState'
+import { animalTutorialState } from '../game/animalTutorialState'
+import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
 import { saveFarm } from '../services/saveService'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
@@ -433,6 +435,36 @@ export function resetFarm() {
   playerState.progressionEventStep   = ''
   playerState.lastNpcVisitAt         = 0
   playerState.npcScheduleIndex       = 0
+
+  // Reset animal system
+  playerState.chickenCoopOwned   = false
+  playerState.chickens           = []
+  playerState.chickenFoodInBowl  = 0
+  playerState.chickenCoopDirtyAt = 0
+  playerState.pigPenOwned        = false
+  playerState.pigs               = []
+  playerState.pigFoodInBowl      = 0
+  playerState.pigPenDirtyAt      = 0
+  playerState.grainCount         = 0
+  playerState.veggieScrapCount   = 0
+  playerState.eggsCount          = 0
+  playerState.pigMeatCount       = 0
+  playerState.coopDirtAccumMs    = 0
+  playerState.penDirtAccumMs     = 0
+  playerState.activeFeedBowl     = null
+  despawnAllAnimals()
+  updateBuildingVisuals()
+
+  // Reset animal tutorials
+  playerState.chickenTutorialStep   = ''
+  playerState.pigTutorialStep       = ''
+  animalTutorialState.chickenActive = false
+  animalTutorialState.chickenStep   = ''
+  animalTutorialState.pigActive     = false
+  animalTutorialState.pigStep       = ''
+
+  // Reset plot group purchases
+  playerState.unlockedPlotGroups = []
 
   // Reset tutorial state
   tutorialState.active          = true

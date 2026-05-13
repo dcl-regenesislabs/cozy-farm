@@ -243,8 +243,11 @@ export function initAnimalBuildings(): void {
   Transform.create(emptyCoopEntity, { position: coopPos, scale: Vector3.create(1, 1, 1) })
   enablePointer(emptyCoopEntity)
   pointerEventsSystem.onPointerDown(
-    { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Buy Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => { purchaseBuilding('chicken') },
+    { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
+    () => {
+      if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
+      playerState.activeMenu = 'chickenCoop'
+    },
   )
 
   // Spawn AnimalBuildingEmpty placeholder for pen spot
@@ -253,8 +256,11 @@ export function initAnimalBuildings(): void {
   Transform.create(emptyPenEntity, { position: penPos, scale: Vector3.create(1, 1, 1) })
   enablePointer(emptyPenEntity)
   pointerEventsSystem.onPointerDown(
-    { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Buy Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => { purchaseBuilding('pig') },
+    { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
+    () => {
+      if (playerState.level < PIG_PEN_UNLOCK_LEVEL) return
+      playerState.activeMenu = 'pigPen'
+    },
   )
 
   // Wire coop building click → open chicken coop panel
@@ -660,6 +666,13 @@ function removeWanderer(id: string): void {
   if (!w) return
   engine.removeEntity(w.entity)
   wanderers.delete(id)
+}
+
+export function despawnAllAnimals(): void {
+  for (const [id, w] of wanderers) {
+    engine.removeEntity(w.entity)
+    wanderers.delete(id)
+  }
 }
 
 // ---------------------------------------------------------------------------

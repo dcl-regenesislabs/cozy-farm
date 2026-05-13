@@ -36,6 +36,7 @@ import { initBeautySpotSystem } from './systems/beautySpotSystem'
 import { initAnimalBuildings } from './systems/animalSystem'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
+import { initTutorialArrow } from './systems/tutorialArrowSystem'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -62,6 +63,10 @@ export function main() {
   initSocialService()
   initVisitorWaterFeedback()
   initAnimalBuildings()
+
+  // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,
+  // animal). Init unconditionally on boot so any tutorial can summon it.
+  initTutorialArrow()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

@@ -4,7 +4,7 @@ import { npcDialogState } from '../game/npcDialogState'
 import { animalTutorialState, animalTutorialCallbacks, type ChickenTutorialStep, type PigTutorialStep } from '../game/animalTutorialState'
 import { initNpcSystem, departAllActiveNpcs } from './npcSystem'
 import { MAYOR_DEF } from '../data/npcData'
-import { setArrowTarget } from './tutorialArrowSystem'
+import { setArrowTarget, initTutorialArrow } from './tutorialArrowSystem'
 import { playSound } from './sfxSystem'
 import { getEmptyCoopEntity, getEmptyPenEntity, getCoopFoodEntity, getPenFoodEntity } from './animalSystem'
 import { saveFarm } from '../services/saveService'
@@ -406,6 +406,11 @@ function resumePigTutorial(onComplete: () => void): void {
 // Entry point — called from index.ts after save loads
 // ============================================================================
 export function initAnimalTutorialSystem(onComplete: () => void): void {
+  // Ensure the compass arrow entity exists — it's normally created by the
+  // main tutorial system, but that only runs when the welcome tutorial is
+  // active. Players past Level 8/12 need it for animal tutorials too.
+  initTutorialArrow()
+
   const chickenStep = animalTutorialState.chickenStep as ChickenTutorialStep
   const pigStep     = animalTutorialState.pigStep as PigTutorialStep
 
