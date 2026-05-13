@@ -49,6 +49,7 @@ export const playerState = {
   totalLikesReceived: 0,
   mailbox: [] as MailboxReward[],
   mailboxSeenCount: 0,
+  serverConnected: false,
   socialToastText: '',
   socialToastExpiresAt: 0,
   levelUpToastText: '',

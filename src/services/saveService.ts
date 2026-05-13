@@ -306,6 +306,7 @@ function applyPayload(payload: FarmStatePayload): void {
   initAnimalSystem()
 
   farmLoaded = true
+  playerState.serverConnected = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
 }
 
