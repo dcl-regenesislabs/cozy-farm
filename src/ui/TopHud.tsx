@@ -9,6 +9,7 @@ import { BadgeDot } from './BadgeDot'
 
 
 const DEBUG_SOCIAL_TOAST = false
+const SHOW_SERVER_INDICATOR = false   // set to true for internal testing only
 const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 
 export const TopHud = () => {
@@ -34,31 +35,33 @@ export const TopHud = () => {
   return (
     <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { top: 0, left: 0 }, pointerFilter: 'none' }}>
 
-    {/* Server connection indicator — top-right corner */}
-    <UiEntity
-      uiTransform={{
-        positionType: 'absolute',
-        position: { top: 200, right: 230 },
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}
-    >
+    {/* Server connection indicator — dev only */}
+    {SHOW_SERVER_INDICATOR && (
       <UiEntity
-        uiTransform={{ width: 10, height: 10, margin: { right: 6 } }}
-        uiBackground={{ color: playerState.serverConnected
-          ? { r: 0.2, g: 0.9, b: 0.3, a: 1 }
-          : { r: 0.5, g: 0.5, b: 0.5, a: 0.6 }
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 200, right: 230 },
+          flexDirection: 'row',
+          alignItems: 'center',
         }}
-      />
-      <Label
-        value={playerState.serverConnected ? 'Connected' : 'Connecting...'}
-        fontSize={14}
-        color={playerState.serverConnected
-          ? { r: 0.2, g: 0.9, b: 0.3, a: 0.8 }
-          : { r: 0.6, g: 0.6, b: 0.6, a: 0.7 }
-        }
-      />
-    </UiEntity>
+      >
+        <UiEntity
+          uiTransform={{ width: 10, height: 10, margin: { right: 6 } }}
+          uiBackground={{ color: playerState.serverConnected
+            ? { r: 0.2, g: 0.9, b: 0.3, a: 1 }
+            : { r: 0.5, g: 0.5, b: 0.5, a: 0.6 }
+          }}
+        />
+        <Label
+          value={playerState.serverConnected ? 'Connected' : 'Connecting...'}
+          fontSize={14}
+          color={playerState.serverConnected
+            ? { r: 0.2, g: 0.9, b: 0.3, a: 0.8 }
+            : { r: 0.6, g: 0.6, b: 0.6, a: 0.7 }
+          }
+        />
+      </UiEntity>
+    )}
 
     {showSocialToast && (
       <UiEntity

@@ -498,6 +498,11 @@ export const leaderboardCallbacks = {
 // systems that depend on restored state, e.g. initTutorialSystem)
 // ---------------------------------------------------------------------------
 export function initSaveService(onLoaded?: () => void): void {
+  // Track server connection state — onReady fires true on connect, false on disconnect
+  room.onReady((isReady) => {
+    playerState.serverConnected = isReady
+  })
+
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (payload) => {
     // Filter: only apply if this is our own wallet.
