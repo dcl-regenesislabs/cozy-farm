@@ -9,13 +9,16 @@ import { BadgeDot } from './BadgeDot'
 
 
 const DEBUG_SOCIAL_TOAST = false
-const SHOW_SERVER_INDICATOR = false   // set to true for internal testing only
+const SHOW_SERVER_INDICATOR = true  // set to true for internal testing only
 const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 
 export const TopHud = () => {
   const xp       = getXpProgress()
   const xpPct    = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
   const isMaxLvl = playerState.level >= 20
+  const isConnected = playerState.serverConnected
+  const connectingBlinkOn = Math.floor(Date.now() / 500) % 2 === 0
+  const serverStatusLabelWidth = isConnected ? 84 : 98
   const liveSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
   const showSocialToast = DEBUG_SOCIAL_TOAST || liveSocialToast
   const socialToastText = DEBUG_SOCIAL_TOAST ? DEBUG_SOCIAL_TOAST_TEXT : playerState.socialToastText
@@ -36,32 +39,7 @@ export const TopHud = () => {
     <UiEntity uiTransform={{ width: '100%', height: '100%', positionType: 'absolute', position: { top: 0, left: 0 }, pointerFilter: 'none' }}>
 
     {/* Server connection indicator — dev only */}
-    {SHOW_SERVER_INDICATOR && (
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { top: 200, right: 230 },
-          flexDirection: 'row',
-          alignItems: 'center',
-        }}
-      >
-        <UiEntity
-          uiTransform={{ width: 10, height: 10, margin: { right: 6 } }}
-          uiBackground={{ color: playerState.serverConnected
-            ? { r: 0.2, g: 0.9, b: 0.3, a: 1 }
-            : { r: 0.5, g: 0.5, b: 0.5, a: 0.6 }
-          }}
-        />
-        <Label
-          value={playerState.serverConnected ? 'Connected' : 'Connecting...'}
-          fontSize={14}
-          color={playerState.serverConnected
-            ? { r: 0.2, g: 0.9, b: 0.3, a: 0.8 }
-            : { r: 0.6, g: 0.6, b: 0.6, a: 0.7 }
-          }
-        />
-      </UiEntity>
-    )}
+
 
     {showSocialToast && (
       <UiEntity
@@ -250,13 +228,54 @@ export const TopHud = () => {
           />
         </UiEntity>
 
-        {/* Row 3: XP text */}
-        <Label
-          value={isMaxLvl ? '' : `${xp.current} / ${xp.needed} XP`}
-          fontSize={15}
-          color={{ r: 0.58, g: 0.58, b: 0.58, a: 1 }}
-          uiTransform={{ width: 400, height: 22, margin: { top: 4 } }}
-        />
+        {/* Row 3: XP text + server indicator */}
+        <UiEntity
+          uiTransform={{
+            width: 400,
+            height: 22,
+            margin: { top: 4 },
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <Label
+            value={isMaxLvl ? '' : `${xp.current} / ${xp.needed} XP`}
+            fontSize={15}
+            color={{ r: 0.58, g: 0.58, b: 0.58, a: 1 }}
+            uiTransform={{ width: 250, height: 22 }}
+          />
+          {SHOW_SERVER_INDICATOR && (
+            <UiEntity
+              uiTransform={{
+                width: 12 + serverStatusLabelWidth,
+                height: 22,
+                margin: { right: 8 },
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+              }}
+            >
+              <UiEntity
+                uiTransform={{ width: 10, height: 10, borderRadius: 5 }}
+                uiBackground={{ color: isConnected
+                  ? { r: 0.2, g: 0.95, b: 0.3, a: 1 }
+                  : { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.3 }
+                }}
+              />
+              <Label
+                value={isConnected ? 'Connected' : 'Connecting...'}
+                fontSize={13}
+                color={isConnected
+                  ? { r: 0.7, g: 1, b: 0.74, a: 1 }
+                  : { r: 1, g: 0.72, b: 0.72, a: connectingBlinkOn ? 1 : 0.7 }
+                }
+                textAlign="middle-right"
+                uiTransform={{ width: serverStatusLabelWidth, height: 22 }}
+              />
+            </UiEntity>
+          )}
+        </UiEntity>
       </UiEntity>
     </UiEntity>
     </UiEntity>
