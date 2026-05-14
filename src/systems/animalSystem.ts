@@ -12,6 +12,7 @@ import {
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
 import type { ChickenData, PigData } from '../game/gameState'
+import { animalTutorialCallbacks } from '../game/animalTutorialState'
 import { addXp } from './levelingSystem'
 import { playSound } from './sfxSystem'
 import { spawnOrganicWasteVfx } from './harvestVfxSystem'
@@ -242,8 +243,11 @@ export function initAnimalBuildings(): void {
   Transform.create(emptyCoopEntity, { position: coopPos, scale: Vector3.create(1, 1, 1) })
   enablePointer(emptyCoopEntity)
   pointerEventsSystem.onPointerDown(
-    { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Buy Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => { purchaseBuilding('chicken') },
+    { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
+    () => {
+      if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
+      playerState.activeMenu = 'chickenCoop'
+    },
   )
 
   // Spawn AnimalBuildingEmpty placeholder for pen spot
@@ -252,8 +256,11 @@ export function initAnimalBuildings(): void {
   Transform.create(emptyPenEntity, { position: penPos, scale: Vector3.create(1, 1, 1) })
   enablePointer(emptyPenEntity)
   pointerEventsSystem.onPointerDown(
-    { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Buy Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => { purchaseBuilding('pig') },
+    { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
+    () => {
+      if (playerState.level < PIG_PEN_UNLOCK_LEVEL) return
+      playerState.activeMenu = 'pigPen'
+    },
   )
 
   // Wire coop building click → open chicken coop panel
@@ -323,6 +330,15 @@ export function initAnimalBuildings(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Entity accessors for tutorial arrow system
+// ---------------------------------------------------------------------------
+
+export function getEmptyCoopEntity(): Entity | null { return emptyCoopEntity }
+export function getEmptyPenEntity():  Entity | null { return emptyPenEntity  }
+export function getCoopFoodEntity():  Entity | null { return coopFood        }
+export function getPenFoodEntity():   Entity | null { return penFood         }
+
+// ---------------------------------------------------------------------------
 // Purchase a building (called when player clicks AnimalBuildingEmpty)
 // ---------------------------------------------------------------------------
 
@@ -342,8 +358,10 @@ export function purchaseBuilding(type: 'chicken' | 'pig'): void {
   playerState.coins -= BUILDING_BUY_PRICE
   if (type === 'chicken') {
     playerState.chickenCoopOwned = true
+    animalTutorialCallbacks.onCoopPurchased()
   } else {
     playerState.pigPenOwned = true
+    animalTutorialCallbacks.onPenPurchased()
   }
   playSound('buttonclick')
   updateBuildingVisuals()
@@ -365,6 +383,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     const chicken: ChickenData = { id: newId(), lastEggAt: now }
     playerState.chickens.push(chicken)
     spawnChickenWanderer(chicken, playerState.chickens.length - 1)
+    if (playerState.chickens.length === 1) animalTutorialCallbacks.onFirstChickenBought()
     console.log(`[AnimalSystem] buyAnimal chicken — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
     return true
@@ -383,6 +402,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     }
     playerState.pigs.push(pig)
     spawnPigWanderer(pig, now, playerState.pigs.length - 1)
+    if (playerState.pigs.length === 1) animalTutorialCallbacks.onFirstPigBought()
     console.log(`[AnimalSystem] buyAnimal pig — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
     return true
@@ -504,6 +524,7 @@ export function depositFoodInBowl(type: 'chicken' | 'pig', grainAmount: number, 
       playerState.harvested.set(cropType as any, current - amount)
       playerState.chickenFoodInBowl += amount
     }
+    animalTutorialCallbacks.onCoopFed()
   } else {
     if (!playerState.pigPenOwned) return false
     if (grainAmount > 0) {
@@ -519,6 +540,7 @@ export function depositFoodInBowl(type: 'chicken' | 'pig', grainAmount: number, 
       // Depositing crops to pig pen feeds their feedScore
       for (const pig of playerState.pigs) pig.feedScore += amount
     }
+    animalTutorialCallbacks.onPenFed()
   }
   updateBuildingVisuals()
   playSound('buttonclick')
@@ -644,6 +666,13 @@ function removeWanderer(id: string): void {
   if (!w) return
   engine.removeEntity(w.entity)
   wanderers.delete(id)
+}
+
+export function despawnAllAnimals(): void {
+  for (const [id, w] of wanderers) {
+    engine.removeEntity(w.entity)
+    wanderers.delete(id)
+  }
 }
 
 // ---------------------------------------------------------------------------

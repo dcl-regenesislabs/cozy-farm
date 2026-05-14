@@ -83,6 +83,9 @@ export const playerState = {
   // Progression events (Level 5 Mayor return, etc.)
   rotSystemUnlocked: false,
   progressionEventStep: '',
+  // Animal tutorials
+  chickenTutorialStep: '',
+  pigTutorialStep:     '',
   // NPC scheduling
   lastNpcVisitAt: 0,
   npcScheduleIndex: 0,

@@ -122,6 +122,9 @@ const FarmStateSchema = Schemas.Map({
   // Progression events (Level 5 Mayor return, etc.)
   rotSystemUnlocked:      Schemas.Boolean,
   progressionEventStep:   Schemas.String,
+  // Animal tutorials
+  chickenTutorialStep:    Schemas.String,
+  pigTutorialStep:        Schemas.String,
 
   // NPC scheduling
   lastNpcVisitAt:         Schemas.Number,
@@ -465,6 +468,8 @@ export type FarmStatePayload = {
   claimedRewards: number[]
   rotSystemUnlocked:      boolean
   progressionEventStep:   string
+  chickenTutorialStep:    string
+  pigTutorialStep:        string
   lastNpcVisitAt:         number
   npcScheduleIndex:       number
   plotStates:     PlotSaveState[]

@@ -21,6 +21,8 @@ import { initTutorialSystem } from './systems/tutorialSystem'
 import { tutorialCallbacks, tutorialState } from './game/tutorialState'
 import { progressionEventState, progressionEventCallbacks } from './game/progressionEventState'
 import { initProgressionEventsSystem, getProgressionEventMayorClickHandler, setOnProgressionEventComplete } from './systems/progressionEventsSystem'
+import { initAnimalTutorialSystem, setOnChickenTutorialComplete, setOnPigTutorialComplete, triggerChickenTutorial, triggerPigTutorial, getChickenTutorialMayorClickHandler, getPigTutorialMayorClickHandler } from './systems/animalTutorialSystem'
+import { animalTutorialState, animalTutorialCallbacks } from './game/animalTutorialState'
 import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { initVisitService } from './services/visitService'
@@ -34,6 +36,7 @@ import { initBeautySpotSystem } from './systems/beautySpotSystem'
 import { initAnimalBuildings } from './systems/animalSystem'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
+import { initTutorialArrow } from './systems/tutorialArrowSystem'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -60,6 +63,10 @@ export function main() {
   initSocialService()
   initVisitorWaterFeedback()
   initAnimalBuildings()
+
+  // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,
+  // animal). Init unconditionally on boot so any tutorial can summon it.
+  initTutorialArrow()
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.
@@ -107,15 +114,44 @@ export function main() {
       initProgressionEventsSystem()
       progressionEventCallbacks.onMayorClicked = getProgressionEventMayorClickHandler()
 
+      // Animal tutorial system — must come after save loads (animalTutorialState is set in applyPayload)
+      initAnimalTutorialSystem(startRegularNpcRotation)
+      setOnChickenTutorialComplete(startRegularNpcRotation)
+      setOnPigTutorialComplete(startRegularNpcRotation)
+
       // Show a 4-second HUD banner whenever the player levels up.
       onLevelUp((newLevel) => {
         console.log('CozyFarm: Level up toast →', newLevel)
         playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
         playerState.levelUpToastExpiresAt = Date.now() + 4000
+
+        // Animal tutorial triggers (skip if another modal tutorial is mid-flow)
+        if (
+          newLevel === 8 &&
+          !animalTutorialState.chickenActive &&
+          animalTutorialState.chickenStep === '' &&
+          !progressionEventState.active
+        ) {
+          triggerChickenTutorial(startRegularNpcRotation)
+        }
+        if (
+          newLevel === 12 &&
+          !animalTutorialState.pigActive &&
+          animalTutorialState.pigStep === '' &&
+          !progressionEventState.active
+        ) {
+          triggerPigTutorial(startRegularNpcRotation)
+        }
       })
 
       // After the progression event (Level 5 Mayor return) is done, start NPC rotation
       setOnProgressionEventComplete(() => startRegularNpcRotation())
+
+      // Wire animal tutorial Mayor click handlers
+      animalTutorialCallbacks.onMayorClicked = () => {
+        if (animalTutorialState.chickenActive) getChickenTutorialMayorClickHandler()()
+        else if (animalTutorialState.pigActive) getPigTutorialMayorClickHandler()()
+      }
 
       // ── NPC Scheduling ─────────────────────────────────────────────────────
 
@@ -200,6 +236,9 @@ export function main() {
       } else if (progressionEventState.active) {
         // Progression event in progress — Mayor already spawned by initProgressionEventsSystem
         // Rotation will start when Mayor departs (wired via the onDespawned callback inside that system)
+      } else if (animalTutorialState.chickenActive || animalTutorialState.pigActive) {
+        // Animal tutorial in progress — Mayor spawned by initAnimalTutorialSystem (resume path)
+        // Rotation starts when Mayor departs via setOnChickenTutorialComplete / setOnPigTutorialComplete
       } else {
         startRegularNpcRotation()
       }
