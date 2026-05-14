@@ -3,6 +3,7 @@ import { room } from '../shared/farmMessages'
 import {
   createFarmProgressStore, emptyFarm, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
+  loadFarmSlots, claimFarmSlot,
 } from './storage/playerFarm'
 import { WORKER_DEBUG_ENABLED } from '../shared/worker'
 
@@ -377,6 +378,40 @@ export function setupFarmServer(): void {
         seeds:   [],
         rewards: [],
       }, { to: [requester] })
+    }
+  })
+
+  // ── Farm slot registry ──────────────────────────────────────────────────────
+
+  room.onMessage('loadFarmSlots', async (_data, context) => {
+    if (!context) return
+    const requester = context.from.toLowerCase()
+    try {
+      const slots = await loadFarmSlots()
+      void room.send('farmSlotsLoaded', { requester, slots })
+    } catch (err) {
+      console.error('[FarmServer] loadFarmSlots error:', err)
+      void room.send('farmSlotsLoaded', { requester, slots: [] })
+    }
+  })
+
+  room.onMessage('claimFarmSlot', async (_data, context) => {
+    if (!context) return
+    const requester    = context.from.toLowerCase()
+    const slotId       = typeof _data.slotId === 'number' ? _data.slotId : -1
+    const displayName  = getDisplayName(requester)
+    try {
+      const result = await claimFarmSlot(requester, displayName, slotId)
+      void room.send('farmSlotClaimed', {
+        requester,
+        success: result.success,
+        reason:  result.reason,
+        slotId,
+        slots:   result.slots,
+      })
+    } catch (err) {
+      console.error('[FarmServer] claimFarmSlot error:', err)
+      void room.send('farmSlotClaimed', { requester, success: false, reason: 'server_error', slotId, slots: [] })
     }
   })
 

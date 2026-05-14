@@ -1,5 +1,5 @@
 import { Storage } from '@dcl/sdk/server'
-import type { FarmStatePayload, ChickenDataPayload, PigDataPayload, PlotSaveState, CropCount, FertilizerCount, QuestProgressSave, PlayerEntry, MailboxReward } from '../../shared/farmMessages'
+import type { FarmStatePayload, ChickenDataPayload, PigDataPayload, PlotSaveState, CropCount, FertilizerCount, QuestProgressSave, PlayerEntry, MailboxReward, FarmSlot } from '../../shared/farmMessages'
 import { calculateBeautyScore } from '../../game/beautyScore'
 import { WORKER_DAILY_WAGE, WORKER_DAY_MS } from '../../shared/worker'
 import { CROP_DATA, CropType } from '../../data/cropData'
@@ -1297,4 +1297,67 @@ export async function loadPlayerRegistryPage(
     players: slice.map(({ address, level, displayName }) => ({ address, level, displayName: displayName ?? '' })),
     totalPages,
   }
+}
+
+// ---------------------------------------------------------------------------
+// Farm slot registry — tracks which wallet owns each physical farm slot
+// ---------------------------------------------------------------------------
+
+const SLOTS_KEY  = 'farm_slots'
+const MAX_SLOTS  = 3
+
+function emptySlots(): FarmSlot[] {
+  return Array.from({ length: MAX_SLOTS }, (_, i) => ({
+    slotId:      i,
+    wallet:      '',
+    displayName: '',
+    claimedAt:   0,
+  }))
+}
+
+export async function loadFarmSlots(): Promise<FarmSlot[]> {
+  const raw = await Storage.get<FarmSlot[]>(SLOTS_KEY)
+  if (!Array.isArray(raw) || raw.length === 0) return emptySlots()
+  // Ensure MAX_SLOTS entries always exist
+  const slots = emptySlots()
+  for (const entry of raw) {
+    if (entry.slotId >= 0 && entry.slotId < MAX_SLOTS) {
+      slots[entry.slotId] = entry
+    }
+  }
+  return slots
+}
+
+export async function claimFarmSlot(
+  wallet: string,
+  displayName: string,
+  slotId: number,
+): Promise<{ success: boolean; reason: string; slots: FarmSlot[] }> {
+  const normalized = wallet.toLowerCase()
+  const slots = await loadFarmSlots()
+
+  // Player already owns a slot?
+  const existing = slots.find((s) => s.wallet === normalized)
+  if (existing) {
+    return { success: false, reason: 'already_claimed', slots }
+  }
+
+  // Slot valid?
+  if (slotId < 0 || slotId >= MAX_SLOTS) {
+    return { success: false, reason: 'invalid_slot', slots }
+  }
+
+  // Slot already taken?
+  if (slots[slotId].wallet !== '') {
+    return { success: false, reason: 'slot_taken', slots }
+  }
+
+  slots[slotId] = { slotId, wallet: normalized, displayName, claimedAt: Date.now() }
+  await Storage.set(SLOTS_KEY, slots)
+  console.log(`[SlotRegistry] Slot ${slotId} claimed by ${normalized} (${displayName})`)
+  return { success: true, reason: 'ok', slots }
+}
+
+export function getSlotForWallet(slots: FarmSlot[], wallet: string): FarmSlot | null {
+  return slots.find((s) => s.wallet === wallet.toLowerCase()) ?? null
 }

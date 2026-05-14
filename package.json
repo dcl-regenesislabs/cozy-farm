@@ -13,7 +13,7 @@
     "deploy:production": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org"
   },
   "devDependencies": {
-    "@dcl/js-runtime": "^7.22.6-25321038582.commit-63ddb3f",
+    "@dcl/js-runtime": "7.22.6-25321038582.commit-63ddb3f",
     "@dcl/sdk": "^7.22.6-25321038582.commit-63ddb3f"
   },
   "engines": {

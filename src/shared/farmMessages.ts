@@ -169,6 +169,16 @@ const FarmStateSchema = Schemas.Map({
 })
 
 // ---------------------------------------------------------------------------
+// Farm slot — one entry per physical farm location in the world
+// ---------------------------------------------------------------------------
+const FarmSlotSchema = Schemas.Map({
+  slotId:      Schemas.Int,
+  wallet:      Schemas.String,   // empty string = unclaimed
+  displayName: Schemas.String,
+  claimedAt:   Schemas.Number,
+})
+
+// ---------------------------------------------------------------------------
 // Player registry entry — used in the Farmers Directory
 // ---------------------------------------------------------------------------
 const PlayerEntrySchema = Schemas.Map({
@@ -346,6 +356,27 @@ const FarmMessages = {
     workerUnpaidDays: Schemas.Int,
     workerLastWageProcessedAt: Schemas.Int64,
   }),
+
+  /** Client → Server: request current state of all farm slots */
+  loadFarmSlots: Schemas.Map({}),
+
+  /** Server → Client: full slot list */
+  farmSlotsLoaded: Schemas.Map({
+    requester: Schemas.String,
+    slots:     Schemas.Array(FarmSlotSchema),
+  }),
+
+  /** Client → Server: claim an empty slot */
+  claimFarmSlot: Schemas.Map({ slotId: Schemas.Int }),
+
+  /** Server → Client: result of a claim attempt */
+  farmSlotClaimed: Schemas.Map({
+    requester: Schemas.String,
+    success:   Schemas.Boolean,
+    reason:    Schemas.String,
+    slotId:    Schemas.Int,
+    slots:     Schemas.Array(FarmSlotSchema),
+  }),
 }
 
 export const room = registerMessages(FarmMessages)
@@ -494,4 +525,11 @@ export type FarmStatePayload = {
   beautySlots:    number[]
   totalLikesReceived: number
   mailbox: MailboxReward[]
+}
+
+export type FarmSlot = {
+  slotId:      number
+  wallet:      string   // empty string = unclaimed
+  displayName: string
+  claimedAt:   number
 }

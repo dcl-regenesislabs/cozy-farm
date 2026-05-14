@@ -23,6 +23,7 @@ import { ChickenCoopPanel } from './ui/ChickenCoopPanel'
 import { PigPenPanel }      from './ui/PigPenPanel'
 import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
+import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -62,6 +63,9 @@ const MainUi = () => (
 
     {/* Leaderboard panel */}
     {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
+
+    {/* Farm selection — shown on first load if player has no slot */}
+    {playerState.activeMenu === 'farmSelect' && <FarmSelectPanel />}
 
     {/* Bottom-nav panels */}
     {playerState.activeMenu === 'inventory' && <InventoryPanel />}

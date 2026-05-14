@@ -492,6 +492,11 @@ export const leaderboardCallbacks = {
   onBeautyLeaderboardLoaded: null as ((data: BeautyLeaderboardResponse) => void) | null,
 }
 
+export const slotCallbacks = {
+  onSlotsLoaded:  null as ((slots: import('../shared/farmMessages').FarmSlot[]) => void) | null,
+  onSlotClaimed:  null as ((success: boolean, reason: string, slots: import('../shared/farmMessages').FarmSlot[]) => void) | null,
+}
+
 // ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
 // onLoaded is called after the first farm state is applied (use it to start
@@ -543,9 +548,33 @@ export function initSaveService(onLoaded?: () => void): void {
     applyDebugWorkerState(data)
   })
 
+  // Slot messages
+  room.onMessage('farmSlotsLoaded', (data) => {
+    if (data.requester !== playerState.wallet) return
+    playerState.farmSlots = data.slots
+    const mine = data.slots.find((s) => s.wallet === playerState.wallet)
+    playerState.mySlotId = mine ? mine.slotId : -1
+    // Show farm select if player has no slot yet
+    if (!mine && playerState.activeMenu === 'none') {
+      playerState.activeMenu = 'farmSelect'
+    }
+    slotCallbacks.onSlotsLoaded?.(data.slots)
+  })
+
+  room.onMessage('farmSlotClaimed', (data) => {
+    if (data.requester !== playerState.wallet) return
+    if (data.success) {
+      playerState.mySlotId  = data.slotId
+      playerState.farmSlots = data.slots
+      if (playerState.activeMenu === 'farmSelect') playerState.activeMenu = 'none'
+    }
+    slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
+  })
+
   // Ask server to load our farm (wallet must already be set in playerState)
   executeTask(async () => {
     void room.send('playerLoadFarm', {})
+    void room.send('loadFarmSlots', {})
   })
 
   scheduleAutoSave()
