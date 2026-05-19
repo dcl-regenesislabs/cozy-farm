@@ -9,9 +9,9 @@ import { WORKER_DEBUG_ENABLED } from '../shared/worker'
 // ---------------------------------------------------------------------------
 // In-memory farm slot registry — session-based, not persisted.
 // Slots are assigned when players connect and released when they disconnect.
-// Max 3 slots (will be 8 in production).
+// Max 8 slots.
 // ---------------------------------------------------------------------------
-const MAX_FARM_SLOTS = 3
+const MAX_FARM_SLOTS = 8
 const activeSlots  = new Map<number, string>()   // slot → wallet
 const playerSlots  = new Map<string, number>()    // wallet → slot
 
@@ -42,9 +42,30 @@ function getActiveSlotsPayload() {
   return Array.from({ length: MAX_FARM_SLOTS }, (_, i) => ({
     slotId: i,
     wallet: activeSlots.get(i) ?? '',
-    displayName: '',
+    displayName: activeSlots.get(i) ? getDisplayName(activeSlots.get(i)!) : '',
     claimedAt: 0,
   }))
+}
+
+function buildFarmSlotVisualPayload(slotId: number, wallet: string) {
+  const farm = store.get(wallet)
+  if (!farm) return null
+
+  return {
+    slotId,
+    wallet,
+    plotStates: farm.plotStates,
+    beautySlots: farm.beautySlots,
+    chickenCoopOwned: farm.chickenCoopOwned,
+    chickens: farm.chickens,
+    chickenFoodInBowl: farm.chickenFoodInBowl,
+    chickenCoopDirtyAt: farm.chickenCoopDirtyAt,
+    pigPenOwned: farm.pigPenOwned,
+    pigs: farm.pigs,
+    pigFoodInBowl: farm.pigFoodInBowl,
+    pigPenDirtyAt: farm.pigPenDirtyAt,
+    compostBinUnlocked: farm.compostBinUnlocked,
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -97,16 +118,16 @@ async function loadAndSend(address: string): Promise<void> {
   const slots  = getActiveSlotsPayload()
   void room.send('farmSlotsLoaded', { requester: normalized, slots })
 
+  for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
+    const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
+    if (!visualPayload) continue
+    void room.send('farmSlotVisualUpdated', visualPayload)
+  }
+
   if (slotId !== null) {
     console.log(`[FarmServer] Slot ${slotId} assigned to ${normalized}`)
-    const farm = store.get(normalized)
-    if (farm) {
-      void room.send('farmSlotVisualUpdated', {
-        slotId,
-        wallet:     normalized,
-        plotStates: farm.plotStates,
-      })
-    }
+    const visualPayload = buildFarmSlotVisualPayload(slotId, normalized)
+    if (visualPayload) void room.send('farmSlotVisualUpdated', visualPayload)
   } else {
     console.log(`[FarmServer] No free slots for ${normalized} — spawning in plaza`)
   }
@@ -124,6 +145,26 @@ function sendWorkerStatus(address: string): void {
     workerUnpaidDays: farm.workerUnpaidDays,
     workerLastWageProcessedAt: farm.workerLastWageProcessedAt,
   }, { to: [normalized] })
+}
+
+async function cleanupDisconnectedPlayers(): Promise<void> {
+  const connected = new Set<string>()
+  for (const [_entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
+    connected.add(identity.address.toLowerCase())
+  }
+
+  for (const address of [...loadedAddresses]) {
+    if (connected.has(address)) continue
+
+    await store.saveAndEvict(address)
+    loadedAddresses.delete(address)
+
+    const slotId = releaseSlot(address)
+    if (slotId !== null) {
+      console.log(`[FarmServer] Slot ${slotId} released after presence cleanup`)
+      void room.send('farmSlotReleased', { slotId })
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -159,6 +200,7 @@ function farmAutosaveSystem(dt: number): void {
     }))
 
     await store.saveDirty()
+    await cleanupDisconnectedPlayers()
   })()
 }
 
@@ -195,6 +237,11 @@ export function setupFarmServer(): void {
 
     const saved = store.get(normalized)
     if (saved) void updatePlayerRegistry(normalized, saved.level, getDisplayName(normalized), saved.beautyScore)
+    const slotId = playerSlots.get(normalized)
+    if (slotId !== undefined) {
+      const visualPayload = buildFarmSlotVisualPayload(slotId, normalized)
+      if (visualPayload) void room.send('farmSlotVisualUpdated', visualPayload)
+    }
     // Bust leaderboard cache on every save so rankings stay fresh
     leaderboardCache = null
   })

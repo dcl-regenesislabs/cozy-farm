@@ -30,10 +30,11 @@ import { DIALOG_ICON, BOX_CROPS_ICON } from '../data/imagePaths'
 import { playSound } from './sfxSystem'
 import { COINS_ICON, EXCLAMATION_ICON } from '../data/imagePaths'
 import { getWorkerStatus } from '../shared/worker'
+import { getCurrentFarmEntity, getCurrentFarmOffset } from './farmInstances'
 
 const FARMER_MODEL  = 'assets/scene/Models/Farmer01/Farmer01.glb'
-const HOME_POS       = Vector3.create(44.66, 0, 70.91)
-const HOME_FACE_TARGET = Vector3.create(44, 0, 62)
+const HOME_POS_BASE         = Vector3.create(44.66, 0, 70.91)
+const HOME_FACE_TARGET_BASE = Vector3.create(44, 0, 62)
 const WALK_SPEED     = 2.0   // units / second
 const ACTION_DURATION = 4.0  // seconds — covers watering VFX (~3.3 s)
 const TALK_DURATION  = 3.0
@@ -64,9 +65,24 @@ const GRAPH: Record<string, string[]> = {
 
 const waypointPositions = new Map<string, Vector3>()
 
+function getHomePos(): Vector3 {
+  const offset = getCurrentFarmOffset()
+  return Vector3.create(HOME_POS_BASE.x + offset.x, HOME_POS_BASE.y + offset.y, HOME_POS_BASE.z + offset.z)
+}
+
+function getHomeFaceTarget(): Vector3 {
+  const offset = getCurrentFarmOffset()
+  return Vector3.create(
+    HOME_FACE_TARGET_BASE.x + offset.x,
+    HOME_FACE_TARGET_BASE.y + offset.y,
+    HOME_FACE_TARGET_BASE.z + offset.z,
+  )
+}
+
 function discoverWaypoints() {
+  waypointPositions.clear()
   for (const name of WP_NAMES) {
-    const entity = engine.getEntityOrNullByName(name)
+    const entity = getCurrentFarmEntity(name)
     if (entity) {
       const p = Transform.get(entity).position
       waypointPositions.set(name, Vector3.create(p.x, p.y, p.z))
@@ -74,7 +90,8 @@ function discoverWaypoints() {
       console.log(`CozyFarm: waypoint '${name}' not found`)
     }
   }
-  waypointPositions.set('HOME', Vector3.create(HOME_POS.x, HOME_POS.y, HOME_POS.z))
+  const homePos = getHomePos()
+  waypointPositions.set('HOME', Vector3.create(homePos.x, homePos.y, homePos.z))
   console.log(`CozyFarm: discovered ${waypointPositions.size - 1} waypoints`)
 }
 
@@ -454,7 +471,7 @@ engine.addSystem((dt: number) => {
     if (farmer.state !== 'idle' && farmer.state !== 'returning') {
       farmer.targetPlot = null
       farmer.actionType = ''
-      startWalkToTarget(HOME_POS)
+      startWalkToTarget(getHomePos())
       farmer.state = 'returning'
     }
 
@@ -511,7 +528,7 @@ engine.addSystem((dt: number) => {
         startWalkToTarget(getApproachPos(Transform.get(next.plot).position))
         farmer.state = 'walking'
       } else {
-        startWalkToTarget(HOME_POS)
+        startWalkToTarget(getHomePos())
         farmer.state = 'returning'
       }
       break
@@ -525,7 +542,7 @@ engine.addSystem((dt: number) => {
         return
       }
       // Back home — gently face toward the fields
-      updateFacing(HOME_FACE_TARGET, dt)
+      updateFacing(getHomeFaceTarget(), dt)
       playAnim('Idle')
       farmer.idleTimer = 7 + Math.random() * 23
       farmer.targetPlot = null
@@ -548,7 +565,7 @@ export function spawnFarmer() {
   farmer.entity = farmerEntity
 
   Transform.create(farmerEntity, {
-    position: HOME_POS,
+    position: getHomePos(),
     rotation: Quaternion.fromAngleAxis(180, Vector3.Up()),
     scale: Vector3.create(1.20, 1.2, 1.2),
   })

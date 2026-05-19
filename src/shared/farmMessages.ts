@@ -185,6 +185,16 @@ const FarmSlotVisualSchema = Schemas.Map({
   slotId:     Schemas.Int,
   wallet:     Schemas.String,
   plotStates: Schemas.Array(PlotSaveSchema),
+  beautySlots: Schemas.Array(Schemas.Int),
+  chickenCoopOwned: Schemas.Boolean,
+  chickens: Schemas.Array(ChickenDataSchema),
+  chickenFoodInBowl: Schemas.Int,
+  chickenCoopDirtyAt: Schemas.Number,
+  pigPenOwned: Schemas.Boolean,
+  pigs: Schemas.Array(PigDataSchema),
+  pigFoodInBowl: Schemas.Int,
+  pigPenDirtyAt: Schemas.Number,
+  compostBinUnlocked: Schemas.Boolean,
 })
 
 // ---------------------------------------------------------------------------
@@ -546,6 +556,16 @@ export type FarmSlotVisual = {
   slotId:     number
   wallet:     string
   plotStates: PlotSaveState[]
+  beautySlots: number[]
+  chickenCoopOwned: boolean
+  chickens: ChickenDataPayload[]
+  chickenFoodInBowl: number
+  chickenCoopDirtyAt: number
+  pigPenOwned: boolean
+  pigs: PigDataPayload[]
+  pigFoodInBowl: number
+  pigPenDirtyAt: number
+  compostBinUnlocked: boolean
 }
 
 export type FarmSlot = {

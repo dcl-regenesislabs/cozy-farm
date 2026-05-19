@@ -6,10 +6,10 @@ import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse, FarmSlotVisual } from '../shared/farmMessages'
 import { calculateBeautyScore } from '../game/beautyScore'
 import { getBeautySlots, applyBeautySlots } from '../systems/beautySpotSystem'
-import { setCropModel, setSoilIconDisplay, applyRotVisual } from '../game/actions'
+import { setCropModel, setSoilIconDisplay, applyRotVisual, removeCropModel } from '../game/actions'
 import { isPlotRotten } from '../game/rotUtils'
 import {
   unlockExpansion1Plots, unlockExpansion2Plots,
@@ -25,14 +25,18 @@ import {
   hideFarmSlot,
   farmSlotSoils,
   setupFarmSlotEntities,
+  getSoilEntities,
 } from '../systems/interactionSetup'
 import { LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 import { questProgressMap, QuestStatus } from '../game/questState'
 import { musicState } from '../game/musicState'
 import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
-import { initAnimalSystem } from '../systems/animalSystem'
+import { initAnimalBuildings, initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
+import { initBeautySpotSystem } from '../systems/beautySpotSystem'
+import { renderRemoteFarmVisual } from '../systems/remoteFarmVisuals'
+import { spawnDog } from '../systems/dogSystem'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval
@@ -81,7 +85,7 @@ function fertArrayToMap(arr: FertilizerCount[]): Map<FertilizerType, number> {
 // ---------------------------------------------------------------------------
 function collectPlotStates(): PlotSaveState[] {
   const states: PlotSaveState[] = []
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     const plot = PlotState.get(entity)
     states.push({
       plotIndex:     plot.plotIndex,
@@ -225,6 +229,7 @@ function applyPayload(payload: FarmStatePayload): void {
 
   // ── Dog ───────────────────────────────────────────────────────────────────
   playerState.dogOwned = payload.dogOwned
+  if (playerState.dogOwned) spawnDog()
 
   // ── Lifetime stats ────────────────────────────────────────────────────────
   playerState.totalCropsHarvested = payload.totalCropsHarvested
@@ -323,7 +328,7 @@ function applyPayload(payload: FarmStatePayload): void {
 export function restorePlotStates(savedPlots: PlotSaveState[]): void {
   // Build an index: plotIndex → soil entity
   const entityByIndex = new Map<number, ReturnType<typeof engine.addEntity>>()
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     const plot = PlotState.get(entity)
     entityByIndex.set(plot.plotIndex, entity)
   }
@@ -508,7 +513,8 @@ export const slotCallbacks = {
 // ---------------------------------------------------------------------------
 // Teleport player to their farm slot spawn position (or central plaza)
 // ---------------------------------------------------------------------------
-function renderOtherFarmSlot(slotId: number, savedPlots: PlotSaveState[]): void {
+function renderOtherFarmSlot(slotId: number, visual: FarmSlotVisual): void {
+  const savedPlots = visual.plotStates
   const soils = farmSlotSoils[slotId]
   if (!soils || soils.length === 0) return
 
@@ -526,13 +532,28 @@ function renderOtherFarmSlot(slotId: number, savedPlots: PlotSaveState[]): void 
       })
     }
     const mutable = PlotState.getMutable(entity)
+    removeCropModel(entity)
     mutable.isUnlocked   = saved.isUnlocked
     mutable.cropType     = saved.cropType
     mutable.growthStage  = saved.growthStage
     mutable.isReady      = saved.isReady
     mutable.isRotten     = saved.isRotten
 
-    if (saved.isUnlocked && saved.cropType !== -1) {
+    if (saved.cropType === -1) {
+      removeCropModel(entity)
+      if (saved.isUnlocked && saved.plotIndex >= 1) {
+        GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+      } else if (!saved.isUnlocked) {
+        GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
+      }
+      continue
+    }
+
+    if (saved.isUnlocked && saved.plotIndex >= 1) {
+      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
+    }
+
+    if (saved.isUnlocked) {
       const def = CROP_DATA.get(saved.cropType as CropType)
       if (def && saved.growthStage > 0) {
         setCropModel(entity, CROP_MODELS[saved.cropType as CropType][saved.growthStage - 1])
@@ -541,9 +562,12 @@ function renderOtherFarmSlot(slotId: number, savedPlots: PlotSaveState[]): void 
       GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
     }
   }
+
+  renderRemoteFarmVisual(slotId, visual)
   console.log(`[MultiFarm] Rendered ${savedPlots.length} plots into slot ${slotId}`)
 }
 
+const SOIL_MODEL = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
 
 function teleportToSlot(slotId: number): void {
@@ -625,7 +649,7 @@ export function initSaveService(onLoaded?: () => void): void {
       return
     }
     revealFarmSlot(data.slotId)
-    renderOtherFarmSlot(data.slotId, data.plotStates)
+    renderOtherFarmSlot(data.slotId, data)
   })
 
   room.onMessage('farmSlotsLoaded', (data) => {
@@ -637,6 +661,8 @@ export function initSaveService(onLoaded?: () => void): void {
     // Wire slot-specific entities BEFORE applying the payload so soilEntities
     // points to the correct farm's soils when restorePlotStates runs.
     setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
+    initBeautySpotSystem()
+    initAnimalBuildings()
 
     // Reveal own farm slot (slot 0 always visible, 1 and 2 start hidden)
     if (mine && mine.slotId > 0) revealFarmSlot(mine.slotId)

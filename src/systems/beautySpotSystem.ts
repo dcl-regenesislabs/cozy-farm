@@ -9,6 +9,7 @@ import { BeautySpotState } from '../components/farmComponents'
 import { BEAUTY_OBJECTS, RARITY_LABEL } from '../data/beautyObjectData'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
+import { getCurrentFarmEntity } from './farmInstances'
 
 // Scene-editor entity names — place these 3 objects in Creator Hub
 const SPOT_NAMES = ['BeautySpot_1', 'BeautySpot_2', 'BeautySpot_3']
@@ -149,9 +150,13 @@ export function hasEmptySlot(): boolean {
 // Init
 // ---------------------------------------------------------------------------
 export function initBeautySpotSystem(): void {
+  spotEntities.length = 0
+  padEntities.length = 0
+  modelEntities.length = 0
+
   let found = 0
   for (let i = 0; i < SPOT_NAMES.length; i++) {
-    const entity = engine.getEntityOrNullByName(SPOT_NAMES[i])
+    const entity = getCurrentFarmEntity(SPOT_NAMES[i])
     if (!entity) {
       console.error(`CozyFarm BeautySpots: "${SPOT_NAMES[i]}" not found in scene`)
       continue

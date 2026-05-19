@@ -313,13 +313,13 @@
   "skyboxConfig": {},
   "source": {
     "origin": "creator-hub",
-    "projectId": "d5069751-c2e5-4b1c-8674-6715a25711c8"
+    "projectId": "b3e99e7c-f492-4f20-8a2d-53164ce8b11b"
   },
   "worldConfiguration": {
     "name": "pepino.dcl.eth"
   },
   "authoritativeMultiplayer": true,
-   "logsPermissions": [
+  "logsPermissions": [
     "0xb8c4df381c6c305758f806c3aa71f37aabbcbd92",
     "0xc502975b49398f9754AFC4E9693Cf0e1594f3275"
   ]

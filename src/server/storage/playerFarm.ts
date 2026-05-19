@@ -1304,7 +1304,7 @@ export async function loadPlayerRegistryPage(
 // ---------------------------------------------------------------------------
 
 const SLOTS_KEY  = 'farm_slots'
-const MAX_SLOTS  = 3
+const MAX_SLOTS  = 8
 
 function emptySlots(): FarmSlot[] {
   return Array.from({ length: MAX_SLOTS }, (_, i) => ({
