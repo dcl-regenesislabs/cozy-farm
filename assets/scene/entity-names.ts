@@ -5,7 +5,6 @@
  * Object containing all entity names in the scene for autocomplete support.
  */
 export enum EntityNames {
-  _2_Soil01_glb_85 = "2_Soil01.glb_85",
   AnimalFoodEmpty_glb = "AnimalFoodEmpty.glb",
   AnimalFoodEmpty_glb_2 = "AnimalFoodEmpty.glb_2",
   AnimalFoodEmpty_glb_3 = "AnimalFoodEmpty.glb_3",
