@@ -3,9 +3,49 @@ import { room } from '../shared/farmMessages'
 import {
   createFarmProgressStore, emptyFarm, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
-  loadFarmSlots, claimFarmSlot,
 } from './storage/playerFarm'
 import { WORKER_DEBUG_ENABLED } from '../shared/worker'
+
+// ---------------------------------------------------------------------------
+// In-memory farm slot registry — session-based, not persisted.
+// Slots are assigned when players connect and released when they disconnect.
+// Max 3 slots (will be 8 in production).
+// ---------------------------------------------------------------------------
+const MAX_FARM_SLOTS = 3
+const activeSlots  = new Map<number, string>()   // slot → wallet
+const playerSlots  = new Map<string, number>()    // wallet → slot
+
+function assignSlot(wallet: string): number | null {
+  // Already has a slot in this session? Reuse it.
+  const existing = playerSlots.get(wallet)
+  if (existing !== undefined) return existing
+  // Find first free slot
+  for (let i = 0; i < MAX_FARM_SLOTS; i++) {
+    if (!activeSlots.has(i)) {
+      activeSlots.set(i, wallet)
+      playerSlots.set(wallet, i)
+      return i
+    }
+  }
+  return null  // No free slots — player goes to plaza
+}
+
+function releaseSlot(wallet: string): number | null {
+  const slot = playerSlots.get(wallet)
+  if (slot === undefined) return null
+  activeSlots.delete(slot)
+  playerSlots.delete(wallet)
+  return slot
+}
+
+function getActiveSlotsPayload() {
+  return Array.from({ length: MAX_FARM_SLOTS }, (_, i) => ({
+    slotId: i,
+    wallet: activeSlots.get(i) ?? '',
+    displayName: '',
+    claimedAt: 0,
+  }))
+}
 
 // ---------------------------------------------------------------------------
 // Auto-save interval (seconds) — same cadence as reference project
@@ -51,6 +91,25 @@ async function loadAndSend(address: string): Promise<void> {
 
   // Register in directory on every connect so returning players appear immediately
   void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized))
+
+  // Assign in-memory session slot
+  const slotId = assignSlot(normalized)
+  const slots  = getActiveSlotsPayload()
+  void room.send('farmSlotsLoaded', { requester: normalized, slots })
+
+  if (slotId !== null) {
+    console.log(`[FarmServer] Slot ${slotId} assigned to ${normalized}`)
+    const farm = store.get(normalized)
+    if (farm) {
+      void room.send('farmSlotVisualUpdated', {
+        slotId,
+        wallet:     normalized,
+        plotStates: farm.plotStates,
+      })
+    }
+  } else {
+    console.log(`[FarmServer] No free slots for ${normalized} — spawning in plaza`)
+  }
 }
 
 function sendWorkerStatus(address: string): void {
@@ -383,36 +442,24 @@ export function setupFarmServer(): void {
 
   // ── Farm slot registry ──────────────────────────────────────────────────────
 
-  room.onMessage('loadFarmSlots', async (_data, context) => {
+  room.onMessage('loadFarmSlots', (_data, context) => {
     if (!context) return
     const requester = context.from.toLowerCase()
-    try {
-      const slots = await loadFarmSlots()
-      void room.send('farmSlotsLoaded', { requester, slots })
-    } catch (err) {
-      console.error('[FarmServer] loadFarmSlots error:', err)
-      void room.send('farmSlotsLoaded', { requester, slots: [] })
-    }
+    // Return current in-memory slot state
+    void room.send('farmSlotsLoaded', { requester, slots: getActiveSlotsPayload() })
   })
 
-  room.onMessage('claimFarmSlot', async (_data, context) => {
+  room.onMessage('claimFarmSlot', (_data, context) => {
     if (!context) return
-    const requester    = context.from.toLowerCase()
-    const slotId       = typeof _data.slotId === 'number' ? _data.slotId : -1
-    const displayName  = getDisplayName(requester)
-    try {
-      const result = await claimFarmSlot(requester, displayName, slotId)
-      void room.send('farmSlotClaimed', {
-        requester,
-        success: result.success,
-        reason:  result.reason,
-        slotId,
-        slots:   result.slots,
-      })
-    } catch (err) {
-      console.error('[FarmServer] claimFarmSlot error:', err)
-      void room.send('farmSlotClaimed', { requester, success: false, reason: 'server_error', slotId, slots: [] })
-    }
+    const requester = context.from.toLowerCase()
+    // Slots are auto-assigned on connect — manual claim is no longer used
+    void room.send('farmSlotClaimed', {
+      requester,
+      success: false,
+      reason:  'auto_assigned',
+      slotId:  playerSlots.get(requester) ?? -1,
+      slots:   getActiveSlotsPayload(),
+    })
   })
 
   // Register the auto-save ECS system
@@ -430,4 +477,11 @@ export async function onPlayerDisconnect(address: string): Promise<void> {
   await store.saveAndEvict(normalized)
   loadedAddresses.delete(normalized)
   console.log(`[FarmServer] Saved and evicted ${normalized} on disconnect`)
+
+  // Release farm slot and notify all clients to hide this farm
+  const slotId = releaseSlot(normalized)
+  if (slotId !== null) {
+    console.log(`[FarmServer] Slot ${slotId} released — broadcasting farmSlotReleased`)
+    void room.send('farmSlotReleased', { slotId })
+  }
 }

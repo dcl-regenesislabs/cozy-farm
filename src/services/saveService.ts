@@ -1,4 +1,5 @@
-import { engine, executeTask, GltfContainer } from '@dcl/sdk/ecs'
+import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
+import { movePlayerTo } from '~system/RestrictedActions'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -18,6 +19,12 @@ import {
   unlockPlotGroupByName,
   hidePlotGroupSign,
   checkLevelGroupUnlocks,
+  FARM_SPAWN_POSITIONS,
+  PLAZA_SPAWN_POSITION,
+  revealFarmSlot,
+  hideFarmSlot,
+  farmSlotSoils,
+  setupFarmSlotEntities,
 } from '../systems/interactionSetup'
 import { LEVEL_PLOT_GROUPS } from '../data/plotGroupData'
 import { questProgressMap, QuestStatus } from '../game/questState'
@@ -498,6 +505,56 @@ export const slotCallbacks = {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Teleport player to their farm slot spawn position (or central plaza)
+// ---------------------------------------------------------------------------
+function renderOtherFarmSlot(slotId: number, savedPlots: PlotSaveState[]): void {
+  const soils = farmSlotSoils[slotId]
+  if (!soils || soils.length === 0) return
+
+  const entityByIndex = new Map<number, Entity>()
+  soils.forEach((entity, i) => entityByIndex.set(i, entity))
+
+  for (const saved of savedPlots) {
+    const entity = entityByIndex.get(saved.plotIndex)
+    if (!entity) continue
+    if (!PlotState.has(entity)) {
+      PlotState.create(entity, {
+        cropType: -1, growthStage: 0, plantedAt: 0, waterCount: 0,
+        isUnlocked: saved.isUnlocked, plotIndex: saved.plotIndex,
+        isRotten: false, fertilizerType: -1,
+      })
+    }
+    const mutable = PlotState.getMutable(entity)
+    mutable.isUnlocked   = saved.isUnlocked
+    mutable.cropType     = saved.cropType
+    mutable.growthStage  = saved.growthStage
+    mutable.isReady      = saved.isReady
+    mutable.isRotten     = saved.isRotten
+
+    if (saved.isUnlocked && saved.cropType !== -1) {
+      const def = CROP_DATA.get(saved.cropType as CropType)
+      if (def && saved.growthStage > 0) {
+        setCropModel(entity, CROP_MODELS[saved.cropType as CropType][saved.growthStage - 1])
+      }
+    } else if (!saved.isUnlocked) {
+      GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
+    }
+  }
+  console.log(`[MultiFarm] Rendered ${savedPlots.length} plots into slot ${slotId}`)
+}
+
+const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
+
+function teleportToSlot(slotId: number): void {
+  const pos = slotId >= 0 && slotId < FARM_SPAWN_POSITIONS.length
+    ? FARM_SPAWN_POSITIONS[slotId]
+    : PLAZA_SPAWN_POSITION
+  void movePlayerTo({ newRelativePosition: pos, cameraTarget: { x: pos.x + 8, y: pos.y, z: pos.z } })
+  console.log(`[SaveService] Teleporting to slot ${slotId} → (${pos.x}, ${pos.y}, ${pos.z})`)
+}
+
+// ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
 // onLoaded is called after the first farm state is applied (use it to start
 // systems that depend on restored state, e.g. initTutorialSystem)
@@ -508,17 +565,21 @@ export function initSaveService(onLoaded?: () => void): void {
     playerState.serverConnected = isReady
   })
 
+  // Cache farm payload until slot is known — needed so we apply data to the
+  // correct farm's soil entities (slot 0 = Farm1, slot 1 = Farm2, etc.)
+  let cachedPayload: FarmStatePayload | null = null
+
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (payload) => {
     // Filter: only apply if this is our own wallet.
-    // If wallet is not yet set (preview / guest mode), accept the first response and adopt its wallet.
     if (playerState.wallet && payload.wallet !== playerState.wallet) return
     if (!playerState.wallet) {
       playerState.wallet = payload.wallet
       console.log(`[SaveService] wallet adopted from server payload: ${payload.wallet}`)
     }
-    applyPayload(payload)
-    onLoaded?.()
+    // Cache payload — apply after slot entities are wired up (farmSlotsLoaded)
+    cachedPayload = payload
+    console.log('[SaveService] Farm payload cached, waiting for slot assignment...')
   })
 
   // Visit mode — other farm loaded
@@ -549,15 +610,46 @@ export function initSaveService(onLoaded?: () => void): void {
   })
 
   // Slot messages
+  // A player disconnected — hide their farm slot for all clients
+  room.onMessage('farmSlotReleased', (data) => {
+    if (data.slotId === playerState.mySlotId) return  // own slot, ignore
+    hideFarmSlot(data.slotId)
+    console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
+  })
+
+  // Another player's farm became visible — reveal their slot and render crops
+  room.onMessage('farmSlotVisualUpdated', (data) => {
+    console.log(`[SaveService] farmSlotVisualUpdated received — slotId=${data.slotId}, mySlot=${playerState.mySlotId}`)
+    if (data.slotId === playerState.mySlotId) {
+      console.log(`[SaveService] Skipping own farm visual update (slot ${data.slotId})`)
+      return
+    }
+    revealFarmSlot(data.slotId)
+    renderOtherFarmSlot(data.slotId, data.plotStates)
+  })
+
   room.onMessage('farmSlotsLoaded', (data) => {
     if (data.requester !== playerState.wallet) return
     playerState.farmSlots = data.slots
     const mine = data.slots.find((s) => s.wallet === playerState.wallet)
     playerState.mySlotId = mine ? mine.slotId : -1
-    // Show farm select if player has no slot yet
-    if (!mine && playerState.activeMenu === 'none') {
-      playerState.activeMenu = 'farmSelect'
+
+    // Wire slot-specific entities BEFORE applying the payload so soilEntities
+    // points to the correct farm's soils when restorePlotStates runs.
+    setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
+
+    // Reveal own farm slot (slot 0 always visible, 1 and 2 start hidden)
+    if (mine && mine.slotId > 0) revealFarmSlot(mine.slotId)
+
+    // Now apply the cached farm payload onto the correct slot's soils
+    if (cachedPayload) {
+      applyPayload(cachedPayload)
+      cachedPayload = null
+      onLoaded?.()
     }
+
+    // Teleport player to their farm spawn (or plaza if no slot)
+    teleportToSlot(playerState.mySlotId)
     slotCallbacks.onSlotsLoaded?.(data.slots)
   })
 
@@ -571,11 +663,9 @@ export function initSaveService(onLoaded?: () => void): void {
     slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
   })
 
-  // Ask server to load our farm (wallet must already be set in playerState)
-  executeTask(async () => {
-    void room.send('playerLoadFarm', {})
-    void room.send('loadFarmSlots', {})
-  })
+  // Ask server to load our farm
+  void room.send('playerLoadFarm', {})
+  console.log('[SaveService] playerLoadFarm sent')
 
   scheduleAutoSave()
   console.log('[SaveService] Initialized')

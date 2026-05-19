@@ -179,6 +179,15 @@ const FarmSlotSchema = Schemas.Map({
 })
 
 // ---------------------------------------------------------------------------
+// Farm slot visual state — broadcast to all clients so each sees other farms
+// ---------------------------------------------------------------------------
+const FarmSlotVisualSchema = Schemas.Map({
+  slotId:     Schemas.Int,
+  wallet:     Schemas.String,
+  plotStates: Schemas.Array(PlotSaveSchema),
+})
+
+// ---------------------------------------------------------------------------
 // Player registry entry — used in the Farmers Directory
 // ---------------------------------------------------------------------------
 const PlayerEntrySchema = Schemas.Map({
@@ -357,6 +366,12 @@ const FarmMessages = {
     workerLastWageProcessedAt: Schemas.Int64,
   }),
 
+  /** Server → All clients: a farm slot became visible / updated its crops */
+  farmSlotVisualUpdated: FarmSlotVisualSchema,
+
+  /** Server → All clients: a player disconnected — hide their farm slot */
+  farmSlotReleased: Schemas.Map({ slotId: Schemas.Int }),
+
   /** Client → Server: request current state of all farm slots */
   loadFarmSlots: Schemas.Map({}),
 
@@ -525,6 +540,12 @@ export type FarmStatePayload = {
   beautySlots:    number[]
   totalLikesReceived: number
   mailbox: MailboxReward[]
+}
+
+export type FarmSlotVisual = {
+  slotId:     number
+  wallet:     string
+  plotStates: PlotSaveState[]
 }
 
 export type FarmSlot = {
