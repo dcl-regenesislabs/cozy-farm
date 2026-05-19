@@ -42,6 +42,8 @@ import { spawnDog } from '../systems/dogSystem'
 // Auto-save interval
 // ---------------------------------------------------------------------------
 const AUTO_SAVE_INTERVAL_MS = 60_000
+const INITIAL_TELEPORT_DELAY_S = 0.25
+const INITIAL_LOAD_RETRY_DELAY_S = 2
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
 
@@ -592,18 +594,88 @@ export function initSaveService(onLoaded?: () => void): void {
   // Cache farm payload until slot is known — needed so we apply data to the
   // correct farm's soil entities (slot 0 = Farm1, slot 1 = Farm2, etc.)
   let cachedPayload: FarmStatePayload | null = null
+  let initialPayloadApplied = false
+  let localFarmInitialized = false
+  let pendingTeleportSlotId: number | null = null
+  let teleportDelayTimer = 0
+  let loadRetryTimer = -1
+  let currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
+
+  const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
+
+  function requestPlayerLoad(): void {
+    currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
+    void room.send('playerLoadFarm', { requestId: currentLoadRequestId })
+    console.log(`[SaveService] playerLoadFarm sent (${currentLoadRequestId})`)
+  }
+
+  engine.addSystem((dt) => {
+    if (pendingTeleportSlotId !== null) {
+      teleportDelayTimer -= dt
+      if (teleportDelayTimer <= 0) {
+        teleportToSlot(pendingTeleportSlotId)
+        pendingTeleportSlotId = null
+      }
+    }
+
+    if (localFarmInitialized || !playerState.wallet || !playerState.farmSlots.length || initialPayloadApplied || loadRetryTimer < 0) return
+    loadRetryTimer -= dt
+    if (loadRetryTimer > 0) return
+    loadRetryTimer = -1
+    console.log('[SaveService] Initial payload missing after slot assignment, re-requesting playerLoadFarm')
+    requestPlayerLoad()
+  }, 0, 'saveServiceSlotRecoverySystem')
+
+  function scheduleSingleTeleport(slotId: number): void {
+    pendingTeleportSlotId = slotId
+    teleportDelayTimer = INITIAL_TELEPORT_DELAY_S
+  }
+
+  function initializeOwnFarmIfPossible(): void {
+    const normalizedWallet = normalizeAddress(playerState.wallet)
+    if (!normalizedWallet) return
+
+    const mine = playerState.farmSlots.find((slot) => normalizeAddress(slot.wallet) === normalizedWallet)
+    if (!mine) return
+
+    if (!cachedPayload || normalizeAddress(cachedPayload.wallet) !== normalizedWallet) {
+      if (!initialPayloadApplied) loadRetryTimer = INITIAL_LOAD_RETRY_DELAY_S
+      return
+    }
+
+    const slotChanged = playerState.mySlotId !== mine.slotId
+    playerState.mySlotId = mine.slotId
+
+    if (!localFarmInitialized || slotChanged) {
+      setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
+      initBeautySpotSystem()
+      initAnimalBuildings()
+      if (mine.slotId > 0) revealFarmSlot(mine.slotId)
+      applyPayload(cachedPayload)
+      cachedPayload = null
+      initialPayloadApplied = true
+      localFarmInitialized = true
+      scheduleSingleTeleport(playerState.mySlotId)
+      loadRetryTimer = -1
+      onLoaded?.()
+    }
+  }
 
   // Listen for server → client farm state
-  room.onMessage('farmStateLoaded', (payload) => {
-    // Filter: only apply if this is our own wallet.
-    if (playerState.wallet && payload.wallet !== playerState.wallet) return
-    if (!playerState.wallet) {
-      playerState.wallet = payload.wallet
-      console.log(`[SaveService] wallet adopted from server payload: ${payload.wallet}`)
-    }
+  room.onMessage('farmStateLoaded', (data) => {
+    if (data.requestId !== currentLoadRequestId) return
+
+    const payload = data.payload
+    const normalizedPayloadWallet = normalizeAddress(payload.wallet)
+    if (!normalizedPayloadWallet) return
+    playerState.wallet = normalizeAddress(data.requester || payload.wallet)
+    console.log(`[SaveService] wallet adopted from server payload: ${playerState.wallet}`)
     // Cache payload — apply after slot entities are wired up (farmSlotsLoaded)
     cachedPayload = payload
-    console.log('[SaveService] Farm payload cached, waiting for slot assignment...')
+    initializeOwnFarmIfPossible()
+    if (!initialPayloadApplied) {
+      console.log('[SaveService] Farm payload cached, waiting for slot assignment...')
+    }
   })
 
   // Visit mode — other farm loaded
@@ -653,29 +725,38 @@ export function initSaveService(onLoaded?: () => void): void {
   })
 
   room.onMessage('farmSlotsLoaded', (data) => {
-    if (data.requester !== playerState.wallet) return
     playerState.farmSlots = data.slots
-    const mine = data.slots.find((s) => s.wallet === playerState.wallet)
-    playerState.mySlotId = mine ? mine.slotId : -1
+    const normalizedWallet = normalizeAddress(playerState.wallet)
+    const normalizedRequester = normalizeAddress(data.requester)
+    const mine = normalizedWallet ? data.slots.find((s) => normalizeAddress(s.wallet) === normalizedWallet) : undefined
+    const nextMySlotId = mine ? mine.slotId : playerState.mySlotId
 
-    // Wire slot-specific entities BEFORE applying the payload so soilEntities
-    // points to the correct farm's soils when restorePlotStates runs.
-    setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
-    initBeautySpotSystem()
-    initAnimalBuildings()
+    for (const slot of data.slots) {
+      const isMine = slot.slotId === nextMySlotId && !!normalizedWallet && normalizeAddress(slot.wallet) === normalizedWallet
+      if (isMine) {
+        if (slot.slotId > 0) revealFarmSlot(slot.slotId)
+        continue
+      }
 
-    // Reveal own farm slot (slot 0 always visible, 1 and 2 start hidden)
-    if (mine && mine.slotId > 0) revealFarmSlot(mine.slotId)
-
-    // Now apply the cached farm payload onto the correct slot's soils
-    if (cachedPayload) {
-      applyPayload(cachedPayload)
-      cachedPayload = null
-      onLoaded?.()
+      if (slot.wallet) revealFarmSlot(slot.slotId)
+      else hideFarmSlot(slot.slotId)
     }
 
-    // Teleport player to their farm spawn (or plaza if no slot)
-    teleportToSlot(playerState.mySlotId)
+    const isForMe = normalizedRequester !== '' && (
+      normalizedRequester === normalizedWallet ||
+      (!!cachedPayload && normalizedRequester === normalizeAddress(cachedPayload.wallet))
+    )
+    if (!isForMe) {
+      slotCallbacks.onSlotsLoaded?.(data.slots)
+      return
+    }
+
+    if (!normalizedWallet && normalizedRequester) {
+      playerState.wallet = normalizedRequester
+      console.log(`[SaveService] wallet adopted from farmSlotsLoaded requester: ${normalizedRequester}`)
+    }
+
+    initializeOwnFarmIfPossible()
     slotCallbacks.onSlotsLoaded?.(data.slots)
   })
 
@@ -690,8 +771,7 @@ export function initSaveService(onLoaded?: () => void): void {
   })
 
   // Ask server to load our farm
-  void room.send('playerLoadFarm', {})
-  console.log('[SaveService] playerLoadFarm sent')
+  requestPlayerLoad()
 
   scheduleAutoSave()
   console.log('[SaveService] Initialized')

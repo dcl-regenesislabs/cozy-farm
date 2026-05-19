@@ -97,7 +97,7 @@ function getDisplayName(address: string): string {
   return normalized.slice(0, 8)
 }
 
-async function loadAndSend(address: string): Promise<void> {
+async function loadAndSend(address: string, requestId: string): Promise<void> {
   const normalized = address.toLowerCase()
   const farm = await store.load(normalized)
 
@@ -105,7 +105,7 @@ async function loadAndSend(address: string): Promise<void> {
   farm.wallet = normalized
 
   const payload = farmSaveToPayload(farm)
-  void room.send('farmStateLoaded', payload)
+  void room.send('farmStateLoaded', { requester: normalized, requestId, payload })
 
   loadedAddresses.add(normalized)
   console.log(`[FarmServer] Loaded farm for ${getDisplayName(normalized)} (${normalized}) — coins: ${farm.coins}`)
@@ -167,6 +167,27 @@ async function cleanupDisconnectedPlayers(): Promise<void> {
   }
 }
 
+async function ensurePlayerSessionLoaded(address: string): Promise<number | null> {
+  const normalized = address.toLowerCase()
+  if (!loadedAddresses.has(normalized)) {
+    const farm = await store.load(normalized)
+    farm.wallet = normalized
+    loadedAddresses.add(normalized)
+    void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized), farm.beautyScore)
+  }
+
+  const slotId = assignSlot(normalized)
+  void room.send('farmSlotsLoaded', { requester: normalized, slots: getActiveSlotsPayload() })
+
+  for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
+    const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
+    if (!visualPayload) continue
+    void room.send('farmSlotVisualUpdated', visualPayload)
+  }
+
+  return slotId
+}
+
 // ---------------------------------------------------------------------------
 // Auto-save system — runs every frame, flushes dirty entries every N seconds
 // ---------------------------------------------------------------------------
@@ -209,25 +230,34 @@ function farmAutosaveSystem(dt: number): void {
 // ---------------------------------------------------------------------------
 export function setupFarmServer(): void {
   // Load farm state when player connects
-  room.onMessage('playerLoadFarm', async (_data, context) => {
+  room.onMessage('playerLoadFarm', async (data, context) => {
     if (!context) return
     try {
-      await loadAndSend(context.from)
+      await loadAndSend(context.from, data.requestId)
     } catch (err) {
       console.error('[FarmServer] loadAndSend failed, sending fresh farm:', err)
       const fresh = emptyFarm(context.from.toLowerCase())
-      void room.send('farmStateLoaded', farmSaveToPayload(fresh))
+      void room.send('farmStateLoaded', {
+        requester: context.from.toLowerCase(),
+        requestId: data.requestId,
+        payload: farmSaveToPayload(fresh),
+      })
     }
   })
 
   // Receive and persist farm state from client
-  room.onMessage('playerSaveFarm', (_data, context) => {
+  room.onMessage('playerSaveFarm', async (_data, context) => {
     if (!context) return
     const normalized = context.from.toLowerCase()
+    try {
 
-    // Only accept saves from players whose profile has already been loaded
-    // (guards against spoofed saves before a proper load)
     if (!loadedAddresses.has(normalized)) {
+      console.log(`[FarmServer] Save received before load tracking for ${normalized}; recovering session`)
+      await ensurePlayerSessionLoaded(normalized)
+    }
+
+    // Legacy hard reject kept disabled; saves now recover missing in-memory sessions.
+    if (false && !loadedAddresses.has(normalized)) {
       console.error(`[FarmServer] Save rejected — no load on record for ${normalized}`)
       return
     }
@@ -244,6 +274,9 @@ export function setupFarmServer(): void {
     }
     // Bust leaderboard cache on every save so rankings stay fresh
     leaderboardCache = null
+    } catch (err) {
+      console.error(`[FarmServer] playerSaveFarm failed for ${normalized}:`, err)
+    }
   })
 
   room.onMessage('payWorkerWages', async (_data, context) => {

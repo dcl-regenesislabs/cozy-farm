@@ -168,6 +168,12 @@ const FarmStateSchema = Schemas.Map({
   mailbox: Schemas.Array(MailboxRewardSchema),
 })
 
+const FarmStateLoadedSchema = Schemas.Map({
+  requester: Schemas.String,
+  requestId: Schemas.String,
+  payload: FarmStateSchema,
+})
+
 // ---------------------------------------------------------------------------
 // Farm slot — one entry per physical farm location in the world
 // ---------------------------------------------------------------------------
@@ -221,10 +227,10 @@ const LeaderboardEntrySchema = Schemas.Map({
 // ---------------------------------------------------------------------------
 const FarmMessages = {
   /** Client → Server: ask the server to load this player's farm */
-  playerLoadFarm: Schemas.Map({}),
+  playerLoadFarm: Schemas.Map({ requestId: Schemas.String }),
 
   /** Server → Client: full farm state response */
-  farmStateLoaded: FarmStateSchema,
+  farmStateLoaded: FarmStateLoadedSchema,
 
   /** Client → Server: persist current farm state */
   playerSaveFarm: FarmStateSchema,
