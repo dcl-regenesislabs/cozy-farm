@@ -31,7 +31,7 @@ import {
   PIG_BREED_COOLDOWN, ADOLESCENT_STAGE_MS,
   getPigStage, getPigletScale, PIG_MEAT_SELL_PRICE,
 } from '../data/animalData'
-import { getCurrentFarmEntity } from './farmInstances'
+import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 
 // ---------------------------------------------------------------------------
 // Wander state
@@ -192,10 +192,8 @@ export function initAnimalBuildings(): void {
   // Get real world positions from the parent scene entities
   const coopParent = getCurrentFarmEntity('ChickenCoop')
   const penParent  = getCurrentFarmEntity('PigPen')
-  const coopTf = coopParent ? Transform.getOrNull(coopParent) : null
-  if (coopTf) resolvedCoopPos = { x: coopTf.position.x, y: coopTf.position.y, z: coopTf.position.z }
-  const penTf = penParent ? Transform.getOrNull(penParent) : null
-  if (penTf) resolvedPenPos = { x: penTf.position.x, y: penTf.position.y, z: penTf.position.z }
+  if (coopParent) resolvedCoopPos = getEntityWorldPosition(coopParent)
+  if (penParent)  resolvedPenPos  = getEntityWorldPosition(penParent)
 
   // Collect ChickenSpawn_N → derive wander bounding box
   {
@@ -243,8 +241,10 @@ export function initAnimalBuildings(): void {
 
   console.log(`[AnimalSystem] Chicken bounds: ${JSON.stringify(chickenBounds)}`)
   console.log(`[AnimalSystem] Pig bounds: ${JSON.stringify(pigBounds)}`)
-  const coopPos    = (coopParent ? Transform.getOrNull(coopParent)?.position : null) ?? Vector3.create(CHICKEN_COOP_CENTRE.x, CHICKEN_COOP_CENTRE.y, CHICKEN_COOP_CENTRE.z)
-  const penPos     = (penParent  ? Transform.getOrNull(penParent)?.position  : null) ?? Vector3.create(PIG_PEN_CENTRE.x, PIG_PEN_CENTRE.y, PIG_PEN_CENTRE.z)
+  const coopPosRaw = coopParent ? getEntityWorldPosition(coopParent) : CHICKEN_COOP_CENTRE
+  const penPosRaw  = penParent  ? getEntityWorldPosition(penParent)  : PIG_PEN_CENTRE
+  const coopPos    = Vector3.create(coopPosRaw.x, coopPosRaw.y, coopPosRaw.z)
+  const penPos     = Vector3.create(penPosRaw.x,  penPosRaw.y,  penPosRaw.z)
 
   // Spawn AnimalBuildingEmpty placeholder for coop spot
   emptyCoopEntity = engine.addEntity()

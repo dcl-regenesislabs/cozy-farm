@@ -35,7 +35,7 @@ import { initAnimalBuildings, initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
-import { renderRemoteFarmVisual } from '../systems/remoteFarmVisuals'
+import { renderRemoteFarmVisual, hideRemoteSlotBuildings } from '../systems/remoteFarmVisuals'
 import { spawnDog } from '../systems/dogSystem'
 
 // ---------------------------------------------------------------------------
@@ -599,6 +599,7 @@ export function initSaveService(onLoaded?: () => void): void {
   let pendingTeleportSlotId: number | null = null
   let teleportDelayTimer = 0
   let loadRetryTimer = -1
+  let initRetryRunning = false
   let currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
 
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
@@ -618,6 +619,7 @@ export function initSaveService(onLoaded?: () => void): void {
       }
     }
 
+    // Recovery: slot was assigned but payload never arrived — re-request from server
     if (localFarmInitialized || !playerState.wallet || !playerState.farmSlots.length || initialPayloadApplied || loadRetryTimer < 0) return
     loadRetryTimer -= dt
     if (loadRetryTimer > 0) return
@@ -647,34 +649,59 @@ export function initSaveService(onLoaded?: () => void): void {
     playerState.mySlotId = mine.slotId
 
     if (!localFarmInitialized || slotChanged) {
-      setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
-      initBeautySpotSystem()
-      initAnimalBuildings()
-      if (mine.slotId > 0) revealFarmSlot(mine.slotId)
-      applyPayload(cachedPayload)
-      cachedPayload = null
-      initialPayloadApplied = true
-      localFarmInitialized = true
-      scheduleSingleTeleport(playerState.mySlotId)
-      loadRetryTimer = -1
-      onLoaded?.()
+      localFarmInitialized = true  // optimistic lock — reset in catch so retry can recover
+      try {
+        setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
+        initBeautySpotSystem()
+        initAnimalBuildings()
+        if (mine.slotId > 0) revealFarmSlot(mine.slotId)
+        applyPayload(cachedPayload)
+        cachedPayload = null
+        initialPayloadApplied = true
+        scheduleSingleTeleport(playerState.mySlotId)
+        loadRetryTimer = -1
+        onLoaded?.()
+      } catch (err) {
+        console.error('[SaveService] Farm init failed (will retry next frame):', err)
+        localFarmInitialized = false  // allow retry system to re-enter
+      }
     }
+  }
+
+  // Registers a per-frame ECS system that retries initializeOwnFarmIfPossible() until
+  // it succeeds. Used when farmStateLoaded arrives before farmSlotsLoaded — the retry
+  // picks up the slot as soon as the slot update message arrives.
+  function startInitRetry(): void {
+    if (initRetryRunning || localFarmInitialized) return
+    initRetryRunning = true
+    engine.addSystem(function farmInitRetry(_dt: number) {
+      initializeOwnFarmIfPossible()
+      if (localFarmInitialized) {
+        engine.removeSystem(farmInitRetry)
+        initRetryRunning = false
+      }
+    }, 0, 'farmInitRetry')
   }
 
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (data) => {
     if (data.requestId !== currentLoadRequestId) return
 
-    const payload = data.payload
-    const normalizedPayloadWallet = normalizeAddress(payload.wallet)
-    if (!normalizedPayloadWallet) return
-    playerState.wallet = normalizeAddress(data.requester || payload.wallet)
-    console.log(`[SaveService] wallet adopted from server payload: ${playerState.wallet}`)
-    // Cache payload — apply after slot entities are wired up (farmSlotsLoaded)
-    cachedPayload = payload
+    // Use data.requester as primary wallet source — payload.wallet may be empty
+    // for new players whose emptyFarm() hasn't persisted a wallet yet.
+    const wallet = normalizeAddress(data.requester || data.payload?.wallet)
+    if (!wallet) return
+
+    playerState.wallet = wallet
+    cachedPayload = data.payload
+    console.log(`[SaveService] farmStateLoaded — wallet: ${playerState.wallet}`)
+
     initializeOwnFarmIfPossible()
-    if (!initialPayloadApplied) {
-      console.log('[SaveService] Farm payload cached, waiting for slot assignment...')
+
+    // If farmSlotsLoaded hasn't arrived yet, retry every frame until it does.
+    if (!localFarmInitialized) {
+      console.log('[SaveService] Farm payload cached — waiting for slot assignment (retry active)')
+      startInitRetry()
     }
   })
 
@@ -738,24 +765,28 @@ export function initSaveService(onLoaded?: () => void): void {
         continue
       }
 
-      if (slot.wallet) revealFarmSlot(slot.slotId)
-      else hideFarmSlot(slot.slotId)
+      if (slot.wallet) {
+        revealFarmSlot(slot.slotId)
+        hideRemoteSlotBuildings(slot.slotId)
+      } else {
+        hideFarmSlot(slot.slotId)
+      }
     }
 
-    const isForMe = normalizedRequester !== '' && (
+    // Adopt wallet from requester when this update was triggered by our own load
+    // and the wallet hasn't been set yet (farmStateLoaded arrived first normally).
+    const isOurRequest = normalizedRequester !== '' && (
       normalizedRequester === normalizedWallet ||
       (!!cachedPayload && normalizedRequester === normalizeAddress(cachedPayload.wallet))
     )
-    if (!isForMe) {
-      slotCallbacks.onSlotsLoaded?.(data.slots)
-      return
-    }
-
-    if (!normalizedWallet && normalizedRequester) {
+    if (!normalizedWallet && normalizedRequester && isOurRequest) {
       playerState.wallet = normalizedRequester
       console.log(`[SaveService] wallet adopted from farmSlotsLoaded requester: ${normalizedRequester}`)
     }
 
+    // Always attempt initialization — the function guards itself against missing wallet/payload/slot.
+    // This handles message ordering where farmSlotsLoaded arrives before or after farmStateLoaded,
+    // and the case where isOurRequest is false but our slot is already in the list.
     initializeOwnFarmIfPossible()
     slotCallbacks.onSlotsLoaded?.(data.slots)
   })
