@@ -141,6 +141,18 @@ function syncStaticAnimals(
   }
 }
 
+// Called immediately when another player's slot is revealed, before their
+// farmSlotVisualUpdated arrives. Hides all buildings so nothing shows incorrectly
+// in the window between slot reveal and the first visual update message.
+export function hideRemoteSlotBuildings(slotId: number): void {
+  const names = [
+    'ChickenCoopBuilding.glb', 'ChickenWater.glb', 'ChickenCoopDirt.glb',
+    'ChickenFoodEmpty.glb', 'PigPenBuilding.glb', 'AnimalWater.glb',
+    'PigPenDirt.glb', 'AnimalFoodEmpty.glb', 'CompostBin.glb',
+  ]
+  for (const name of names) setVisible(getFarmEntity(slotId, name), false)
+}
+
 export function renderRemoteFarmVisual(slotId: number, visual: FarmSlotVisual): void {
   syncBeauty(slotId, visual.beautySlots)
   syncBuildingVisuals(slotId, visual)

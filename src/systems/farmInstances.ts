@@ -47,7 +47,11 @@ let initialized = false
 let currentFarmSlotId = 0
 let baseAnchor = { x: 0, y: 0, z: 0 }
 
-function getEntityWorldPosition(entity: Entity): { x: number; y: number; z: number } {
+// Tracks slots whose anchor entity wasn't found at init time (Creator Hub timing issue).
+// A retry ECS system resolves them on the next tick and repositions the affected clones.
+const missingAnchorSlots = new Set<number>()
+
+export function getEntityWorldPosition(entity: Entity): { x: number; y: number; z: number } {
   let x = 0
   let y = 0
   let z = 0
@@ -68,8 +72,9 @@ function getEntityWorldPosition(entity: Entity): { x: number; y: number; z: numb
 function cloneIfPresent(component: any, source: Entity, target: Entity): void {
   const value = component.getOrNull?.(source)
   if (!value) return
-  if (typeof component.createOrReplace === 'function') component.createOrReplace(target, value)
-  else if (typeof component.create === 'function') component.create(target, value)
+  const copy = { ...value }
+  if (typeof component.createOrReplace === 'function') component.createOrReplace(target, copy)
+  else if (typeof component.create === 'function') component.create(target, copy)
 }
 
 function getSoilSortIndex(name: string): number {
@@ -165,10 +170,11 @@ function cloneEntityTree(
 function resolveAnchor(slotId: number): { x: number; y: number; z: number } {
   const anchorEntity = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[slotId])
   if (!anchorEntity) {
+    missingAnchorSlots.add(slotId)
     const fallback = slotId === 0
       ? { x: 0, y: 0, z: 0 }
       : { x: baseAnchor.x + slotId * 32, y: baseAnchor.y, z: baseAnchor.z }
-    console.error(`[FarmInstances] Anchor '${FARM_ANCHOR_NAMES[slotId]}' not found, using fallback`)
+    console.error(`[FarmInstances] Anchor '${FARM_ANCHOR_NAMES[slotId]}' not found, using fallback — will retry next tick`)
     return fallback
   }
   return getEntityWorldPosition(anchorEntity)
@@ -176,20 +182,72 @@ function resolveAnchor(slotId: number): { x: number; y: number; z: number } {
 
 function buildSpawnPositions(): void {
   const baseSpawn = { x: 8, y: 1, z: 8 }
+  // Always do a fresh entity lookup so a deferred retry picks up corrected positions.
+  const baseAnchorEntity = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[0])
+  const freshBase = baseAnchorEntity ? getEntityWorldPosition(baseAnchorEntity) : baseAnchor
   const offset = {
-    x: baseSpawn.x - baseAnchor.x,
-    y: baseSpawn.y - baseAnchor.y,
-    z: baseSpawn.z - baseAnchor.z,
+    x: baseSpawn.x - freshBase.x,
+    y: baseSpawn.y - freshBase.y,
+    z: baseSpawn.z - freshBase.z,
   }
 
   for (let slotId = 0; slotId < MAX_FARM_SLOTS; slotId++) {
-    const anchor = farmInstances[slotId]?.anchor ?? resolveAnchor(slotId)
+    const anchorEntity = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[slotId])
+    const anchor = anchorEntity
+      ? getEntityWorldPosition(anchorEntity)
+      : (farmInstances[slotId]?.anchor ?? { x: freshBase.x + slotId * 32, y: freshBase.y, z: freshBase.z })
     farmSpawnPositionsStore[slotId] = {
       x: anchor.x + offset.x,
       y: anchor.y + offset.y,
       z: anchor.z + offset.z,
     }
   }
+}
+
+// Resolves any anchors that were missing at init time, repositions the affected farm
+// clones, and rebuilds spawn positions. Runs as a short-lived ECS system in Creator Hub.
+function retryMissingAnchors(): void {
+  if (missingAnchorSlots.size === 0) return
+
+  // Fix baseAnchor first — slot 0 must be correct before computing offsets for others.
+  if (missingAnchorSlots.has(0)) {
+    const e = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[0])
+    if (e) {
+      baseAnchor = getEntityWorldPosition(e)
+      if (farmInstances[0]) farmInstances[0].anchor = baseAnchor
+      missingAnchorSlots.delete(0)
+      console.log(`[FarmInstances] Resolved 'position_farm_1' on retry`)
+    }
+  }
+
+  const rootTransform = Transform.getOrNull(farmInstances[0]?.root)
+  const rootPos = rootTransform?.position ?? { x: 0, y: 0, z: 0 }
+
+  for (const slotId of [...missingAnchorSlots]) {
+    const e = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[slotId])
+    if (!e) continue
+
+    const anchor = getEntityWorldPosition(e)
+    const dx = anchor.x - baseAnchor.x
+    const dy = anchor.y - baseAnchor.y
+    const dz = anchor.z - baseAnchor.z
+
+    const instance = farmInstances[slotId]
+    if (!instance) { missingAnchorSlots.delete(slotId); continue }
+
+    const t = Transform.getMutableOrNull(instance.root)
+    if (t) {
+      t.position = Vector3.create(rootPos.x + dx, rootPos.y + dy, rootPos.z + dz)
+    }
+    instance.anchor = anchor
+    missingAnchorSlots.delete(slotId)
+    console.log(
+      `[FarmInstances] Resolved '${FARM_ANCHOR_NAMES[slotId]}' on retry — slot ${slotId} repositioned to ` +
+      `(${(rootPos.x + dx).toFixed(1)}, ${(rootPos.y + dy).toFixed(1)}, ${(rootPos.z + dz).toFixed(1)})`,
+    )
+  }
+
+  buildSpawnPositions()
 }
 
 export function initFarmInstances(): void {
@@ -265,6 +323,27 @@ export function initFarmInstances(): void {
   buildSpawnPositions()
   initialized = true
   console.log(`[FarmInstances] Initialized ${farmInstances.length} farm instances from template '${FARM_PARENT_NAME}'`)
+
+  // If any anchor entities weren't found (Creator Hub loads composites lazily),
+  // retry on subsequent ECS ticks so farm clones land at correct world positions.
+  if (missingAnchorSlots.size > 0) {
+    let attempts = 0
+    engine.addSystem(
+      function anchorRetry(_dt: number) {
+        attempts++
+        retryMissingAnchors()
+        if (missingAnchorSlots.size === 0 || attempts >= 10) {
+          engine.removeSystem(anchorRetry)
+          if (missingAnchorSlots.size > 0) {
+            const names = [...missingAnchorSlots].map((id) => FARM_ANCHOR_NAMES[id]).join(', ')
+            console.error(`[FarmInstances] Could not resolve anchors after retries: ${names}`)
+          }
+        }
+      },
+      0,
+      'farmAnchorRetry',
+    )
+  }
 }
 
 export function getFarmInstance(slotId: number): FarmInstance | null {
