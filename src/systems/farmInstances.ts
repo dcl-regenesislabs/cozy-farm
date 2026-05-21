@@ -181,7 +181,7 @@ function resolveAnchor(slotId: number): { x: number; y: number; z: number } {
 }
 
 function buildSpawnPositions(): void {
-  const baseSpawn = { x: 8, y: 1, z: 8 }
+  const baseSpawn = { x: 40, y: 1, z: 40 }
   // Always do a fresh entity lookup so a deferred retry picks up corrected positions.
   const baseAnchorEntity = engine.getEntityOrNullByName(FARM_ANCHOR_NAMES[0])
   const freshBase = baseAnchorEntity ? getEntityWorldPosition(baseAnchorEntity) : baseAnchor
