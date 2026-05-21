@@ -21,6 +21,7 @@ import { playSound } from './sfxSystem'
 import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
 import { tutorialState } from '../game/tutorialState'
+import { MAILBOX_FEATURE_ENABLED } from '../game/featureFlags'
 import { isVisiting } from '../services/visitService'
 import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { requestVisitorWaterPlot, visitorWaterCallbacks } from '../services/socialService'
@@ -253,7 +254,7 @@ function wireLocalFarmInteractives(): void {
   }
 
   const mailbox = getCurrentFarmEntity('Mailbox')
-  if (mailbox) {
+  if (mailbox && MAILBOX_FEATURE_ENABLED) {
     enablePointerOnGltf(mailbox)
     pointerEventsSystem.onPointerDown(
       { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: 'Mailbox & Neighbours', maxDistance: 8 } },
