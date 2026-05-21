@@ -191,6 +191,8 @@ export enum EntityNames {
   SoilPlots = "SoilPlots",
   Table_with_Chairs = "Table with Chairs",
   The_Lonely_Fountain = "The Lonely Fountain",
+  The_Lonely_Fountain_2 = "The Lonely Fountain_2",
+  The_Lonely_Fountain_3 = "The Lonely Fountain_3",
   Tile_1 = "Tile 1",
   Tile_10 = "Tile 10",
   Tile_100 = "Tile 100",

@@ -195,6 +195,27 @@
             "parent": 659
           }
         },
+        "517": {
+          "json": {
+            "position": {
+              "x": 127.5,
+              "y": 0.09999999403953552,
+              "z": 127.5
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "scale": {
+              "x": 3,
+              "y": 3,
+              "z": 3
+            },
+            "parent": 0
+          }
+        },
         "518": {
           "json": {
             "position": {
@@ -5588,27 +5609,6 @@
               "y": 0.7071067690849304,
               "z": 0,
               "w": 0.7071067690849304
-            },
-            "parent": 0
-          }
-        },
-        "809": {
-          "json": {
-            "position": {
-              "x": 128,
-              "y": 0.25,
-              "z": 127.5
-            },
-            "scale": {
-              "x": 3,
-              "y": 3,
-              "z": 3
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
             },
             "parent": 0
           }
@@ -11344,6 +11344,13 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
+        "517": {
+          "json": {
+            "src": "assets/asset-packs/the_lonely_fountain/Fountain_03/Fountain_03.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
         "518": {
           "json": {
             "src": "assets/scene/Models/Soil01/Soil01.glb",
@@ -12901,13 +12908,6 @@
         "796": {
           "json": {
             "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "809": {
-          "json": {
-            "src": "assets/asset-packs/the_lonely_fountain/Fountain_03/Fountain_03.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -14874,6 +14874,11 @@
             "value": "ChickenCoop"
           }
         },
+        "517": {
+          "json": {
+            "value": "The Lonely Fountain_2"
+          }
+        },
         "518": {
           "json": {
             "value": "Soil01.glb"
@@ -16157,11 +16162,6 @@
         "796": {
           "json": {
             "value": "Cobblestone Tile_11"
-          }
-        },
-        "809": {
-          "json": {
-            "value": "The Lonely Fountain"
           }
         },
         "1252": {
@@ -17643,9 +17643,9 @@
         "serializationType": "map"
       },
       "data": {
-        "0": {
+        "517": {
           "json": {
-            "gizmo": 0
+            "gizmo": 1
           }
         }
       }
@@ -17694,6 +17694,7 @@
             "value": [
               {
                 "entity": 0,
+                "open": true,
                 "children": [
                   1939,
                   2196,
@@ -17711,7 +17712,7 @@
                   1264,
                   749,
                   796,
-                  809
+                  517
                 ]
               },
               {
@@ -18050,7 +18051,6 @@
               },
               {
                 "entity": 1939,
-                "open": true,
                 "children": [
                   1940,
                   1941,
@@ -20412,7 +20412,7 @@
                 "children": []
               },
               {
-                "entity": 809,
+                "entity": 517,
                 "children": []
               }
             ]
@@ -20454,6 +20454,9 @@
           "json": {}
         },
         "516": {
+          "json": {}
+        },
+        "517": {
           "json": {}
         },
         "518": {
@@ -21242,9 +21245,6 @@
           "json": {}
         },
         "806": {
-          "json": {}
-        },
-        "809": {
           "json": {}
         },
         "1252": {
