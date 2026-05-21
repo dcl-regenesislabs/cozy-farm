@@ -38,6 +38,22 @@ function releaseSlot(wallet: string): number | null {
   return slot
 }
 
+function claimSpecificSlot(wallet: string, slotId: number): { success: boolean; reason: string; slotId: number } {
+  const existing = playerSlots.get(wallet)
+  if (existing !== undefined) {
+    return { success: false, reason: 'already_claimed', slotId: existing }
+  }
+  if (slotId < 0 || slotId >= MAX_FARM_SLOTS) {
+    return { success: false, reason: 'invalid_slot', slotId: -1 }
+  }
+  if (activeSlots.has(slotId)) {
+    return { success: false, reason: 'slot_taken', slotId }
+  }
+  activeSlots.set(slotId, wallet)
+  playerSlots.set(wallet, slotId)
+  return { success: true, reason: 'ok', slotId }
+}
+
 function getActiveSlotsPayload() {
   return Array.from({ length: MAX_FARM_SLOTS }, (_, i) => ({
     slotId: i,
@@ -163,6 +179,7 @@ async function cleanupDisconnectedPlayers(): Promise<void> {
     if (slotId !== null) {
       console.log(`[FarmServer] Slot ${slotId} released after presence cleanup`)
       void room.send('farmSlotReleased', { slotId })
+      void room.send('farmSlotsLoaded', { requester: address, slots: getActiveSlotsPayload() })
     }
   }
 }
@@ -532,14 +549,21 @@ export function setupFarmServer(): void {
   room.onMessage('claimFarmSlot', (_data, context) => {
     if (!context) return
     const requester = context.from.toLowerCase()
+    const requestedSlotId = typeof _data.slotId === 'number' ? _data.slotId : -1
+    const result = claimSpecificSlot(requester, requestedSlotId)
+    const slots = getActiveSlotsPayload()
     // Slots are auto-assigned on connect — manual claim is no longer used
     void room.send('farmSlotClaimed', {
       requester,
-      success: false,
-      reason:  'auto_assigned',
-      slotId:  playerSlots.get(requester) ?? -1,
-      slots:   getActiveSlotsPayload(),
+      success: result.success,
+      reason:  result.reason,
+      slotId:  result.slotId,
+      slots,
     })
+    if (!result.success) return
+    void room.send('farmSlotsLoaded', { requester, slots })
+    const visualPayload = buildFarmSlotVisualPayload(result.slotId, requester)
+    if (visualPayload) void room.send('farmSlotVisualUpdated', visualPayload)
   })
 
   // Register the auto-save ECS system

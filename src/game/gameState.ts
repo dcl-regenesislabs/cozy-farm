@@ -97,4 +97,13 @@ export const playerState = {
   // Plot group unlock tracking
   unlockedPlotGroups: [] as string[],      // group names purchased via coins
   activePlotGroupName: '',                  // set before opening 'plotGroupUnlock' menu
+  // Runtime-only: shown after a new slot claim, before teleporting the player home
+  farmAssignmentOverlayActive: false,
+  farmAssignmentOverlaySlotId: -1,
+  farmAssignmentOverlayStartedAt: 0,
+  farmAssignmentOverlayDurationMs: 0,
+  // Runtime-only: enables the gameplay HUD/panels only after the player reaches a farm parcel
+  farmGameplayUiReady: false,
+  // Runtime-only: waiting-in-plaza UI state when no farm slot is available
+  plazaMapMinimized: false,
 }

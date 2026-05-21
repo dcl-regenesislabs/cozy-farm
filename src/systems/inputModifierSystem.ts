@@ -13,7 +13,7 @@ let menuWasOpen = false
 
 export function setupInputModifierSystem() {
   engine.addSystem(() => {
-    const menuOpen = playerState.activeMenu !== 'none'
+    const menuOpen = playerState.activeMenu !== 'none' || playerState.farmAssignmentOverlayActive
 
     if (menuOpen === menuWasOpen) return
     menuWasOpen = menuOpen
