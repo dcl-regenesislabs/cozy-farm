@@ -8,6 +8,7 @@ import {
 } from '@dcl/sdk/ecs'
 import { Color4, Vector3 } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
+import { MAILBOX_FEATURE_ENABLED } from '../game/featureFlags'
 import { isVisiting } from '../services/visitService'
 import { getCurrentFarmEntity } from './farmInstances'
 
@@ -73,6 +74,11 @@ function setIndicatorVisible(visible: boolean): void {
 }
 
 function mailboxIndicatorSystem(dt: number): void {
+  if (!MAILBOX_FEATURE_ENABLED) {
+    setIndicatorVisible(false)
+    return
+  }
+
   ensureMailboxIndicator()
   if (!mailboxIndicatorRoot) return
 

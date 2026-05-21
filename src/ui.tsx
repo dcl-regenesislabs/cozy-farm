@@ -24,6 +24,7 @@ import { PigPenPanel }      from './ui/PigPenPanel'
 import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
 import { FarmSelectPanel }  from './ui/FarmSelectPanel'
+import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -55,7 +56,7 @@ const MainUi = () => (
 
     {/* World-object menus (continued) */}
     {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
-    {playerState.activeMenu === 'mailbox'   && <MailboxMenu />}
+    {MAILBOX_FEATURE_ENABLED && playerState.activeMenu === 'mailbox' && <MailboxMenu />}
     {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
     {playerState.activeMenu === 'chickenCoop' && <ChickenCoopPanel />}
     {playerState.activeMenu === 'pigPen'      && <PigPenPanel />}
