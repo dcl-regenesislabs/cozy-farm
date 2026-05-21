@@ -575,7 +575,7 @@ function renderOtherFarmSlot(slotId: number, visual: FarmSlotVisual): void {
 const SOIL_MODEL = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
 
-function teleportToSlot(slotId: number): void {
+export function teleportToSlot(slotId: number): void {
   const pos = slotId >= 0 && slotId < FARM_SPAWN_POSITIONS.length
     ? FARM_SPAWN_POSITIONS[slotId]
     : PLAZA_SPAWN_POSITION

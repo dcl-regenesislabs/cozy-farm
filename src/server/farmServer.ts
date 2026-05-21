@@ -552,7 +552,6 @@ export function setupFarmServer(): void {
     const requestedSlotId = typeof _data.slotId === 'number' ? _data.slotId : -1
     const result = claimSpecificSlot(requester, requestedSlotId)
     const slots = getActiveSlotsPayload()
-    // Slots are auto-assigned on connect — manual claim is no longer used
     void room.send('farmSlotClaimed', {
       requester,
       success: result.success,

@@ -1,16 +1,17 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, Transform } from '@dcl/sdk/ecs'
-import { movePlayerTo } from '~system/RestrictedActions'
 import { playerState } from '../game/gameState'
 import { room } from '../shared/farmMessages'
 import type { FarmSlot } from '../shared/farmMessages'
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { FARM_SPAWN_POSITIONS, PLAZA_SPAWN_POSITION } from '../systems/interactionSetup'
+import { teleportToSlot } from '../services/saveService'
 
 const MAP_TILE_W = 176
 const MAP_TILE_H = 126
 const MAP_ROAD = 16
+// 3×3 grid encoding 8 farm slots + central plaza (-1). Matches server MAX_FARM_SLOTS = 8.
 const MAP_LAYOUT = [
   [0, 7, 6],
   [1, -1, 5],
@@ -22,7 +23,7 @@ const MINI_ROAD = 5
 const MAP_WORLD_PADDING = 40
 const BIG_MARKER_SIZE = 20
 const MINI_MARKER_SIZE = 14
-const MAP_PANEL_TOP = 120
+const MAP_PANEL_TOP = 190
 
 type MapSlotMode = 'available' | 'occupied' | 'own'
 type MapViewMode = 'waiting' | 'overview'
@@ -102,12 +103,7 @@ export function requestClaimSlot(slotId: number): void {
 function teleportToFarm(slotId: number, closeMenu = true): void {
   if (closeMenu) playerState.activeMenu = 'none'
   playerState.plazaMapMinimized = true
-  const pos = FARM_SPAWN_POSITIONS[slotId]
-  if (!pos) return
-  void movePlayerTo({
-    newRelativePosition: pos,
-    cameraTarget: { x: pos.x + 8, y: pos.y, z: pos.z },
-  })
+  teleportToSlot(slotId)
 }
 
 function visitSlot(slot: FarmSlot): void {
@@ -516,14 +512,12 @@ export const FarmSelectPanel = () => {
                   justifyContent: 'space-between',
                 }}
               >
-                {row.map((slotId, colIndex) =>
-                  slotId === -1
-                    ? <MiniMapPlazaTile key={`mini-plaza-${rowIndex}-${colIndex}`} />
-                    : <MiniMapFarmTile
-                        key={`mini-slot-${slotId}`}
-                        mode={getSlotMode(slotById.get(slotId)!, highlightedSlotId)}
-                      />
-                )}
+                {row.map((slotId, colIndex) => {
+                  if (slotId === -1) return <MiniMapPlazaTile key={`mini-plaza-${rowIndex}-${colIndex}`} />
+                  const slot = slotById.get(slotId)
+                  if (!slot) return <UiEntity key={`mini-empty-${slotId}`} />
+                  return <MiniMapFarmTile key={`mini-slot-${slotId}`} mode={getSlotMode(slot, highlightedSlotId)} />
+                })}
               </UiEntity>
             ))}
             <MapPlayerMarker marker={miniMarker} size={MINI_MARKER_SIZE} inset={6} />
