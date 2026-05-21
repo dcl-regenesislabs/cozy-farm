@@ -43,6 +43,9 @@ import { spawnDog } from '../systems/dogSystem'
 // ---------------------------------------------------------------------------
 const AUTO_SAVE_INTERVAL_MS = 60_000
 const INITIAL_TELEPORT_DELAY_S = 0.25
+const SLOT_ASSIGNMENT_OVERLAY_INTRO_MS = 2_000
+const SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS = 4_200
+const SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS = SLOT_ASSIGNMENT_OVERLAY_INTRO_MS + SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS
 const INITIAL_LOAD_RETRY_DELAY_S = 2
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
@@ -572,10 +575,15 @@ function renderOtherFarmSlot(slotId: number, visual: FarmSlotVisual): void {
 const SOIL_MODEL = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
 
-function teleportToSlot(slotId: number): void {
+export function teleportToSlot(slotId: number): void {
   const pos = slotId >= 0 && slotId < FARM_SPAWN_POSITIONS.length
     ? FARM_SPAWN_POSITIONS[slotId]
     : PLAZA_SPAWN_POSITION
+  playerState.farmAssignmentOverlayActive = false
+  playerState.farmAssignmentOverlaySlotId = -1
+  playerState.farmAssignmentOverlayStartedAt = 0
+  playerState.farmAssignmentOverlayDurationMs = 0
+  playerState.farmGameplayUiReady = slotId >= 0
   void movePlayerTo({ newRelativePosition: pos, cameraTarget: { x: pos.x + 8, y: pos.y, z: pos.z } })
   console.log(`[SaveService] Teleporting to slot ${slotId} → (${pos.x}, ${pos.y}, ${pos.z})`)
 }
@@ -600,6 +608,7 @@ export function initSaveService(onLoaded?: () => void): void {
   let teleportDelayTimer = 0
   let loadRetryTimer = -1
   let initRetryRunning = false
+  let playSlotAssignmentOverlay = false
   let currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
 
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
@@ -608,6 +617,13 @@ export function initSaveService(onLoaded?: () => void): void {
     currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
     void room.send('playerLoadFarm', { requestId: currentLoadRequestId })
     console.log(`[SaveService] playerLoadFarm sent (${currentLoadRequestId})`)
+  }
+
+  function startFarmAssignmentOverlay(slotId: number): void {
+    playerState.farmAssignmentOverlayActive = true
+    playerState.farmAssignmentOverlaySlotId = slotId
+    playerState.farmAssignmentOverlayStartedAt = Date.now()
+    playerState.farmAssignmentOverlayDurationMs = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS
   }
 
   engine.addSystem((dt) => {
@@ -630,6 +646,14 @@ export function initSaveService(onLoaded?: () => void): void {
 
   function scheduleSingleTeleport(slotId: number): void {
     pendingTeleportSlotId = slotId
+    playerState.farmGameplayUiReady = false
+    if (playSlotAssignmentOverlay) {
+      startFarmAssignmentOverlay(slotId)
+      teleportDelayTimer = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS / 1000
+      playSlotAssignmentOverlay = false
+      return
+    }
+
     teleportDelayTimer = INITIAL_TELEPORT_DELAY_S
   }
 
@@ -645,12 +669,24 @@ export function initSaveService(onLoaded?: () => void): void {
       return
     }
 
-    const slotChanged = playerState.mySlotId !== mine.slotId
+    const previousSlotId = playerState.mySlotId
+    const slotChanged = previousSlotId !== mine.slotId
+    const shouldShowInitialAssignmentOverlay =
+      !initialPayloadApplied &&
+      previousSlotId < 0 &&
+      mine.slotId >= 0 &&
+      !playerState.farmAssignmentOverlayActive
     playerState.mySlotId = mine.slotId
+    if (playerState.mySlotId >= 0) {
+      playerState.plazaMapMinimized = false
+    }
 
     if (!localFarmInitialized || slotChanged) {
       localFarmInitialized = true  // optimistic lock — reset in catch so retry can recover
       try {
+        if (shouldShowInitialAssignmentOverlay) {
+          playSlotAssignmentOverlay = true
+        }
         setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
         initBeautySpotSystem()
         initAnimalBuildings()
@@ -736,6 +772,12 @@ export function initSaveService(onLoaded?: () => void): void {
   // A player disconnected — hide their farm slot for all clients
   room.onMessage('farmSlotReleased', (data) => {
     if (data.slotId === playerState.mySlotId) return  // own slot, ignore
+    const released = playerState.farmSlots.find((slot) => slot.slotId === data.slotId)
+    if (released) {
+      released.wallet = ''
+      released.displayName = ''
+      released.claimedAt = 0
+    }
     hideFarmSlot(data.slotId)
     console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
   })
@@ -757,6 +799,10 @@ export function initSaveService(onLoaded?: () => void): void {
     const normalizedRequester = normalizeAddress(data.requester)
     const mine = normalizedWallet ? data.slots.find((s) => normalizeAddress(s.wallet) === normalizedWallet) : undefined
     const nextMySlotId = mine ? mine.slotId : playerState.mySlotId
+
+    if (!mine && !playerState.viewingFarm) {
+      playerState.farmGameplayUiReady = false
+    }
 
     for (const slot of data.slots) {
       const isMine = slot.slotId === nextMySlotId && !!normalizedWallet && normalizeAddress(slot.wallet) === normalizedWallet
@@ -796,7 +842,16 @@ export function initSaveService(onLoaded?: () => void): void {
     if (data.success) {
       playerState.mySlotId  = data.slotId
       playerState.farmSlots = data.slots
+      playerState.farmGameplayUiReady = false
+      playerState.plazaMapMinimized = false
       if (playerState.activeMenu === 'farmSelect') playerState.activeMenu = 'none'
+    } else {
+      playerState.farmAssignmentOverlayActive = false
+      playerState.farmAssignmentOverlaySlotId = -1
+      playerState.farmAssignmentOverlayStartedAt = 0
+      playerState.farmAssignmentOverlayDurationMs = 0
+      playerState.farmGameplayUiReady = false
+      playSlotAssignmentOverlay = false
     }
     slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
   })

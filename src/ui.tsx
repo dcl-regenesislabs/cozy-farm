@@ -25,53 +25,58 @@ import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
 import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
+import { FarmAssignmentOverlay } from './ui/FarmAssignmentOverlay'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
 }
 
-const MainUi = () => (
-  <UiEntity
-    uiTransform={{
-      width: '100%',
-      height: '100%',
-      pointerFilter: 'none',
-    }}
-  >
-    {/* Always-visible chrome */}
-    <TopHud />
-    <VisitHud />
-    <BottomNav />
+const MainUi = () => {
+  const showVisitHud = playerState.viewingFarm !== null
+  const showOwnFarmUi = playerState.viewingFarm === null && playerState.farmGameplayUiReady
+  const waitingForSlot =
+    playerState.viewingFarm === null &&
+    playerState.mySlotId < 0 &&
+    playerState.farmSlots.length > 0
 
-    {/* World-interaction menus (triggered by clicking scene objects) */}
-    {playerState.activeMenu === 'plant'     && <PlantMenu />}
-    {playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
-    {playerState.activeMenu === 'shop'      && <ShopMenu />}
-    {playerState.activeMenu === 'sell'      && <SellMenu />}
-    {playerState.activeMenu === 'unlock'         && <UnlockMenu />}
-    {playerState.activeMenu === 'plotGroupUnlock' && <PlotGroupUnlockMenu />}
-    {(playerState.activeMenu === 'expansion1' || playerState.activeMenu === 'expansion2') && <ExpansionMenu />}
-    {playerState.activeMenu === 'farmer'    && <FarmerMenu />}
-    {playerState.activeMenu === 'npcDialog' && <NpcDialogMenu />}
+  return (
+    <UiEntity
+      uiTransform={{
+        width: '100%',
+        height: '100%',
+        pointerFilter: 'none',
+      }}
+    >
+      {showOwnFarmUi && <TopHud />}
+      {showVisitHud && <VisitHud />}
+      {showOwnFarmUi && playerState.activeMenu !== 'farmSelect' && <BottomNav />}
 
-    {/* World-object menus (continued) */}
-    {playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
-    {MAILBOX_FEATURE_ENABLED && playerState.activeMenu === 'mailbox' && <MailboxMenu />}
-    {playerState.activeMenu === 'compost'   && <CompostBinMenu />}
-    {playerState.activeMenu === 'chickenCoop' && <ChickenCoopPanel />}
-    {playerState.activeMenu === 'pigPen'      && <PigPenPanel />}
-    {playerState.activeMenu === 'feedBowl'  && <FeedBowlMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'plant'     && <PlantMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'shop'      && <ShopMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'sell'      && <SellMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'unlock'         && <UnlockMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'plotGroupUnlock' && <PlotGroupUnlockMenu />}
+      {showOwnFarmUi && (playerState.activeMenu === 'expansion1' || playerState.activeMenu === 'expansion2') && <ExpansionMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'farmer'    && <FarmerMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'npcDialog' && <NpcDialogMenu />}
 
-    {/* Leaderboard panel */}
-    {playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
+      {showOwnFarmUi && MAILBOX_FEATURE_ENABLED && playerState.activeMenu === 'mailbox' && <MailboxMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'compost'   && <CompostBinMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'chickenCoop' && <ChickenCoopPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'pigPen'      && <PigPenPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'feedBowl'  && <FeedBowlMenu />}
 
-    {/* Farm selection — shown on first load if player has no slot */}
-    {playerState.activeMenu === 'farmSelect' && <FarmSelectPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
-    {/* Bottom-nav panels */}
-    {playerState.activeMenu === 'inventory' && <InventoryPanel />}
-    {playerState.activeMenu === 'stats'     && <StatsPanel />}
-    {playerState.activeMenu === 'quests'    && <QuestPanel />}
-    {playerState.activeMenu === 'farm'      && <FarmPanel />}
-  </UiEntity>
-)
+      {(waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
+
+      {showOwnFarmUi && playerState.activeMenu === 'inventory' && <InventoryPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'stats'     && <StatsPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'quests'    && <QuestPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'farm'      && <FarmPanel />}
+      <FarmAssignmentOverlay />
+    </UiEntity>
+  )
+}
