@@ -5004,6 +5004,27 @@
             "parent": 659
           }
         },
+        "749": {
+          "json": {
+            "position": {
+              "x": 98,
+              "y": 0,
+              "z": 132.5
+            },
+            "scale": {
+              "x": 2.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 0
+          }
+        },
         "750": {
           "json": {
             "position": {
@@ -5254,6 +5275,342 @@
               "w": 1
             },
             "parent": 754
+          }
+        },
+        "780": {
+          "json": {
+            "position": {
+              "x": 4,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "781": {
+          "json": {
+            "position": {
+              "x": 12,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "782": {
+          "json": {
+            "position": {
+              "x": 8,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "783": {
+          "json": {
+            "position": {
+              "x": 16,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "786": {
+          "json": {
+            "position": {
+              "x": 20,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "787": {
+          "json": {
+            "position": {
+              "x": 24,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "788": {
+          "json": {
+            "position": {
+              "x": 27.979999542236328,
+              "y": 0,
+              "z": 7.897615432739258e-7
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 749
+          }
+        },
+        "789": {
+          "json": {
+            "position": {
+              "x": 4,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "790": {
+          "json": {
+            "position": {
+              "x": 12,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "791": {
+          "json": {
+            "position": {
+              "x": 8,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "792": {
+          "json": {
+            "position": {
+              "x": 16,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "793": {
+          "json": {
+            "position": {
+              "x": 20,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "794": {
+          "json": {
+            "position": {
+              "x": 24,
+              "y": 0,
+              "z": 0
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "795": {
+          "json": {
+            "position": {
+              "x": 27.979997634887695,
+              "y": 0,
+              "z": -0.0000018194064068666194
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 796
+          }
+        },
+        "796": {
+          "json": {
+            "position": {
+              "x": 132.5,
+              "y": 0,
+              "z": 158
+            },
+            "scale": {
+              "x": 2.5,
+              "y": 1,
+              "z": 2.5
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0.7071067690849304,
+              "z": 0,
+              "w": 0.7071067690849304
+            },
+            "parent": 0
+          }
+        },
+        "809": {
+          "json": {
+            "position": {
+              "x": 128,
+              "y": 0.25,
+              "z": 127.5
+            },
+            "scale": {
+              "x": 3,
+              "y": 3,
+              "z": 3
+            },
+            "rotation": {
+              "x": 0,
+              "y": 0,
+              "z": 0,
+              "w": 1
+            },
+            "parent": 0
           }
         },
         "1252": {
@@ -12359,6 +12716,13 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
+        "749": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
         "750": {
           "json": {
             "src": "assets/scene/Models/PigPenBuilding/PigPenBuilding.glb",
@@ -12432,6 +12796,118 @@
         "763": {
           "json": {
             "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "780": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "781": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "782": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "783": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "786": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "787": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "788": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "789": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "790": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "791": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "792": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "793": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "794": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "795": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "796": {
+          "json": {
+            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
+            "visibleMeshesCollisionMask": 0,
+            "invisibleMeshesCollisionMask": 3
+          }
+        },
+        "809": {
+          "json": {
+            "src": "assets/asset-packs/the_lonely_fountain/Fountain_03/Fountain_03.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -15543,6 +16019,11 @@
             "value": "PigPen"
           }
         },
+        "749": {
+          "json": {
+            "value": "Cobblestone Tile"
+          }
+        },
         "750": {
           "json": {
             "value": "PigPenBuilding.glb"
@@ -15601,6 +16082,86 @@
         "763": {
           "json": {
             "value": "PigSpawn_4"
+          }
+        },
+        "780": {
+          "json": {
+            "value": "Cobblestone Tile_2"
+          }
+        },
+        "781": {
+          "json": {
+            "value": "Cobblestone Tile_3"
+          }
+        },
+        "782": {
+          "json": {
+            "value": "Cobblestone Tile_4"
+          }
+        },
+        "783": {
+          "json": {
+            "value": "Cobblestone Tile_5"
+          }
+        },
+        "786": {
+          "json": {
+            "value": "Cobblestone Tile_8"
+          }
+        },
+        "787": {
+          "json": {
+            "value": "Cobblestone Tile_9"
+          }
+        },
+        "788": {
+          "json": {
+            "value": "Cobblestone Tile_10"
+          }
+        },
+        "789": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "790": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "791": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "792": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "793": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "794": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "795": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "796": {
+          "json": {
+            "value": "Cobblestone Tile_11"
+          }
+        },
+        "809": {
+          "json": {
+            "value": "The Lonely Fountain"
           }
         },
         "1252": {
@@ -17133,7 +17694,6 @@
             "value": [
               {
                 "entity": 0,
-                "open": true,
                 "children": [
                   1939,
                   2196,
@@ -17148,7 +17708,10 @@
                   1261,
                   1260,
                   1259,
-                  1264
+                  1264,
+                  749,
+                  796,
+                  809
                 ]
               },
               {
@@ -17487,6 +18050,7 @@
               },
               {
                 "entity": 1939,
+                "open": true,
                 "children": [
                   1940,
                   1941,
@@ -19766,6 +20330,90 @@
               {
                 "entity": 1266,
                 "children": []
+              },
+              {
+                "entity": 749,
+                "children": [
+                  781,
+                  782,
+                  780,
+                  783,
+                  786,
+                  787,
+                  788
+                ]
+              },
+              {
+                "entity": 780,
+                "children": []
+              },
+              {
+                "entity": 781,
+                "children": []
+              },
+              {
+                "entity": 782,
+                "children": []
+              },
+              {
+                "entity": 783,
+                "children": []
+              },
+              {
+                "entity": 786,
+                "children": []
+              },
+              {
+                "entity": 787,
+                "children": []
+              },
+              {
+                "entity": 788,
+                "children": []
+              },
+              {
+                "entity": 796,
+                "children": [
+                  795,
+                  794,
+                  793,
+                  792,
+                  791,
+                  790,
+                  789
+                ]
+              },
+              {
+                "entity": 795,
+                "children": []
+              },
+              {
+                "entity": 794,
+                "children": []
+              },
+              {
+                "entity": 793,
+                "children": []
+              },
+              {
+                "entity": 792,
+                "children": []
+              },
+              {
+                "entity": 791,
+                "children": []
+              },
+              {
+                "entity": 790,
+                "children": []
+              },
+              {
+                "entity": 789,
+                "children": []
+              },
+              {
+                "entity": 809,
+                "children": []
               }
             ]
           }
@@ -20488,6 +21136,9 @@
         "748": {
           "json": {}
         },
+        "749": {
+          "json": {}
+        },
         "750": {
           "json": {}
         },
@@ -20522,6 +21173,78 @@
           "json": {}
         },
         "763": {
+          "json": {}
+        },
+        "780": {
+          "json": {}
+        },
+        "781": {
+          "json": {}
+        },
+        "782": {
+          "json": {}
+        },
+        "783": {
+          "json": {}
+        },
+        "786": {
+          "json": {}
+        },
+        "787": {
+          "json": {}
+        },
+        "788": {
+          "json": {}
+        },
+        "789": {
+          "json": {}
+        },
+        "790": {
+          "json": {}
+        },
+        "791": {
+          "json": {}
+        },
+        "792": {
+          "json": {}
+        },
+        "793": {
+          "json": {}
+        },
+        "794": {
+          "json": {}
+        },
+        "795": {
+          "json": {}
+        },
+        "796": {
+          "json": {}
+        },
+        "799": {
+          "json": {}
+        },
+        "800": {
+          "json": {}
+        },
+        "801": {
+          "json": {}
+        },
+        "802": {
+          "json": {}
+        },
+        "803": {
+          "json": {}
+        },
+        "804": {
+          "json": {}
+        },
+        "805": {
+          "json": {}
+        },
+        "806": {
+          "json": {}
+        },
+        "809": {
           "json": {}
         },
         "1252": {
@@ -24579,8 +25302,8 @@
                   "x": {
                     "$case": "range",
                     "value": [
-                      7.5,
-                      8.5
+                      126.4000015258789,
+                      127.4000015258789
                     ]
                   },
                   "y": {
@@ -24593,8 +25316,8 @@
                   "z": {
                     "$case": "range",
                     "value": [
-                      44.5,
-                      45.5
+                      111.0999984741211,
+                      112.0999984741211
                     ]
                   }
                 },
@@ -25212,7 +25935,7 @@
         "0": {
           "json": {
             "id": 0,
-            "value": 24
+            "value": 28
           }
         }
       }
