@@ -22,7 +22,7 @@ import {
   PIG_MODEL,
   getPigletScale,
 } from '../data/animalData'
-import { getFarmEntity } from './farmInstances'
+import { getEntityWorldPosition, getFarmEntity } from './farmInstances'
 import type { FarmSlotVisual } from '../shared/farmMessages'
 
 const remoteBeautyModels = new Map<number, Entity[]>()
@@ -42,7 +42,6 @@ type RemoteAnimalState = {
   bounds: WanderBounds
   pauseTimer: number
   currentTarget: { x: number; z: number } | null
-  scale: number
 }
 
 function setVisible(entity: Entity | null, visible: boolean): void {
@@ -111,7 +110,6 @@ function updateRemoteAnimalStates(dt: number, statesMap: Map<number, RemoteAnima
         transform.position.z + (dz / dist) * step,
       )
       transform.rotation = Quaternion.fromEulerDegrees(0, Math.atan2(dx, dz) * (180 / Math.PI), 0)
-      transform.scale = Vector3.create(state.scale, state.scale, state.scale)
     }
   }
 }
@@ -146,8 +144,7 @@ function getSpawnMarkersAndBounds(slotId: number, prefix: string): { markers: En
     if (!marker) break
     setVisible(marker, false)
     markers.push(marker)
-    const pos = Transform.getOrNull(marker)?.position
-    if (!pos) continue
+    const pos = getEntityWorldPosition(marker)
     if (pos.x < minX) minX = pos.x
     if (pos.x > maxX) maxX = pos.x
     if (pos.z < minZ) minZ = pos.z
@@ -250,7 +247,6 @@ function syncBuildingVisuals(slotId: number, visual: FarmSlotVisual): void {
 
 function syncAmbientAnimals(
   slotId: number,
-  parentName: string,
   markers: Entity[],
   bounds: WanderBounds | null,
   targetCount: number,
@@ -269,12 +265,10 @@ function syncAmbientAnimals(
   }
 
   if (!bounds || markers.length === 0) return
-  const parentEntity = getFarmEntity(slotId, parentName)
 
   for (let index = 0; index < targetCount; index++) {
     const marker = markers[index % markers.length]
-    const markerPos = Transform.getOrNull(marker)?.position
-    if (!markerPos) continue
+    const markerPos = getEntityWorldPosition(marker)
     const jitterX = ((index % 3) - 1) * 0.35
     const jitterZ = (Math.floor(index / 3) % 2) * 0.35
     const scale = scaleResolver(index)
@@ -287,7 +281,6 @@ function syncAmbientAnimals(
       entities[index] = entity
       GltfContainer.create(entity, { src })
       Transform.create(entity, {
-        parent: parentEntity ?? undefined,
         position: Vector3.create(markerPos.x + jitterX, markerPos.y, markerPos.z + jitterZ),
         rotation: Quaternion.fromEulerDegrees(0, (index * 57) % 360, 0),
         scale: Vector3.create(scale, scale, scale),
@@ -304,19 +297,16 @@ function syncAmbientAnimals(
         bounds,
         pauseTimer: Math.random() * 1.0,
         currentTarget: null,
-        scale,
       }
       states[index] = state
     } else {
       GltfContainer.createOrReplace(entity, { src })
       const transform = Transform.getMutable(entity)
-      transform.parent = parentEntity ?? undefined
       if (!state.currentTarget) {
         transform.position = Vector3.create(markerPos.x + jitterX, markerPos.y, markerPos.z + jitterZ)
       }
       transform.scale = Vector3.create(scale, scale, scale)
       state.bounds = bounds
-      state.scale = scale
     }
   }
 }
@@ -347,7 +337,6 @@ export function renderRemoteFarmVisual(slotId: number, visual: FarmSlotVisual): 
 
   syncAmbientAnimals(
     slotId,
-    'ChickenCoop',
     chickenArea.markers,
     chickenArea.bounds,
     visual.chickens.length,
@@ -359,7 +348,6 @@ export function renderRemoteFarmVisual(slotId: number, visual: FarmSlotVisual): 
 
   syncAmbientAnimals(
     slotId,
-    'PigPen',
     pigArea.markers,
     pigArea.bounds,
     visual.pigs.length,
