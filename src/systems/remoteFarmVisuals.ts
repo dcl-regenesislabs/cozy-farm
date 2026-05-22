@@ -3,6 +3,7 @@ import {
   Entity,
   GltfContainer,
   Transform,
+  Animator,
   VisibilityComponent,
 } from '@dcl/sdk/ecs'
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
@@ -11,22 +12,39 @@ import {
   ANIMAL_BUILDING_EMPTY,
   ANIMAL_FOOD_EMPTY,
   ANIMAL_FOOD_FULL,
+  ANIMAL_PAUSE_MAX,
+  ANIMAL_PAUSE_MIN,
   ANIMAL_SCALE_CHICKEN,
+  ANIMAL_WALK_SPEED,
   CHICKEN_FOOD_EMPTY,
   CHICKEN_FOOD_FULL,
   CHICKEN_MODEL,
   PIG_MODEL,
   getPigletScale,
 } from '../data/animalData'
+
 import { getFarmEntity, getEntityWorldPosition } from './farmInstances'
+
 import type { FarmSlotVisual } from '../shared/farmMessages'
 
 const remoteBeautyModels = new Map<number, Entity[]>()
 const remoteChickenEntities = new Map<number, Entity[]>()
 const remotePigEntities = new Map<number, Entity[]>()
+const remoteChickenStates = new Map<number, RemoteAnimalState[]>()
+const remotePigStates = new Map<number, RemoteAnimalState[]>()
 // Placeholder buildings shown when the remote player hasn't bought the coop/pen yet
 const remoteEmptyCoopEntities = new Map<number, Entity>()
 const remoteEmptyPenEntities  = new Map<number, Entity>()
+let remoteAnimalSystemRegistered = false
+
+type WanderBounds = { minX: number; maxX: number; minZ: number; maxZ: number }
+
+type RemoteAnimalState = {
+  entity: Entity
+  bounds: WanderBounds
+  pauseTimer: number
+  currentTarget: { x: number; z: number } | null
+}
 
 function setVisible(entity: Entity | null, visible: boolean): void {
   if (!entity) return
@@ -40,6 +58,109 @@ function getOrCreateArray(map: Map<number, Entity[]>, slotId: number): Entity[] 
   const created: Entity[] = []
   map.set(slotId, created)
   return created
+}
+
+function getOrCreateStateArray(map: Map<number, RemoteAnimalState[]>, slotId: number): RemoteAnimalState[] {
+  const existing = map.get(slotId)
+  if (existing) return existing
+  const created: RemoteAnimalState[] = []
+  map.set(slotId, created)
+  return created
+}
+
+function ensureRemoteAnimalSystem(): void {
+  if (remoteAnimalSystemRegistered) return
+  remoteAnimalSystemRegistered = true
+  engine.addSystem((dt) => {
+    updateRemoteAnimalStates(dt, remoteChickenStates)
+    updateRemoteAnimalStates(dt, remotePigStates)
+  }, 0, 'remote-animal-wander-system')
+}
+
+function updateRemoteAnimalStates(dt: number, statesMap: Map<number, RemoteAnimalState[]>): void {
+  for (const states of statesMap.values()) {
+    for (const state of states) {
+      state.pauseTimer -= dt
+
+      if (state.pauseTimer > 0) continue
+
+      if (!state.currentTarget) {
+        const current = Transform.getOrNull(state.entity)?.position
+        if (!current) continue
+        state.currentTarget = randomWanderTarget(current, state.bounds)
+        playRemoteAnim(state.entity, 'walk')
+      }
+
+      const transform = Transform.getMutableOrNull(state.entity)
+      if (!transform || !state.currentTarget) continue
+
+      const dx = state.currentTarget.x - transform.position.x
+      const dz = state.currentTarget.z - transform.position.z
+      const dist = Math.sqrt(dx * dx + dz * dz)
+
+      if (dist < 0.15) {
+        state.currentTarget = null
+        state.pauseTimer = ANIMAL_PAUSE_MIN + Math.random() * (ANIMAL_PAUSE_MAX - ANIMAL_PAUSE_MIN)
+        playRemoteAnim(state.entity, 'idle')
+        continue
+      }
+
+      const step = Math.min(ANIMAL_WALK_SPEED * dt, dist)
+      transform.position = Vector3.create(
+        transform.position.x + (dx / dist) * step,
+        transform.position.y,
+        transform.position.z + (dz / dist) * step,
+      )
+      transform.rotation = Quaternion.fromEulerDegrees(0, Math.atan2(dx, dz) * (180 / Math.PI), 0)
+    }
+  }
+}
+
+function playRemoteAnim(entity: Entity, clip: 'idle' | 'walk' | 'eat'): void {
+  if (!Animator.has(entity)) return
+  const animator = Animator.getMutable(entity)
+  for (const state of animator.states) {
+    state.playing = state.clip === clip
+    state.weight = state.clip === clip ? 1 : 0
+  }
+}
+
+function randomWanderTarget(currentPos: Vector3, bounds: WanderBounds): { x: number; z: number } {
+  const angle = Math.random() * Math.PI * 2
+  const radius = (0.5 + Math.random() * 0.5) * 3.5
+  return {
+    x: Math.max(bounds.minX, Math.min(bounds.maxX, currentPos.x + Math.cos(angle) * radius)),
+    z: Math.max(bounds.minZ, Math.min(bounds.maxZ, currentPos.z + Math.sin(angle) * radius)),
+  }
+}
+
+function getSpawnMarkersAndBounds(slotId: number, prefix: string): { markers: Entity[]; bounds: WanderBounds | null } {
+  const markers: Entity[] = []
+  let minX = Infinity
+  let maxX = -Infinity
+  let minZ = Infinity
+  let maxZ = -Infinity
+
+  for (let i = 1; i <= 20; i++) {
+    const marker = getFarmEntity(slotId, `${prefix}_${i}`)
+    if (!marker) break
+    setVisible(marker, false)
+    markers.push(marker)
+    const pos = getEntityWorldPosition(marker)
+    if (pos.x < minX) minX = pos.x
+    if (pos.x > maxX) maxX = pos.x
+    if (pos.z < minZ) minZ = pos.z
+    if (pos.z > maxZ) maxZ = pos.z
+  }
+
+  if (markers.length === 0 || minX === Infinity) {
+    return { markers, bounds: null }
+  }
+
+  return {
+    markers,
+    bounds: { minX, maxX, minZ, maxZ },
+  }
 }
 
 function syncBeauty(slotId: number, beautySlots: number[]): void {
@@ -134,46 +255,68 @@ function syncBuildingVisuals(slotId: number, visual: FarmSlotVisual): void {
   setVisible(getFarmEntity(slotId, 'CompostBin.glb'), visual.compostBinUnlocked)
 }
 
-function syncStaticAnimals(
+function syncAmbientAnimals(
   slotId: number,
-  markers: (Entity | null)[],
+  markers: Entity[],
+  bounds: WanderBounds | null,
   targetCount: number,
   src: string,
   entitiesMap: Map<number, Entity[]>,
+  statesMap: Map<number, RemoteAnimalState[]>,
   scaleResolver: (index: number) => number,
 ): void {
   const entities = getOrCreateArray(entitiesMap, slotId)
+  const states = getOrCreateStateArray(statesMap, slotId)
 
   while (entities.length > targetCount) {
     const entity = entities.pop()
+    states.pop()
     if (entity) engine.removeEntity(entity)
   }
 
-  for (let index = 0; index < targetCount; index++) {
-    const marker = markers[index % Math.max(1, markers.length)]
-    if (!marker) continue
+  if (!bounds || markers.length === 0) return
 
+  for (let index = 0; index < targetCount; index++) {
+    const marker = markers[index % markers.length]
+    const markerPos = getEntityWorldPosition(marker)
     const jitterX = ((index % 3) - 1) * 0.35
     const jitterZ = (Math.floor(index / 3) % 2) * 0.35
     const scale = scaleResolver(index)
 
     let entity = entities[index]
-    if (!entity) {
+    let state = states[index]
+
+    if (!entity || !state) {
       entity = engine.addEntity()
       entities[index] = entity
       GltfContainer.create(entity, { src })
       Transform.create(entity, {
-        parent: marker,
-        position: Vector3.create(jitterX, 0, jitterZ),
+        position: Vector3.create(markerPos.x + jitterX, markerPos.y, markerPos.z + jitterZ),
         rotation: Quaternion.fromEulerDegrees(0, (index * 57) % 360, 0),
         scale: Vector3.create(scale, scale, scale),
       })
+      Animator.create(entity, {
+        states: [
+          { clip: 'idle', playing: true, weight: 1, loop: true },
+          { clip: 'walk', playing: false, weight: 0, loop: true },
+          { clip: 'eat', playing: false, weight: 0, loop: true },
+        ],
+      })
+      state = {
+        entity,
+        bounds,
+        pauseTimer: Math.random() * 1.0,
+        currentTarget: null,
+      }
+      states[index] = state
     } else {
       GltfContainer.createOrReplace(entity, { src })
       const transform = Transform.getMutable(entity)
-      transform.parent = marker
-      transform.position = Vector3.create(jitterX, 0, jitterZ)
+      if (!state.currentTarget) {
+        transform.position = Vector3.create(markerPos.x + jitterX, markerPos.y, markerPos.z + jitterZ)
+      }
       transform.scale = Vector3.create(scale, scale, scale)
+      state.bounds = bounds
     }
   }
 }
@@ -188,30 +331,39 @@ export function hideRemoteSlotBuildings(slotId: number): void {
     'PigPenDirt.glb', 'AnimalFoodEmpty.glb', 'CompostBin.glb',
   ]
   for (const name of names) setVisible(getFarmEntity(slotId, name), false)
+  for (let i = 1; i <= 20; i++) {
+    setVisible(getFarmEntity(slotId, `ChickenSpawn_${i}`), false)
+    setVisible(getFarmEntity(slotId, `PigSpawn_${i}`), false)
+  }
 }
 
 export function renderRemoteFarmVisual(slotId: number, visual: FarmSlotVisual): void {
+  ensureRemoteAnimalSystem()
   syncBeauty(slotId, visual.beautySlots)
   syncBuildingVisuals(slotId, visual)
 
-  const chickenMarkers = [1, 2, 3, 4].map((index) => getFarmEntity(slotId, `ChickenSpawn_${index}`))
-  const pigMarkers = [1, 2, 3, 4].map((index) => getFarmEntity(slotId, `PigSpawn_${index}`))
+  const chickenArea = getSpawnMarkersAndBounds(slotId, 'ChickenSpawn')
+  const pigArea = getSpawnMarkersAndBounds(slotId, 'PigSpawn')
 
-  syncStaticAnimals(
+  syncAmbientAnimals(
     slotId,
-    chickenMarkers,
+    chickenArea.markers,
+    chickenArea.bounds,
     visual.chickens.length,
     CHICKEN_MODEL,
     remoteChickenEntities,
+    remoteChickenStates,
     () => ANIMAL_SCALE_CHICKEN,
   )
 
-  syncStaticAnimals(
+  syncAmbientAnimals(
     slotId,
-    pigMarkers,
+    pigArea.markers,
+    pigArea.bounds,
     visual.pigs.length,
     PIG_MODEL,
     remotePigEntities,
+    remotePigStates,
     (index) => getPigletScale(visual.pigs[index] as any, Date.now()),
   )
 }
