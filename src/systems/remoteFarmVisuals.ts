@@ -8,6 +8,7 @@ import {
 import { Quaternion, Vector3 } from '@dcl/sdk/math'
 import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
 import {
+  ANIMAL_BUILDING_EMPTY,
   ANIMAL_FOOD_EMPTY,
   ANIMAL_FOOD_FULL,
   ANIMAL_SCALE_CHICKEN,
@@ -23,6 +24,9 @@ import type { FarmSlotVisual } from '../shared/farmMessages'
 const remoteBeautyModels = new Map<number, Entity[]>()
 const remoteChickenEntities = new Map<number, Entity[]>()
 const remotePigEntities = new Map<number, Entity[]>()
+// Placeholder buildings shown when the remote player hasn't bought the coop/pen yet
+const remoteEmptyCoopEntities = new Map<number, Entity>()
+const remoteEmptyPenEntities  = new Map<number, Entity>()
 
 function setVisible(entity: Entity | null, visible: boolean): void {
   if (!entity) return
@@ -71,10 +75,32 @@ function syncBeauty(slotId: number, beautySlots: number[]): void {
   }
 }
 
+function getOrCreateEmptyBuilding(
+  map: Map<number, Entity>,
+  slotId: number,
+  parentName: string,
+): Entity {
+  const existing = map.get(slotId)
+  if (existing) return existing
+  const parent = getFarmEntity(slotId, parentName)
+  const entity = engine.addEntity()
+  GltfContainer.create(entity, { src: ANIMAL_BUILDING_EMPTY })
+  Transform.create(entity, {
+    parent:   parent ?? undefined,
+    position: Vector3.Zero(),
+    scale:    Vector3.create(1, 1, 1),
+  })
+  map.set(slotId, entity)
+  return entity
+}
+
 function syncBuildingVisuals(slotId: number, visual: FarmSlotVisual): void {
+  // Chicken Coop — show real building or empty placeholder
   setVisible(getFarmEntity(slotId, 'ChickenCoopBuilding.glb'), visual.chickenCoopOwned)
   setVisible(getFarmEntity(slotId, 'ChickenWater.glb'), visual.chickenCoopOwned)
   setVisible(getFarmEntity(slotId, 'ChickenCoopDirt.glb'), visual.chickenCoopOwned && visual.chickenCoopDirtyAt > 0)
+  const emptyCoopRemote = getOrCreateEmptyBuilding(remoteEmptyCoopEntities, slotId, 'ChickenCoop')
+  setVisible(emptyCoopRemote, !visual.chickenCoopOwned)
 
   const chickenFood = getFarmEntity(slotId, 'ChickenFoodEmpty.glb')
   setVisible(chickenFood, visual.chickenCoopOwned)
@@ -83,9 +109,12 @@ function syncBuildingVisuals(slotId: number, visual: FarmSlotVisual): void {
       visual.chickenFoodInBowl > 0 ? CHICKEN_FOOD_FULL : CHICKEN_FOOD_EMPTY
   }
 
+  // Pig Pen — show real building or empty placeholder
   setVisible(getFarmEntity(slotId, 'PigPenBuilding.glb'), visual.pigPenOwned)
   setVisible(getFarmEntity(slotId, 'AnimalWater.glb'), visual.pigPenOwned)
   setVisible(getFarmEntity(slotId, 'PigPenDirt.glb'), visual.pigPenOwned && visual.pigPenDirtyAt > 0)
+  const emptyPenRemote = getOrCreateEmptyBuilding(remoteEmptyPenEntities, slotId, 'PigPen')
+  setVisible(emptyPenRemote, !visual.pigPenOwned)
 
   const pigFood = getFarmEntity(slotId, 'AnimalFoodEmpty.glb')
   setVisible(pigFood, visual.pigPenOwned)

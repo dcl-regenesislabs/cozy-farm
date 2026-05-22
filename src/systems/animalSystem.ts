@@ -246,20 +246,30 @@ export function initAnimalBuildings(): void {
   const coopPos    = Vector3.create(coopPosRaw.x, coopPosRaw.y, coopPosRaw.z)
   const penPos     = Vector3.create(penPosRaw.x,  penPosRaw.y,  penPosRaw.z)
 
-  // Spawn AnimalBuildingEmpty placeholder for coop spot
+  // Spawn AnimalBuildingEmpty placeholder for coop spot.
+  // Parented to ChickenCoop so it follows when farm anchors are retried/repositioned.
   emptyCoopEntity = engine.addEntity()
   GltfContainer.create(emptyCoopEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyCoopEntity, { position: coopPos, scale: Vector3.create(1, 1, 1) })
+  Transform.create(emptyCoopEntity, {
+    parent:   coopParent ?? undefined,
+    position: coopParent ? Vector3.Zero() : coopPos,
+    scale:    Vector3.create(1, 1, 1),
+  })
   enablePointer(emptyCoopEntity)
   pointerEventsSystem.onPointerDown(
     { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Buy Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
     () => { purchaseBuilding('chicken') },
   )
 
-  // Spawn AnimalBuildingEmpty placeholder for pen spot
+  // Spawn AnimalBuildingEmpty placeholder for pen spot.
+  // Parented to PigPen so it follows when farm anchors are retried/repositioned.
   emptyPenEntity = engine.addEntity()
   GltfContainer.create(emptyPenEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyPenEntity, { position: penPos, scale: Vector3.create(1, 1, 1) })
+  Transform.create(emptyPenEntity, {
+    parent:   penParent ?? undefined,
+    position: penParent ? Vector3.Zero() : penPos,
+    scale:    Vector3.create(1, 1, 1),
+  })
   enablePointer(emptyPenEntity)
   pointerEventsSystem.onPointerDown(
     { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Buy Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
