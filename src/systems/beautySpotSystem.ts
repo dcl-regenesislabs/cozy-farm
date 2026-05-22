@@ -9,6 +9,7 @@ import { BeautySpotState } from '../components/farmComponents'
 import { BEAUTY_OBJECTS, RARITY_LABEL } from '../data/beautyObjectData'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
+import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 
 // Scene-editor entity names — place these 3 objects in Creator Hub
 const SPOT_NAMES = ['BeautySpot_1', 'BeautySpot_2', 'BeautySpot_3']
@@ -28,7 +29,7 @@ const modelEntities: Entity[] = []
 // always lies flat on the ground regardless of the spot parent's rotation.
 // ---------------------------------------------------------------------------
 function buildPlaceholderVisual(parent: Entity, slotIndex: number): void {
-  const parentPos = Transform.getOrNull(parent)?.position ?? Vector3.Zero()
+  const parentPos = getEntityWorldPosition(parent)
 
   const pad = engine.addEntity()
   Transform.create(pad, {
@@ -64,7 +65,7 @@ function updateSlotModel(slotIndex: number, objectId: number): void {
   if (!def) return
 
   // Root entity — same world position as the spot, no parent rotation inherited
-  const spotPos = Transform.getOrNull(spot)?.position ?? Vector3.Zero()
+  const spotPos = getEntityWorldPosition(spot)
   const model = engine.addEntity()
   Transform.create(model, {
     position: Vector3.create(spotPos.x, 0, spotPos.z),
@@ -149,15 +150,19 @@ export function hasEmptySlot(): boolean {
 // Init
 // ---------------------------------------------------------------------------
 export function initBeautySpotSystem(): void {
+  spotEntities.length = 0
+  padEntities.length = 0
+  modelEntities.length = 0
+
   let found = 0
   for (let i = 0; i < SPOT_NAMES.length; i++) {
-    const entity = engine.getEntityOrNullByName(SPOT_NAMES[i])
+    const entity = getCurrentFarmEntity(SPOT_NAMES[i])
     if (!entity) {
       console.error(`CozyFarm BeautySpots: "${SPOT_NAMES[i]}" not found in scene`)
       continue
     }
 
-    BeautySpotState.create(entity, { slotIndex: i, objectId: 0 })
+    BeautySpotState.createOrReplace(entity, { slotIndex: i, objectId: 0 })
     spotEntities[i]  = entity
     modelEntities[i] = 0 as unknown as Entity
 

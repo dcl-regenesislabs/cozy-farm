@@ -86,7 +86,18 @@ function getSpawnName(prefix: string, suffix: SpawnSuffix): string {
   return `${prefix}${suffix}`
 }
 
+// Override spawn positions — set by setupFarmSlotEntities for slots 1 and 2
+// so NPCs walk to the correct farm instead of always using Farm 1 positions.
+let spawnPositionOverride: Map<SpawnSuffix, Vector3> | null = null
+
+export function setNpcSpawnPositionOverride(positions: Map<string, Vector3> | null): void {
+  spawnPositionOverride = positions as Map<SpawnSuffix, Vector3> | null
+}
+
 function discoverSpawnPoints(prefix: string): Map<SpawnSuffix, Vector3> {
+  if (spawnPositionOverride && spawnPositionOverride.size > 0) {
+    return spawnPositionOverride
+  }
   const positions = new Map<SpawnSuffix, Vector3>()
   for (const suffix of SPAWN_SUFFIXES) {
     const name   = getSpawnName(prefix, suffix)

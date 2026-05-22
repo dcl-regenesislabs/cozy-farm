@@ -8,7 +8,7 @@ import {
   pauseAutoSave, resumeAutoSave,
   visitCallbacks, registryCallbacks,
 } from './saveService'
-import { refreshAllPlotHoverTexts, clearVisitSessionWater } from '../systems/interactionSetup'
+import { refreshAllPlotHoverTexts, clearVisitSessionWater, getSoilEntities } from '../systems/interactionSetup'
 
 // ---------------------------------------------------------------------------
 // Module state
@@ -49,7 +49,7 @@ export function enterVisitMode(address: string, payload: FarmStatePayload): void
   ownPlotSnapshot = snapshotOwnPlots()
 
   // Clear existing crop models before applying visited data
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     removeCropModel(entity)
   }
 
@@ -67,7 +67,7 @@ export function exitVisitMode(): void {
   if (!ownPlotSnapshot) return
 
   // Clear visited crop models
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     removeCropModel(entity)
   }
 
@@ -120,7 +120,7 @@ export function initVisitService(): void {
 
 function snapshotOwnPlots(): PlotSaveState[] {
   const states: PlotSaveState[] = []
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     const plot = PlotState.get(entity)
     states.push({
       plotIndex:      plot.plotIndex,

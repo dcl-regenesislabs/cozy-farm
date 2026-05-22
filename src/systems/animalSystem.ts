@@ -32,6 +32,7 @@ import {
   PIG_BREED_COOLDOWN, ADOLESCENT_STAGE_MS,
   getPigStage, getPigletScale, PIG_MEAT_SELL_PRICE,
 } from '../data/animalData'
+import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 
 // ---------------------------------------------------------------------------
 // Wander state
@@ -170,29 +171,36 @@ export function updateBuildingVisuals(): void {
 // ---------------------------------------------------------------------------
 
 export function initAnimalBuildings(): void {
+  coopBuilding = null
+  coopDirt = null
+  coopFood = null
+  coopWater = null
+  penBuilding = null
+  penDirt = null
+  penFood = null
+  penWater = null
+
   // Resolve child entities by name
-  coopBuilding = engine.getEntityOrNullByName('ChickenCoopBuilding.glb')
-  coopDirt     = engine.getEntityOrNullByName('ChickenCoopDirt.glb')
-  coopFood     = engine.getEntityOrNullByName('ChickenFoodEmpty.glb')
-  coopWater    = engine.getEntityOrNullByName('ChickenWater.glb')
-  penBuilding  = engine.getEntityOrNullByName('PigPenBuilding.glb')
-  penDirt      = engine.getEntityOrNullByName('PigPenDirt.glb')
-  penFood      = engine.getEntityOrNullByName('AnimalFoodEmpty.glb')
-  penWater     = engine.getEntityOrNullByName('AnimalWater.glb')
+  coopBuilding = getCurrentFarmEntity('ChickenCoopBuilding.glb')
+  coopDirt     = getCurrentFarmEntity('ChickenCoopDirt.glb')
+  coopFood     = getCurrentFarmEntity('ChickenFoodEmpty.glb')
+  coopWater    = getCurrentFarmEntity('ChickenWater.glb')
+  penBuilding  = getCurrentFarmEntity('PigPenBuilding.glb')
+  penDirt      = getCurrentFarmEntity('PigPenDirt.glb')
+  penFood      = getCurrentFarmEntity('AnimalFoodEmpty.glb')
+  penWater     = getCurrentFarmEntity('AnimalWater.glb')
 
   // Get real world positions from the parent scene entities
-  const coopParent = engine.getEntityOrNullByName('ChickenCoop')
-  const penParent  = engine.getEntityOrNullByName('PigPen')
-  const coopTf = coopParent ? Transform.getOrNull(coopParent) : null
-  if (coopTf) resolvedCoopPos = { x: coopTf.position.x, y: coopTf.position.y, z: coopTf.position.z }
-  const penTf = penParent ? Transform.getOrNull(penParent) : null
-  if (penTf) resolvedPenPos = { x: penTf.position.x, y: penTf.position.y, z: penTf.position.z }
+  const coopParent = getCurrentFarmEntity('ChickenCoop')
+  const penParent  = getCurrentFarmEntity('PigPen')
+  if (coopParent) resolvedCoopPos = getEntityWorldPosition(coopParent)
+  if (penParent)  resolvedPenPos  = getEntityWorldPosition(penParent)
 
   // Collect ChickenSpawn_N → derive wander bounding box
   {
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity
     for (let i = 1; i <= 20; i++) {
-      const e = engine.getEntityOrNullByName(`ChickenSpawn_${i}`)
+      const e = getCurrentFarmEntity(`ChickenSpawn_${i}`)
       if (!e) break
       setVisible(e, false)
       const tf = Transform.getOrNull(e)
@@ -209,7 +217,7 @@ export function initAnimalBuildings(): void {
   {
     let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity
     for (let i = 1; i <= 20; i++) {
-      const e = engine.getEntityOrNullByName(`PigSpawn_${i}`)
+      const e = getCurrentFarmEntity(`PigSpawn_${i}`)
       if (!e) break
       setVisible(e, false)
       const tf = Transform.getOrNull(e)
@@ -234,13 +242,20 @@ export function initAnimalBuildings(): void {
 
   console.log(`[AnimalSystem] Chicken bounds: ${JSON.stringify(chickenBounds)}`)
   console.log(`[AnimalSystem] Pig bounds: ${JSON.stringify(pigBounds)}`)
-  const coopPos    = (coopParent ? Transform.getOrNull(coopParent)?.position : null) ?? Vector3.create(CHICKEN_COOP_CENTRE.x, CHICKEN_COOP_CENTRE.y, CHICKEN_COOP_CENTRE.z)
-  const penPos     = (penParent  ? Transform.getOrNull(penParent)?.position  : null) ?? Vector3.create(PIG_PEN_CENTRE.x, PIG_PEN_CENTRE.y, PIG_PEN_CENTRE.z)
+  const coopPosRaw = coopParent ? getEntityWorldPosition(coopParent) : CHICKEN_COOP_CENTRE
+  const penPosRaw  = penParent  ? getEntityWorldPosition(penParent)  : PIG_PEN_CENTRE
+  const coopPos    = Vector3.create(coopPosRaw.x, coopPosRaw.y, coopPosRaw.z)
+  const penPos     = Vector3.create(penPosRaw.x,  penPosRaw.y,  penPosRaw.z)
 
-  // Spawn AnimalBuildingEmpty placeholder for coop spot
+  // Spawn AnimalBuildingEmpty placeholder for coop spot.
+  // Parented to ChickenCoop so it follows when farm anchors are retried/repositioned.
   emptyCoopEntity = engine.addEntity()
   GltfContainer.create(emptyCoopEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyCoopEntity, { position: coopPos, scale: Vector3.create(1, 1, 1) })
+  Transform.create(emptyCoopEntity, {
+    parent:   coopParent ?? undefined,
+    position: coopParent ? Vector3.Zero() : coopPos,
+    scale:    Vector3.create(1, 1, 1),
+  })
   enablePointer(emptyCoopEntity)
   pointerEventsSystem.onPointerDown(
     { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
@@ -250,10 +265,15 @@ export function initAnimalBuildings(): void {
     },
   )
 
-  // Spawn AnimalBuildingEmpty placeholder for pen spot
+  // Spawn AnimalBuildingEmpty placeholder for pen spot.
+  // Parented to PigPen so it follows when farm anchors are retried/repositioned.
   emptyPenEntity = engine.addEntity()
   GltfContainer.create(emptyPenEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyPenEntity, { position: penPos, scale: Vector3.create(1, 1, 1) })
+  Transform.create(emptyPenEntity, {
+    parent:   penParent ?? undefined,
+    position: penParent ? Vector3.Zero() : penPos,
+    scale:    Vector3.create(1, 1, 1),
+  })
   enablePointer(emptyPenEntity)
   pointerEventsSystem.onPointerDown(
     { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },

@@ -8,7 +8,9 @@ import {
 } from '@dcl/sdk/ecs'
 import { Color4, Vector3 } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
+import { MAILBOX_FEATURE_ENABLED } from '../game/featureFlags'
 import { isVisiting } from '../services/visitService'
+import { getCurrentFarmEntity } from './farmInstances'
 
 const ENVELOPE_SRC = 'assets/images/envelope.png'
 const ROOT_Y = 2.35
@@ -25,9 +27,17 @@ let indicatorVisible = false
 let floatTime = 0
 
 function ensureMailboxIndicator(): void {
-  if (mailboxIndicatorRoot) return
+  const currentMailboxEntity = getCurrentFarmEntity('Mailbox')
+  if (!currentMailboxEntity) return
 
-  mailboxEntity = engine.getEntityOrNullByName('Mailbox')
+  if (mailboxIndicatorRoot && mailboxEntity === currentMailboxEntity) return
+  if (mailboxIndicatorRoot) {
+    engine.removeEntity(mailboxIndicatorRoot)
+    mailboxIndicatorRoot = null
+    indicatorVisible = false
+  }
+
+  mailboxEntity = currentMailboxEntity
   if (!mailboxEntity) return
 
   const root = engine.addEntity()
@@ -64,6 +74,11 @@ function setIndicatorVisible(visible: boolean): void {
 }
 
 function mailboxIndicatorSystem(dt: number): void {
+  if (!MAILBOX_FEATURE_ENABLED) {
+    setIndicatorVisible(false)
+    return
+  }
+
   ensureMailboxIndicator()
   if (!mailboxIndicatorRoot) return
 

@@ -5,7 +5,7 @@ import { progressionEventState, type ProgressionEventStep } from '../game/progre
 import { onLevelUp } from './levelingSystem'
 import { initNpcSystem, requestNpcDeparture, departAllActiveNpcs, walkNpcToPosition } from './npcSystem'
 import { MAYOR_DEF } from '../data/npcData'
-import { setCompostBinVisible, getCompostBinEntity, getSoilEntities } from './interactionSetup'
+import { setCompostBinVisible, getCompostBinEntity, getSoilEntities, getComputerEntity } from './interactionSetup'
 import { playSound } from './sfxSystem'
 import { setArrowTarget } from './tutorialArrowSystem'
 import { setOnBuyCompostBin } from '../game/actions'
@@ -380,5 +380,5 @@ export function initProgressionEventsSystem(): void {
 // Helper — get computer entity for arrow (computer = shop entry point)
 // ---------------------------------------------------------------------------
 function getComputerEntityForArrow() {
-  return engine.getEntityOrNullByName('Computer.glb')
+  return getComputerEntity()
 }

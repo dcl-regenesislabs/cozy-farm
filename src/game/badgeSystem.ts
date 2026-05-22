@@ -1,6 +1,6 @@
-import { engine } from '@dcl/sdk/ecs'
-import { PlotState } from '../components/farmComponents'
 import { questProgressMap } from './questState'
+import { PlotState } from '../components/farmComponents'
+import { getSoilEntities } from '../systems/interactionSetup'
 
 // 'stats' is intentionally excluded — that badge is live-computed from playerState
 // in the UI layer rather than tracked here, so it never gets stale.
@@ -22,7 +22,7 @@ export function hasBadge(key: BadgeKey): boolean {
 
 /** Called once after farm state is loaded — seeds initial badge state from saved data. */
 export function recomputeStartupBadges(): void {
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     if (PlotState.get(entity).isReady) {
       showBadge('farm')
       break

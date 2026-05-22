@@ -4,6 +4,7 @@ import {
   Transform,
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion } from '@dcl/sdk/math'
+import { getEntityWorldPosition } from './farmInstances'
 
 // ---------------------------------------------------------------------------
 // Tutorial Compass Arrow
@@ -60,11 +61,14 @@ function compassSystem(_dt: number) {
   if (!guideTarget || !compassRoot) return
 
   const playerT = Transform.getOrNull(engine.PlayerEntity)
-  const targetT = Transform.getOrNull(guideTarget as Entity)
-  if (!playerT || !targetT) return
+  if (!playerT) return
 
-  const dx   = targetT.position.x - playerT.position.x
-  const dz   = targetT.position.z - playerT.position.z
+  // Use world position so the arrow works correctly even when the target
+  // entity is nested inside a parent with an offset (Farm 2/3 slots).
+  const targetWorld = getEntityWorldPosition(guideTarget as Entity)
+
+  const dx   = targetWorld.x - playerT.position.x
+  const dz   = targetWorld.z - playerT.position.z
   const dist = Math.sqrt(dx * dx + dz * dz)
 
   const t = Transform.getMutable(compassRoot)

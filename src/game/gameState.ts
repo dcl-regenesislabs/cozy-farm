@@ -6,7 +6,7 @@ import type { ChickenDataPayload, PigDataPayload, MailboxReward } from '../share
 export type ChickenData = ChickenDataPayload
 export type PigData     = PigDataPayload
 
-export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'chickenCoop' | 'pigPen' | 'plotGroupUnlock' | 'feedBowl'
+export type MenuType = 'none' | 'plant' | 'fertilize' | 'shop' | 'sell' | 'unlock' | 'farmer' | 'npcDialog' | 'inventory' | 'stats' | 'quests' | 'farm' | 'jukebox' | 'expansion1' | 'expansion2' | 'mailbox' | 'compost' | 'leaderboard' | 'chickenCoop' | 'pigPen' | 'plotGroupUnlock' | 'feedBowl' | 'farmSelect'
 
 export const playerState = {
   coins: 0,
@@ -50,6 +50,9 @@ export const playerState = {
   mailbox: [] as MailboxReward[],
   mailboxSeenCount: 0,
   serverConnected: false,
+  // Farm slot system
+  mySlotId:   -1,          // -1 = not claimed yet
+  farmSlots:  [] as import('../shared/farmMessages').FarmSlot[],
   socialToastText: '',
   socialToastExpiresAt: 0,
   levelUpToastText: '',
@@ -97,4 +100,13 @@ export const playerState = {
   // Plot group unlock tracking
   unlockedPlotGroups: [] as string[],      // group names purchased via coins
   activePlotGroupName: '',                  // set before opening 'plotGroupUnlock' menu
+  // Runtime-only: shown after a new slot claim, before teleporting the player home
+  farmAssignmentOverlayActive: false,
+  farmAssignmentOverlaySlotId: -1,
+  farmAssignmentOverlayStartedAt: 0,
+  farmAssignmentOverlayDurationMs: 0,
+  // Runtime-only: enables the gameplay HUD/panels only after the player reaches a farm parcel
+  farmGameplayUiReady: false,
+  // Runtime-only: waiting-in-plaza UI state when no farm slot is available
+  plazaMapMinimized: false,
 }

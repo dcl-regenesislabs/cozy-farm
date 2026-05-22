@@ -32,8 +32,6 @@ import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
 import { initCompostBinVfx } from './systems/compostBinVfx'
-import { initBeautySpotSystem } from './systems/beautySpotSystem'
-import { initAnimalBuildings } from './systems/animalSystem'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
@@ -54,7 +52,6 @@ export function main() {
   // ── Client branch ─────────────────────────────────────────────────────────
   setupUi()
   setupEntities()
-  initBeautySpotSystem()
   setupSfxSystem()
   setupMusicSystem()
   setupInputModifierSystem()
@@ -62,7 +59,6 @@ export function main() {
   initCompostBinVfx()
   initSocialService()
   initVisitorWaterFeedback()
-  initAnimalBuildings()
 
   // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,
   // animal). Init unconditionally on boot so any tutorial can summon it.

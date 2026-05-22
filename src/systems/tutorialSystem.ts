@@ -1,4 +1,4 @@
-import { engine, Transform } from '@dcl/sdk/ecs'
+import { engine } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
@@ -15,6 +15,7 @@ import { initTutorialArrow, setArrowTarget } from './tutorialArrowSystem'
 import { progressionEventState } from '../game/progressionEventState'
 import { animalTutorialState } from '../game/animalTutorialState'
 import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
+import { getEntityWorldPosition } from './farmInstances'
 import { saveFarm } from '../services/saveService'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
@@ -46,7 +47,7 @@ function showTutorialDialog(text: string, buttonLabel: string, onButton: () => v
 function walkMayorToSoil(offsetX: number, offsetZ: number) {
   const soil = tutorialCallbacks.getFirstSoilEntity()
   if (soil === null) return
-  const pos = Transform.get(soil as import('@dcl/sdk/ecs').Entity).position
+  const pos = getEntityWorldPosition(soil as import('@dcl/sdk/ecs').Entity)
   walkNpcToPosition('mayorchen', Vector3.create(pos.x + offsetX, pos.y, pos.z + offsetZ))
 }
 
@@ -365,15 +366,17 @@ export function skipTutorial() {
   tutorialState.active = false
   tutorialState.step   = 'complete'
   playerState.coins    = 20000
-  playerState.seeds.set(CropType.Onion, 5)
+  playerState.seeds.set(CropType.Onion, 10)
+  playerState.seeds.set(CropType.Tomato, 5)
   ALL_FERTILIZER_TYPES.forEach((f) => playerState.fertilizers.set(f, 2))
   playerState.organicWaste = 10
+  playerState.grainCount   = 10
   playerState.activeMenu = 'none'
   setArrowTarget(null)
   tutorialCallbacks.unlockSoilsAll6()
   requestNpcDeparture()
-  addXp(900)  // bring player to level 5, firing level-up callbacks to trigger progression events
-  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks)')
+  addXp(3000)  // bring player to level 8 — unlocks Chicken Coop + all quest prerequisites
+  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks) — level 8, 20k coins, grain x10')
 }
 
 // ---------------------------------------------------------------------------

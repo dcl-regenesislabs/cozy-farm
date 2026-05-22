@@ -9,6 +9,7 @@ import { tutorialState } from '../game/tutorialState'
 import { isPlotRotten } from '../game/rotUtils'
 import { playerState } from '../game/gameState'
 import { showBadge } from '../game/badgeSystem'
+import { getSoilEntities } from './interactionSetup'
 
 /** Onion grow time during the tutorial — 30 seconds so it doesn't feel like a wait */
 const TUTORIAL_ONION_GROW_MS = 30_000
@@ -36,7 +37,7 @@ export function formatTime(ms: number): string {
 function growthSystem(_dt: number) {
   const now = Date.now()
 
-  for (const [entity] of engine.getEntitiesWith(PlotState)) {
+  for (const entity of getSoilEntities()) {
     const plot = PlotState.get(entity)
 
     // Auto-clear the "just harvested" interstitial after 2 seconds
