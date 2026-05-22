@@ -22,7 +22,9 @@ import {
   PIG_MODEL,
   getPigletScale,
 } from '../data/animalData'
-import { getEntityWorldPosition, getFarmEntity } from './farmInstances'
+
+import { getFarmEntity, getEntityWorldPosition } from './farmInstances'
+
 import type { FarmSlotVisual } from '../shared/farmMessages'
 
 const remoteBeautyModels = new Map<number, Entity[]>()
@@ -179,16 +181,24 @@ function syncBeauty(slotId: number, beautySlots: number[]): void {
     const definition = BEAUTY_OBJECTS.get(objectId)
     if (!spot || !definition) continue
 
+    // Use world position without parent so the ornament doesn't inherit
+    // the BeautySpot entity's rotation (same approach as beautySpotSystem.ts).
+    const worldPos = getEntityWorldPosition(spot)
+
     if (!existing) {
       const entity = engine.addEntity()
       Transform.create(entity, {
-        parent: spot,
-        position: Vector3.create(0, 0, 0),
-        rotation: Quaternion.fromEulerDegrees(0, 0, 0),
+        position: Vector3.create(worldPos.x, 0, worldPos.z),
+        rotation: Quaternion.Identity(),
       })
       GltfContainer.create(entity, { src: definition.modelPath })
       models[i] = entity
     } else {
+      const t = Transform.getMutableOrNull(existing)
+      if (t) {
+        t.position = Vector3.create(worldPos.x, 0, worldPos.z)
+        t.rotation = Quaternion.Identity()
+      }
       GltfContainer.createOrReplace(existing, { src: definition.modelPath })
     }
   }
