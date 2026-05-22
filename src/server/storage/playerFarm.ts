@@ -115,6 +115,8 @@ export type FarmSaveV1 = {
   compostBinUnlocked:  boolean
   rotSystemUnlocked:       boolean
   progressionEventStep:    string
+  chickenTutorialStep:     string
+  pigTutorialStep:         string
   lastNpcVisitAt:          number
   npcScheduleIndex:        number
   beautyScore:    number
@@ -185,6 +187,8 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     compostBinUnlocked:  false,
     rotSystemUnlocked:       false,
     progressionEventStep:    '',
+    chickenTutorialStep:     '',
+    pigTutorialStep:         '',
     lastNpcVisitAt:          0,
     npcScheduleIndex:        0,
     beautyScore:    0,
@@ -292,6 +296,8 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     compostBinUnlocked:  safeBool((maybe as any).compostBinUnlocked, false),
     rotSystemUnlocked:       safeBool((maybe as any).rotSystemUnlocked, false),
     progressionEventStep:    safeStr((maybe as any).progressionEventStep, ''),
+    chickenTutorialStep:     safeStr((maybe as any).chickenTutorialStep, ''),
+    pigTutorialStep:         safeStr((maybe as any).pigTutorialStep, ''),
     lastNpcVisitAt:          safeInt((maybe as any).lastNpcVisitAt, 0),
     npcScheduleIndex:        safeInt((maybe as any).npcScheduleIndex, 0),
     beautyScore:         safeInt(maybe.beautyScore, 0),
@@ -373,6 +379,8 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     compostBinUnlocked:  save.compostBinUnlocked,
     rotSystemUnlocked:       save.rotSystemUnlocked,
     progressionEventStep:    save.progressionEventStep,
+    chickenTutorialStep:     save.chickenTutorialStep,
+    pigTutorialStep:         save.pigTutorialStep,
     lastNpcVisitAt:          save.lastNpcVisitAt,
     npcScheduleIndex:        save.npcScheduleIndex,
     beautyScore:         save.beautyScore,
@@ -835,11 +843,11 @@ export class FarmProgressStore {
       fertilizers:             payload.fertilizers ?? [],
       compostWasteCount:       payload.compostWasteCount ?? 0,
       compostLastCollectedAt:  payload.compostLastCollectedAt ?? 0,
-      chickenCoopOwned:    existing.chickenCoopOwned || (payload.chickenCoopOwned ?? false),
+      chickenCoopOwned:    payload.chickenCoopOwned ?? existing.chickenCoopOwned,
       chickens:            payload.chickens ?? [],
       chickenFoodInBowl:   payload.chickenFoodInBowl ?? 0,
       chickenCoopDirtyAt:  payload.chickenCoopDirtyAt ?? 0,
-      pigPenOwned:         existing.pigPenOwned || (payload.pigPenOwned ?? false),
+      pigPenOwned:         payload.pigPenOwned ?? existing.pigPenOwned,
       pigs:                payload.pigs ?? [],
       pigFoodInBowl:       payload.pigFoodInBowl ?? 0,
       pigPenDirtyAt:       payload.pigPenDirtyAt ?? 0,
@@ -850,6 +858,8 @@ export class FarmProgressStore {
       compostBinUnlocked:      payload.compostBinUnlocked ?? existing.compostBinUnlocked,
       rotSystemUnlocked:       payload.rotSystemUnlocked ?? existing.rotSystemUnlocked,
       progressionEventStep:    payload.progressionEventStep ?? '',
+      chickenTutorialStep:     payload.chickenTutorialStep ?? '',
+      pigTutorialStep:         payload.pigTutorialStep ?? '',
       lastNpcVisitAt:          payload.lastNpcVisitAt ?? 0,
       npcScheduleIndex:        payload.npcScheduleIndex ?? 0,
       // Always recalculate on server — client value is advisory, server is authoritative

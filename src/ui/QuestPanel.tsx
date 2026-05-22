@@ -8,6 +8,13 @@ import {
   PROGRESSION_MILESTONES,
   getProgressionMilestoneStatus,
 } from '../game/progressionEventState'
+import {
+  animalTutorialState,
+  CHICKEN_MILESTONES,
+  PIG_MILESTONES,
+  getChickenMilestoneStatus,
+  getPigMilestoneStatus,
+} from '../game/animalTutorialState'
 import { PanelShell, C } from './PanelShell'
 import { NPC_ROSTER } from '../data/npcData'
 import { MAYOR_DEF } from '../data/npcData'
@@ -165,6 +172,142 @@ const ProgressionEventQuestCard = () => {
   )
 }
 
+// ── Chicken tutorial progress card ───────────────────────────────────────────
+const ChickenTutorialQuestCard = () => {
+  const doneCount = CHICKEN_MILESTONES.filter(
+    (m) => getChickenMilestoneStatus(m) === 'done'
+  ).length
+
+  return (
+    <UiEntity
+      uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 15 } }}
+      uiBackground={{ color: { r: 0.14, g: 0.10, b: 0.06, a: 1 } }}
+    >
+      {/* Left accent — warm amber */}
+      <UiEntity
+        uiTransform={{ width: 6, alignSelf: 'stretch', flexShrink: 0 }}
+        uiBackground={{ color: { r: 1.0, g: 0.65, b: 0.1, a: 1 } }}
+      />
+
+      {/* Mayor portrait */}
+      <UiEntity
+        uiTransform={{ width: 80, height: 80, margin: { top: 18, bottom: 18, left: 18 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: MAYOR_DEF.headImage, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+
+      {/* Content */}
+      <UiEntity
+        uiTransform={{
+          flex: 1, flexDirection: 'column',
+          padding: { top: 14, bottom: 14, left: 18, right: 15 },
+        }}
+      >
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
+          <Label value="Mayor Chen" fontSize={16} color={{ r: 1.0, g: 0.75, b: 0.3, a: 1 }} />
+          <Label
+            value={`  ${doneCount} / ${CHICKEN_MILESTONES.length}`}
+            fontSize={15}
+            color={C.textMute}
+          />
+        </UiEntity>
+        <Label
+          value="Chicken Tutorial"
+          fontSize={21}
+          color={C.textMain}
+          uiTransform={{ margin: { bottom: 12 } }}
+        />
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          {CHICKEN_MILESTONES.map((m) => {
+            const status = getChickenMilestoneStatus(m)
+            const icon   = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
+            const color  =
+              status === 'done'    ? C.green :
+              status === 'current' ? C.gold  :
+              C.textMute
+            return (
+              <UiEntity
+                key={m.label}
+                uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 5 } }}
+              >
+                <Label value={icon}    fontSize={15} color={color} uiTransform={{ width: 22 }} />
+                <Label value={m.label} fontSize={16} color={color} />
+              </UiEntity>
+            )
+          })}
+        </UiEntity>
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+// ── Pig tutorial progress card ────────────────────────────────────────────────
+const PigTutorialQuestCard = () => {
+  const doneCount = PIG_MILESTONES.filter(
+    (m) => getPigMilestoneStatus(m) === 'done'
+  ).length
+
+  return (
+    <UiEntity
+      uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: 15 } }}
+      uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.12, a: 1 } }}
+    >
+      {/* Left accent — pink/rose */}
+      <UiEntity
+        uiTransform={{ width: 6, alignSelf: 'stretch', flexShrink: 0 }}
+        uiBackground={{ color: { r: 1.0, g: 0.45, b: 0.65, a: 1 } }}
+      />
+
+      {/* Mayor portrait */}
+      <UiEntity
+        uiTransform={{ width: 80, height: 80, margin: { top: 18, bottom: 18, left: 18 }, flexShrink: 0 }}
+        uiBackground={{ texture: { src: MAYOR_DEF.headImage, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+
+      {/* Content */}
+      <UiEntity
+        uiTransform={{
+          flex: 1, flexDirection: 'column',
+          padding: { top: 14, bottom: 14, left: 18, right: 15 },
+        }}
+      >
+        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 10 } }}>
+          <Label value="Mayor Chen" fontSize={16} color={{ r: 1.0, g: 0.55, b: 0.75, a: 1 }} />
+          <Label
+            value={`  ${doneCount} / ${PIG_MILESTONES.length}`}
+            fontSize={15}
+            color={C.textMute}
+          />
+        </UiEntity>
+        <Label
+          value="Pig Tutorial"
+          fontSize={21}
+          color={C.textMain}
+          uiTransform={{ margin: { bottom: 12 } }}
+        />
+        <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+          {PIG_MILESTONES.map((m) => {
+            const status = getPigMilestoneStatus(m)
+            const icon   = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
+            const color  =
+              status === 'done'    ? C.green :
+              status === 'current' ? C.gold  :
+              C.textMute
+            return (
+              <UiEntity
+                key={m.label}
+                uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 5 } }}
+              >
+                <Label value={icon}    fontSize={15} color={color} uiTransform={{ width: 22 }} />
+                <Label value={m.label} fontSize={16} color={color} />
+              </UiEntity>
+            )
+          })}
+        </UiEntity>
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
 // ── Main panel ────────────────────────────────────────────────────────────────
 export const QuestPanel = () => {
   const visible = QUEST_DEFINITIONS.filter((d) => {
@@ -180,7 +323,11 @@ export const QuestPanel = () => {
       {/* Fertilizer tutorial card — shown during Level 5 progression event */}
       {progressionEventState.active && <ProgressionEventQuestCard />}
 
-      {visible.length === 0 && !tutorialState.active && !progressionEventState.active ? (
+      {/* Animal tutorial cards */}
+      {animalTutorialState.chickenActive && <ChickenTutorialQuestCard />}
+      {animalTutorialState.pigActive     && <PigTutorialQuestCard />}
+
+      {visible.length === 0 && !tutorialState.active && !progressionEventState.active && !animalTutorialState.chickenActive && !animalTutorialState.pigActive ? (
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Label value="No active quests" fontSize={27} color={C.textMute} textAlign="middle-center" />
           <Label

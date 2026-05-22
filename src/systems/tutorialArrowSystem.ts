@@ -25,6 +25,7 @@ let compassRoot: Entity | null = null
 let guideTarget: Entity | null = null
 
 export function initTutorialArrow() {
+  if (compassRoot !== null) return
   compassRoot = engine.addEntity()
 
   Transform.create(compassRoot, {
