@@ -1,4 +1,4 @@
-import { engine, Transform } from '@dcl/sdk/ecs'
+import { engine } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { playerState } from '../game/gameState'
 import { npcDialogState } from '../game/npcDialogState'
@@ -15,6 +15,7 @@ import { initTutorialArrow, setArrowTarget } from './tutorialArrowSystem'
 import { progressionEventState } from '../game/progressionEventState'
 import { animalTutorialState } from '../game/animalTutorialState'
 import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
+import { getEntityWorldPosition } from './farmInstances'
 import { saveFarm } from '../services/saveService'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
@@ -39,22 +40,6 @@ function showTutorialDialog(text: string, buttonLabel: string, onButton: () => v
 }
 
 // ---------------------------------------------------------------------------
-// Compute world position by summing local positions up the parent chain.
-// Needed for Farm 2/3 whose soil entities are nested under a parent with a z-offset.
-function getSoilWorldPosition(entity: import('@dcl/sdk/ecs').Entity): { x: number; y: number; z: number } {
-  let x = 0, y = 0, z = 0
-  let current: import('@dcl/sdk/ecs').Entity | null = entity
-  for (let depth = 0; depth < 8 && current !== null; depth++) {
-    const t = Transform.getOrNull(current)
-    if (!t) break
-    x += t.position.x
-    y += t.position.y
-    z += t.position.z
-    current = (t.parent as import('@dcl/sdk/ecs').Entity | undefined) ?? null
-  }
-  return { x, y, z }
-}
-
 // Mayor walk helper — uses tutorialCallbacks.getFirstSoilEntity() to avoid
 // a circular import (interactionSetup ↔ tutorialSystem).
 // The callback is wired in index.ts after both modules are loaded.
@@ -62,7 +47,7 @@ function getSoilWorldPosition(entity: import('@dcl/sdk/ecs').Entity): { x: numbe
 function walkMayorToSoil(offsetX: number, offsetZ: number) {
   const soil = tutorialCallbacks.getFirstSoilEntity()
   if (soil === null) return
-  const pos = getSoilWorldPosition(soil as import('@dcl/sdk/ecs').Entity)
+  const pos = getEntityWorldPosition(soil as import('@dcl/sdk/ecs').Entity)
   walkNpcToPosition('mayorchen', Vector3.create(pos.x + offsetX, pos.y, pos.z + offsetZ))
 }
 

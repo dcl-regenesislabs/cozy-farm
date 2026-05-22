@@ -15,7 +15,7 @@ import {
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { getActiveNpcPositions } from './npcSystem'
-import { getCurrentFarmEntity } from './farmInstances'
+import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -186,26 +186,12 @@ function updateFacing(targetPos: Vector3, dt: number) {
 
 // Compute world position by summing local positions up the parent chain.
 // Needed for Farm 2/3 whose entities are nested under a parent with a z-offset.
-function getWorldPos(entity: Entity): { x: number; y: number; z: number } {
-  let x = 0, y = 0, z = 0
-  let current: Entity | null = entity
-  for (let depth = 0; depth < 8 && current !== null; depth++) {
-    const t = Transform.getOrNull(current)
-    if (!t) break
-    x += t.position.x
-    y += t.position.y
-    z += t.position.z
-    current = (t.parent as Entity | undefined) ?? null
-  }
-  return { x, y, z }
-}
-
 function discoverWanderBounds(): WanderBounds {
   let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity
   for (const name of WANDER_POINT_NAMES) {
     const entity = getCurrentFarmEntity(name)
     if (!entity) { console.log(`CozyFarm Dog: spawn point '${name}' not found`); continue }
-    const p = getWorldPos(entity)
+    const p = getEntityWorldPosition(entity)
     if (p.x < minX) minX = p.x
     if (p.x > maxX) maxX = p.x
     if (p.z < minZ) minZ = p.z

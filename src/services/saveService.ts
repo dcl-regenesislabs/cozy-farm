@@ -37,7 +37,7 @@ import { spawnFarmer } from '../systems/farmerSystem'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
 import { renderRemoteFarmVisual, hideRemoteSlotBuildings } from '../systems/remoteFarmVisuals'
 import { spawnDog } from '../systems/dogSystem'
-import { animalTutorialState } from 'src/game/animalTutorialState'
+import { animalTutorialState } from '../game/animalTutorialState'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval

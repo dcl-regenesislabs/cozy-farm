@@ -137,7 +137,7 @@ async function loadAndSend(address: string, requestId: string): Promise<void> {
   for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
     const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
     if (!visualPayload) continue
-    void room.send('farmSlotVisualUpdated', visualPayload)
+    void room.send('farmSlotVisualUpdated', visualPayload, { to: [normalized] })
   }
 
   if (slotId !== null) {
@@ -199,7 +199,7 @@ async function ensurePlayerSessionLoaded(address: string): Promise<number | null
   for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
     const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
     if (!visualPayload) continue
-    void room.send('farmSlotVisualUpdated', visualPayload)
+    void room.send('farmSlotVisualUpdated', visualPayload, { to: [normalized] })
   }
 
   return slotId
@@ -271,12 +271,6 @@ export function setupFarmServer(): void {
     if (!loadedAddresses.has(normalized)) {
       console.log(`[FarmServer] Save received before load tracking for ${normalized}; recovering session`)
       await ensurePlayerSessionLoaded(normalized)
-    }
-
-    // Legacy hard reject kept disabled; saves now recover missing in-memory sessions.
-    if (false && !loadedAddresses.has(normalized)) {
-      console.error(`[FarmServer] Save rejected — no load on record for ${normalized}`)
-      return
     }
 
     store.applyPayload(normalized, _data)

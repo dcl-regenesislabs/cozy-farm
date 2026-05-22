@@ -34,6 +34,7 @@ import {
   getCurrentFarmEntity,
   getFarmSlotSoils,
   getFarmSpawnPositions,
+  getEntityWorldPosition,
   hideFarmInstance,
   revealFarmInstance,
   setCurrentFarmSlot,
@@ -58,24 +59,6 @@ let truckEntity: Entity | null = null
 let compostBinEntity: Entity | null = null
 let compostBinOriginalScale: { x: number; y: number; z: number } | null = null
 
-function getWorldPosition(entity: Entity): { x: number; y: number; z: number } {
-  let x = 0
-  let y = 0
-  let z = 0
-  let current: Entity | null = entity
-
-  for (let depth = 0; depth < 24 && current; depth++) {
-    const transform = Transform.getOrNull(current)
-    if (!transform) break
-    x += transform.position.x
-    y += transform.position.y
-    z += transform.position.z
-    current = (transform.parent as Entity | undefined) ?? null
-  }
-
-  return { x, y, z }
-}
-
 function collectNpcSpawnPositionsForSlot(slotId: number): Map<string, ReturnType<typeof Vector3.create>> {
   const suffixMap = [
     ['Spawn01', 'NPCSpawn01'],
@@ -89,7 +72,7 @@ function collectNpcSpawnPositionsForSlot(slotId: number): Map<string, ReturnType
   for (const [suffix, entityName] of suffixMap) {
     const entity = getFarmEntity(slotId, entityName)
     if (!entity) continue
-    const worldPos = getWorldPosition(entity)
+    const worldPos = getEntityWorldPosition(entity)
     positions.set(suffix, Vector3.create(worldPos.x, worldPos.y, worldPos.z))
   }
   return positions

@@ -4,6 +4,7 @@ import {
   Transform,
 } from '@dcl/sdk/ecs'
 import { Vector3, Quaternion } from '@dcl/sdk/math'
+import { getEntityWorldPosition } from './farmInstances'
 
 // ---------------------------------------------------------------------------
 // Tutorial Compass Arrow
@@ -55,25 +56,6 @@ export function setArrowTarget(entity: Entity | null) {
   }
 }
 
-// Compute world position by summing the local position chain up to root.
-// Needed when the target entity is nested inside a parent with an offset
-// (e.g., Farm 2's soils are inside FarmParent_2 which is at z=91).
-function computeWorldPos(entity: Entity): { x: number; y: number; z: number } {
-  let x = 0, y = 0, z = 0
-  let current: number = entity as unknown as number
-  for (let depth = 0; depth < 8; depth++) {
-    const t = Transform.getOrNull(current as unknown as Entity)
-    if (!t) break
-    x += t.position.x
-    y += t.position.y
-    z += t.position.z
-    const parent = t.parent as number | undefined
-    if (!parent) break
-    current = parent
-  }
-  return { x, y, z }
-}
-
 // ── Per-frame: one rotation write only ───────────────────────────────────────
 function compassSystem(_dt: number) {
   if (!guideTarget || !compassRoot) return
@@ -83,7 +65,7 @@ function compassSystem(_dt: number) {
 
   // Use world position so the arrow works correctly even when the target
   // entity is nested inside a parent with an offset (Farm 2/3 slots).
-  const targetWorld = computeWorldPos(guideTarget as Entity)
+  const targetWorld = getEntityWorldPosition(guideTarget as Entity)
 
   const dx   = targetWorld.x - playerT.position.x
   const dz   = targetWorld.z - playerT.position.z
