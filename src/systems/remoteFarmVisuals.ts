@@ -337,6 +337,47 @@ export function hideRemoteSlotBuildings(slotId: number): void {
   }
 }
 
+// Remove all dynamically created entities for a farm slot (called on disconnect).
+// hideFarmSlot only zeroes the clone scale; standalone entities must be removed here.
+export function clearRemoteFarmSlot(slotId: number): void {
+  // Beauty ornaments
+  const beautyModels = remoteBeautyModels.get(slotId)
+  if (beautyModels) {
+    for (const entity of beautyModels) {
+      if (entity) engine.removeEntity(entity)
+    }
+    remoteBeautyModels.delete(slotId)
+  }
+
+  // Chickens
+  const chickens = remoteChickenEntities.get(slotId)
+  if (chickens) {
+    for (const entity of chickens) {
+      if (entity) engine.removeEntity(entity)
+    }
+    remoteChickenEntities.delete(slotId)
+    remoteChickenStates.delete(slotId)
+  }
+
+  // Pigs
+  const pigs = remotePigEntities.get(slotId)
+  if (pigs) {
+    for (const entity of pigs) {
+      if (entity) engine.removeEntity(entity)
+    }
+    remotePigEntities.delete(slotId)
+    remotePigStates.delete(slotId)
+  }
+
+  // Empty building placeholders
+  const emptyCoop = remoteEmptyCoopEntities.get(slotId)
+  if (emptyCoop) { engine.removeEntity(emptyCoop); remoteEmptyCoopEntities.delete(slotId) }
+  const emptyPen = remoteEmptyPenEntities.get(slotId)
+  if (emptyPen) { engine.removeEntity(emptyPen); remoteEmptyPenEntities.delete(slotId) }
+
+  console.log(`[RemoteFarmVisuals] Cleared all dynamic entities for slot ${slotId}`)
+}
+
 export function renderRemoteFarmVisual(slotId: number, visual: FarmSlotVisual): void {
   ensureRemoteAnimalSystem()
   syncBeauty(slotId, visual.beautySlots)
