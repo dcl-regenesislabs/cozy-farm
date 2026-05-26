@@ -35,7 +35,7 @@ import { initAnimalBuildings, initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
-import { renderRemoteFarmVisual, hideRemoteSlotBuildings } from '../systems/remoteFarmVisuals'
+import { renderRemoteFarmVisual, hideRemoteSlotBuildings, clearRemoteFarmSlot } from '../systems/remoteFarmVisuals'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
 
@@ -793,6 +793,7 @@ export function initSaveService(onLoaded?: () => void): void {
       released.claimedAt = 0
     }
     hideFarmSlot(data.slotId)
+    clearRemoteFarmSlot(data.slotId)
     console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
   })
 
