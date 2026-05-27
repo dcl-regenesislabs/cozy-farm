@@ -112,6 +112,33 @@ function enablePointer(entity: Entity): void {
 }
 
 // ---------------------------------------------------------------------------
+// Re-register hover text for empty building placeholders.
+// Called on init and every time updateBuildingVisuals runs so the text
+// reflects the player's current level rather than the level at boot.
+// ---------------------------------------------------------------------------
+
+function refreshEmptyBuildingPointers(): void {
+  if (emptyCoopEntity) {
+    pointerEventsSystem.onPointerDown(
+      { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
+      () => {
+        if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
+        playerState.activeMenu = 'chickenCoop'
+      },
+    )
+  }
+  if (emptyPenEntity) {
+    pointerEventsSystem.onPointerDown(
+      { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
+      () => {
+        if (playerState.level < PIG_PEN_UNLOCK_LEVEL) return
+        playerState.activeMenu = 'pigPen'
+      },
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Visual state — call after any state change affecting buildings
 // ---------------------------------------------------------------------------
 
@@ -164,6 +191,9 @@ export function updateBuildingVisuals(): void {
     const t = Transform.getMutableOrNull(w.entity)
     if (t) t.scale = Vector3.create(scale, scale, scale)
   }
+
+  // Refresh hover text so level-gating reflects the player's current level.
+  refreshEmptyBuildingPointers()
 }
 
 // ---------------------------------------------------------------------------
@@ -257,13 +287,6 @@ export function initAnimalBuildings(): void {
     scale:    Vector3.create(1, 1, 1),
   })
   enablePointer(emptyCoopEntity)
-  pointerEventsSystem.onPointerDown(
-    { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => {
-      if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
-      playerState.activeMenu = 'chickenCoop'
-    },
-  )
 
   // Spawn AnimalBuildingEmpty placeholder for pen spot.
   // Parented to PigPen so it follows when farm anchors are retried/repositioned.
@@ -275,13 +298,9 @@ export function initAnimalBuildings(): void {
     scale:    Vector3.create(1, 1, 1),
   })
   enablePointer(emptyPenEntity)
-  pointerEventsSystem.onPointerDown(
-    { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
-    () => {
-      if (playerState.level < PIG_PEN_UNLOCK_LEVEL) return
-      playerState.activeMenu = 'pigPen'
-    },
-  )
+
+  // Register pointer events for both placeholders with current level state.
+  refreshEmptyBuildingPointers()
 
   // Wire coop building click → open chicken coop panel
   if (coopBuilding) {
@@ -952,4 +971,9 @@ export function initAnimalSystem(): void {
   if (playerState.pigPenOwned) {
     playerState.pigs.forEach((p, i) => spawnPigWanderer(p, now, i))
   }
+
+  // Refresh building visuals now that playerState.level is loaded from save.
+  // initAnimalBuildings runs before applyPayload, so the hover text was set
+  // with level=0; this call fixes it with the actual restored level.
+  updateBuildingVisuals()
 }
