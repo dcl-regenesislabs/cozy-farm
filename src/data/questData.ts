@@ -57,6 +57,13 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
     rewardCoins: 200, rewardXp: 100,
   },
   {
+    id: 'mayorchen_farmer', npcId: 'mayorchen', npcName: 'Mayor Chen',
+    title: 'Sell 50 crops',
+    description: "I've been reviewing the town's expansion plans. If you can sell 50 crops to the market, I'll authorize the new farming zone adjacent to your land. The town council is counting on you!",
+    type: 'sell_total', cropType: null, target: 50,
+    rewardCoins: 500, rewardXp: 200,
+  },
+  {
     id: 'mayorchen_fertilizer', npcId: 'mayorchen', npcName: 'Mayor Chen',
     title: 'Generate 5 Fertilizers',
     description: "Practice makes perfect! Add organic waste to your compost bin and collect 5 fertilizers. Your crops will thank you!",

@@ -3,7 +3,7 @@ import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible, unlockPlotGroupByName } from './systems/interactionSetup'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -27,7 +27,7 @@ import { setupFarmServer } from './server/farmServer'
 import { initSaveService } from './services/saveService'
 import { initVisitService } from './services/visitService'
 import { initSocialService } from './services/socialService'
-import { getActiveQuestForNpc, hasOnlyBlockedQuestsForNpc } from './game/questState'
+import { getActiveQuestForNpc, hasOnlyBlockedQuestsForNpc, setOnQuestClaimedById } from './game/questState'
 import { setupInputModifierSystem } from './systems/inputModifierSystem'
 import { setupMusicSystem } from './systems/musicSystem'
 import { setupSfxSystem } from './systems/sfxSystem'
@@ -137,6 +137,15 @@ export function main() {
           !progressionEventState.active
         ) {
           triggerPigTutorial(startRegularNpcRotation)
+        }
+      })
+
+      // Unlock the farmer plot zone when Mayor Chen's sell-50 quest is claimed.
+      // Adds to unlockedPlotGroups so the save system persists and restores it.
+      setOnQuestClaimedById('mayorchen_farmer', () => {
+        unlockPlotGroupByName('PlotGroup_Farmer')
+        if (!playerState.unlockedPlotGroups.includes('PlotGroup_Farmer')) {
+          playerState.unlockedPlotGroups.push('PlotGroup_Farmer')
         }
       })
 
