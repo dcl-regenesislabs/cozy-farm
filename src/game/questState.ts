@@ -29,6 +29,14 @@ let onQuestAcceptedCb:  (() => void) | null = null
 let onQuestClaimedCb:   (() => void) | null = null
 let onQuestClaimableCb: (() => void) | null = null
 
+// Permanent per-quest callbacks — keyed by quest id, never cleared after firing.
+// Use for unlock side-effects (e.g. plot group unlock on specific quest completion).
+const questClaimedCallbacks = new Map<string, () => void>()
+
+export function setOnQuestClaimedById(questId: string, cb: () => void): void {
+  questClaimedCallbacks.set(questId, cb)
+}
+
 // One-shot callbacks for the progression event (plant/water/fertilize steps)
 let onNextPlantCb:         (() => void) | null = null
 let onNextWaterCb:         (() => void) | null = null
@@ -77,6 +85,7 @@ export function claimQuestReward(questId: string): void {
   const cb = onQuestClaimedCb
   onQuestClaimedCb = null
   cb?.()
+  questClaimedCallbacks.get(questId)?.()
 }
 
 // ---------------------------------------------------------------------------

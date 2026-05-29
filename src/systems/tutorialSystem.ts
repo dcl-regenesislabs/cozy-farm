@@ -6,7 +6,7 @@ import { tutorialState, TutorialActionType, tutorialCallbacks, tutorialNavState 
 import { CropType } from '../data/cropData'
 import { ALL_FERTILIZER_TYPES } from '../data/fertilizerData'
 import { MAYOR_DEF } from '../data/npcData'
-import { setOnQuestAccepted, setOnQuestClaimed, setOnQuestClaimable, resetQuestProgress } from '../game/questState'
+import { setOnQuestAccepted, setOnQuestClaimed, setOnQuestClaimable, resetQuestProgress, questProgressMap } from '../game/questState'
 import { walkNpcToPosition, requestNpcDeparture } from './npcSystem'
 import { addXp } from './levelingSystem'
 import { PlotState } from '../components/farmComponents'
@@ -374,9 +374,22 @@ export function skipTutorial() {
   playerState.activeMenu = 'none'
   setArrowTarget(null)
   tutorialCallbacks.unlockSoilsAll6()
-  requestNpcDeparture()
   addXp(3000)  // bring player to level 8 — unlocks Chicken Coop + all quest prerequisites
-  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks) — level 8, 20k coins, grain x10')
+
+  // Complete all regular NPC quests and unlock rot system so the skip lands
+  // in a fully playable post-tutorial state (Mayor Chen enters normal rotation).
+  for (const id of ['rosa', 'gerald', 'marco', 'lily', 'dave', 'mayorchen']) {
+    const qp = questProgressMap.get(id)
+    if (qp) qp.status = 'completed'
+  }
+  playerState.rotSystemUnlocked    = true
+  playerState.progressionEventStep = 'complete'
+  progressionEventState.active     = false
+  progressionEventState.step       = 'complete'
+  playerState.harvested.set(CropType.Onion, 10)
+
+  requestNpcDeparture()
+  console.log('CozyFarm Tutorial: skipped via Axe (3 clicks) — level 8, 20k coins, all quests cleared')
 }
 
 // ---------------------------------------------------------------------------
