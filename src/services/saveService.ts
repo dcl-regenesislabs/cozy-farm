@@ -608,6 +608,10 @@ export function teleportToSlot(slotId: number): void {
 // systems that depend on restored state, e.g. initTutorialSystem)
 // ---------------------------------------------------------------------------
 export function initSaveService(onLoaded?: () => void): void {
+  playerState.farmAssignmentOverlayActive = true
+  playerState.farmAssignmentOverlaySlotId = -1
+  playerState.farmAssignmentOverlayStartedAt = 0
+  playerState.farmAssignmentOverlayDurationMs = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS
   // Track server connection state — onReady fires true on connect, false on disconnect
   room.onReady((isReady) => {
     playerState.serverConnected = isReady
@@ -688,8 +692,7 @@ export function initSaveService(onLoaded?: () => void): void {
     const shouldShowInitialAssignmentOverlay =
       !initialPayloadApplied &&
       previousSlotId < 0 &&
-      mine.slotId >= 0 &&
-      !playerState.farmAssignmentOverlayActive
+      mine.slotId >= 0
     playerState.mySlotId = mine.slotId
     if (playerState.mySlotId >= 0) {
       playerState.plazaMapMinimized = false
@@ -816,6 +819,7 @@ export function initSaveService(onLoaded?: () => void): void {
     const nextMySlotId = mine ? mine.slotId : playerState.mySlotId
 
     if (!mine && !playerState.viewingFarm) {
+      playerState.farmAssignmentOverlayActive = false
       playerState.farmGameplayUiReady = false
     }
 
