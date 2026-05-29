@@ -8,8 +8,13 @@ const PROGRESS_W = 540
 const INTRO_HOLD_MS = 2_000
 const PROGRESS_DURATION_MS = 4_200
 
-function getPhaseText(progress: number, farmNumber: number): string {
-  if (progress <= 0) return `Assigning Farm ${farmNumber} to your account`
+function getAnimatedEllipsis(): string {
+  const phase = Math.floor(Date.now() / 350) % 4
+  return '.'.repeat(phase)
+}
+
+function getPhaseText(isConnecting: boolean, progress: number, farmNumber: number): string {
+  if (isConnecting) return `Connecting to the server${getAnimatedEllipsis()}`
   if (progress < 0.34) return `Assigning Farm ${farmNumber} to your account`
   if (progress < 0.7) return 'Loading crops, tools, and cozy essentials'
   return `Final checks complete. Sending you to Farm ${farmNumber}`
@@ -29,12 +34,14 @@ export const FarmAssignmentOverlay = () => {
   if (!playerState.farmAssignmentOverlayActive) return null
 
   const startedAt = playerState.farmAssignmentOverlayStartedAt
-  const elapsedMs = Math.max(0, Date.now() - startedAt)
+  const hasAssignedFarm = playerState.farmAssignmentOverlaySlotId >= 0
+  const elapsedMs = hasAssignedFarm ? Math.max(0, Date.now() - startedAt) : 0
   const loadElapsedMs = Math.max(0, elapsedMs - INTRO_HOLD_MS)
   const progress = Math.min(1, loadElapsedMs / PROGRESS_DURATION_MS)
   const progressPct = Math.round(progress * 100)
-  const farmNumber = Math.max(1, playerState.farmAssignmentOverlaySlotId + 1)
+  const farmNumber = playerState.farmAssignmentOverlaySlotId + 1
   const shimmerLeft = Math.max(0, Math.min(PROGRESS_W - 42, Math.round(progress * PROGRESS_W) - 21))
+  const isConnectingPhase = !hasAssignedFarm || elapsedMs < INTRO_HOLD_MS
 
   return (
     <UiEntity
@@ -49,27 +56,6 @@ export const FarmAssignmentOverlay = () => {
       }}
       uiBackground={{ color: { r: 0.03, g: 0.025, b: 0.015, a: 0.9 } }}
     >
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { top: 120, left: 250 },
-          width: 180,
-          height: 180,
-          borderRadius: 90,
-        }}
-        uiBackground={{ color: { r: 0.42, g: 0.22, b: 0.06, a: 0.18 } }}
-      />
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { bottom: 110, right: 250 },
-          width: 220,
-          height: 220,
-          borderRadius: 110,
-        }}
-        uiBackground={{ color: { r: 0.16, g: 0.28, b: 0.12, a: 0.16 } }}
-      />
-
       <UiEntity
         uiTransform={{
           width: OVERLAY_W,
@@ -97,7 +83,7 @@ export const FarmAssignmentOverlay = () => {
             }}
             uiBackground={{ color: { r: 0.26, g: 0.19, b: 0.08, a: 1 } }}
           >
-            <Label value={`FARM ${farmNumber}`} fontSize={20} color={C.header} textAlign="middle-center" />
+            <Label value={hasAssignedFarm ? `FARM ${farmNumber}` : 'COZYFARM'} fontSize={20} color={C.header} textAlign="middle-center" />
           </UiEntity>
 
           <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
@@ -130,7 +116,7 @@ export const FarmAssignmentOverlay = () => {
           />
 
           <Label
-            value={getPhaseText(progress, farmNumber)}
+            value={getPhaseText(isConnectingPhase, progress, farmNumber)}
             fontSize={24}
             color={{ r: 0.88, g: 0.82, b: 0.72, a: 1 }}
             textAlign="middle-left"
@@ -146,8 +132,9 @@ export const FarmAssignmentOverlay = () => {
               margin: { bottom: 16 },
             }}
           >
-            <Label value="Claiming slot" fontSize={18} color={progress >= 0.16 ? C.gold : C.textMute} />
-            <Label value="Loading farm" fontSize={18} color={progress >= 0.5 ? C.gold : C.textMute} />
+            <Label value="Connecting" fontSize={18} color={isConnectingPhase ? C.gold : C.textMute} />
+            <Label value="Claiming slot" fontSize={18} color={!isConnectingPhase && progress < 0.34 ? C.gold : (progress >= 0.34 ? C.gold : C.textMute)} />
+            <Label value="Loading farm" fontSize={18} color={progress >= 0.34 ? C.gold : C.textMute} />
             <Label value="Teleporting" fontSize={18} color={progress >= 0.84 ? C.gold : C.textMute} />
           </UiEntity>
 
