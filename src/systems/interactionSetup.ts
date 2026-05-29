@@ -16,7 +16,6 @@ import { PlotState } from '../components/farmComponents'
 import { handlePlotClick, getWateringStatus, removeCropModel, removeSoilIcons, removeSoilTimerText } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { SHOPINGCART_ICON, COINS_ICON } from '../data/imagePaths'
-import { skipTutorial, resetFarm } from './tutorialSystem'
 import { playSound } from './sfxSystem'
 import { CROP_DATA, CROP_NAMES, CropType } from '../data/cropData'
 import { formatTime } from './growthSystem'
@@ -199,40 +198,6 @@ function wireLocalFarmInteractives(): void {
     pointerEventsSystem.onPointerDown(
       { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: 'Change Music', maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'jukebox' },
-    )
-  }
-
-  let bedClickCount = 0
-  const bed = getCurrentFarmEntity('Bed.glb')
-  if (bed) {
-    enablePointerOnGltf(bed)
-    pointerEventsSystem.onPointerDown(
-      { entity: bed, opts: { button: InputAction.IA_POINTER, hoverText: 'Sleep', maxDistance: 8 } },
-      () => {
-        if (isVisiting()) return
-        bedClickCount++
-        if (bedClickCount >= 3) {
-          bedClickCount = 0
-          resetFarm()
-        }
-      },
-    )
-  }
-
-  let axeClickCount = 0
-  const axe = getCurrentFarmEntity('Axe 2')
-  if (axe) {
-    enablePointerOnGltf(axe)
-    pointerEventsSystem.onPointerDown(
-      { entity: axe, opts: { button: InputAction.IA_POINTER, hoverText: 'Chop', maxDistance: 8 } },
-      () => {
-        if (isVisiting()) return
-        axeClickCount++
-        if (axeClickCount >= 3) {
-          axeClickCount = 0
-          skipTutorial()
-        }
-      },
     )
   }
 
