@@ -36,6 +36,7 @@ export const BTN_INVENTORY  = 'assets/scene/Images/InventoryButton.png'
 export const BTN_FARM       = 'assets/scene/Images/FarmButton.png'
 export const BTN_QUESTS     = 'assets/scene/Images/QuestButton.png'
 export const BTN_PROFILE    = 'assets/scene/Images/ProfileButton.png'
+export const TOPHUD_PROFILE_BG = 'assets/images/ui_loading/profile.png'
 
 // World-space billboard icons
 export const SOIL_ICON        = 'assets/scene/Images/SoilIcon.png'
