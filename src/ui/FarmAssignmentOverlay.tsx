@@ -1,47 +1,249 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from '../game/gameState'
-import { C } from './PanelShell'
 
-const OVERLAY_W = 760
-const OVERLAY_H = 430
-const PROGRESS_W = 540
-const INTRO_HOLD_MS = 2_000
-const PROGRESS_DURATION_MS = 4_200
+const BACKGROUND_W = 1024
+const BACKGROUND_H = 683
+const ATLAS_SIZE = 1024
+const LOADING_BACKGROUND = 'assets/images/ui_loading/background.png'
+const LOADING_ATLAS = 'assets/images/ui_loading/atlas.png'
+
+const TITLE_COLOR = { r: 0.29, g: 0.17, b: 0.07, a: 1 }
+const SUBTITLE_COLOR = { r: 0.31, g: 0.19, b: 0.08, a: 1 }
+const STEP_BROWN = { r: 0.38, g: 0.24, b: 0.1, a: 1 }
+const STEP_GREEN = { r: 0.36, g: 0.56, b: 0.14, a: 1 }
+const TRACK_COLOR = { r: 0.60, g: 0.40, b: 0.19, a: 1 }
+const PROGRESS_GREEN = { r: 0.40, g: 0.67, b: 0.14, a: 1 }
+
+const TITLE_W = 620
+const TITLE_H = 58
+const TITLE_TOP = 164
+const TITLE_LEFT = 176
+const SUBTITLE_TOP = 224
+const SUBTITLE_LEFT = 176
+
+const STEPS_TOP = 258
+const STEPS_LEFT = 166
+const STEPS_W = 692
+const STEP_TEXT_TOP = 136
+const ICON_STRIP_TOP = 8
+const ICON_STRIP_LEFT = 10
+const ICON_STRIP_W = 670
+const ICON_STRIP_H = 112
+
+const PROGRESS_TOP = 436
+const PROGRESS_LEFT = 176
+const PROGRESS_W = 665
+const PROGRESS_H = 20
+const PROGRESS_FILL_INSET = 4
+const PROGRESS_FILL_H = 12
+const PROGRESS_RADIUS = 10
+const LOAD_INTRO_HOLD_MS = 2_000
+const LOAD_PROGRESS_DURATION_MS = 4_200
+
+const FOOTER_TOP = 480
+const FOOTER_LEFT = 176
+const FOOTER_W = 660
+
+type AtlasRect = { x: number; y: number; w: number; h: number }
+type LoadingStep = {
+  id: string
+  label: string
+  start: number
+  end: number
+  labelLeft: number
+  labelWidth: number
+}
+
+const SPRITES = {
+  iconStrip:{ x: 30, y: 20, w: 973, h: 163 },
+} as const
+
+const STEPS: LoadingStep[] = [
+  { id: 'connecting',  label: 'Connecting',    start: 0.00, end: 0.25, labelLeft: -8,  labelWidth: 140 },
+  { id: 'claiming',    label: 'Claiming slot', start: 0.25, end: 0.50, labelLeft: 178, labelWidth: 140 },
+  { id: 'loading',     label: 'Loading farm',  start: 0.50, end: 0.84, labelLeft: 364, labelWidth: 140 },
+  { id: 'teleporting', label: 'Teleporting',   start: 0.84, end: 1.00, labelLeft: 552, labelWidth: 140 },
+]
 
 function getAnimatedEllipsis(): string {
-  const phase = Math.floor(Date.now() / 350) % 4
-  return '.'.repeat(phase)
+  const phase = Math.floor(Date.now() / 350) % 3
+  return '.'.repeat(phase + 1)
 }
 
-function getPhaseText(isConnecting: boolean, progress: number, farmNumber: number): string {
-  if (isConnecting) return `Connecting to the server${getAnimatedEllipsis()}`
-  if (progress < 0.34) return `Assigning Farm ${farmNumber} to your account`
-  if (progress < 0.7) return 'Loading crops, tools, and cozy essentials'
-  return `Final checks complete. Sending you to Farm ${farmNumber}`
+function atlasUvs(rect: AtlasRect): number[] {
+  const left = rect.x / ATLAS_SIZE
+  const right = (rect.x + rect.w) / ATLAS_SIZE
+  const top = 1 - rect.y / ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / ATLAS_SIZE
+
+  return [left, top, right, top, right, bottom, left, bottom]
 }
 
-function pulseValue(offset: number): number {
-  const wave = Math.sin(Date.now() / 220 + offset)
-  return 0.55 + ((wave + 1) * 0.225)
+function atlasUvsRotatedRight(rect: AtlasRect): number[] {
+  const left = rect.x / ATLAS_SIZE
+  const right = (rect.x + rect.w) / ATLAS_SIZE
+  const top = 1 - rect.y / ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / ATLAS_SIZE
+
+  return [left, bottom, left, top, right, top, right, bottom]
 }
 
-function dotSize(offset: number): number {
-  const wave = Math.sin(Date.now() / 220 + offset)
-  return Math.round(18 + (wave + 1) * 6)
+function getLoadProgress(): { progress: number; progressPct: number; isConnectingPhase: boolean; subtitle: string } {
+  const startedAt = playerState.farmAssignmentOverlayStartedAt
+  const hasAssignedFarm = playerState.farmAssignmentOverlaySlotId >= 0
+  const elapsedMs = hasAssignedFarm ? Math.max(0, Date.now() - startedAt) : 0
+  const overlayDurationMs = playerState.farmAssignmentOverlayDurationMs > 0
+    ? playerState.farmAssignmentOverlayDurationMs
+    : LOAD_INTRO_HOLD_MS + LOAD_PROGRESS_DURATION_MS
+  const effectiveProgressDurationMs = Math.max(1, overlayDurationMs - LOAD_INTRO_HOLD_MS)
+  const loadElapsedMs = Math.max(0, elapsedMs - LOAD_INTRO_HOLD_MS)
+  const progress = Math.min(1, loadElapsedMs / effectiveProgressDurationMs)
+  const progressPct = Math.round(progress * 100)
+  const isConnectingPhase = !hasAssignedFarm || elapsedMs < LOAD_INTRO_HOLD_MS
+
+  if (isConnectingPhase) {
+    return {
+      progress,
+      progressPct,
+      isConnectingPhase,
+      subtitle: `Connecting to the server${getAnimatedEllipsis()}`
+    }
+  }
+
+  if (progress < 0.5) {
+    return { progress, progressPct, isConnectingPhase, subtitle: 'Claiming your farm slot' }
+  }
+
+  if (progress < 0.84) {
+    return { progress, progressPct, isConnectingPhase, subtitle: 'Loading crops, plots, and farm data' }
+  }
+
+  return { progress, progressPct, isConnectingPhase, subtitle: 'Teleporting you to your farm' }
+}
+
+function isStepGreen(step: LoadingStep, progress: number, isConnectingPhase: boolean): boolean {
+  if (step.id === 'connecting') return isConnectingPhase || progress >= step.end
+  return progress >= step.start
+}
+
+const LoadingTitle = () => (
+  <UiEntity
+    uiTransform={{
+      positionType: 'absolute',
+      position: { top: TITLE_TOP, left: TITLE_LEFT },
+      width: TITLE_W,
+      height: TITLE_H,
+    }}
+  >
+    {[0, 1, 2].map((offset) => (
+      <Label
+        key={`loading-title-${offset}`}
+        value="Preparing your new farm"
+        fontSize={42}
+        color={TITLE_COLOR}
+        textAlign="middle-left"
+        uiTransform={{
+          positionType: 'absolute',
+          position: { left: offset, top: 0 },
+          width: TITLE_W,
+          height: TITLE_H,
+        }}
+      />
+    ))}
+  </UiEntity>
+)
+
+const LoadingStepsRow = ({ progress, isConnectingPhase }: { progress: number; isConnectingPhase: boolean }) => (
+  <UiEntity
+    uiTransform={{
+      positionType: 'absolute',
+      position: { top: STEPS_TOP, left: STEPS_LEFT },
+      width: STEPS_W,
+      height: 196,
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+    }}
+  >
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: ICON_STRIP_TOP, left: ICON_STRIP_LEFT },
+        width: ICON_STRIP_W,
+        height: ICON_STRIP_H,
+      }}
+      uiBackground={{
+        texture: { src: LOADING_ATLAS, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+        uvs: atlasUvsRotatedRight(SPRITES.iconStrip),
+      }}
+    />
+
+    {STEPS.map((step) => {
+      const green = isStepGreen(step, progress, isConnectingPhase)
+
+      return (
+        <Label
+          key={step.id}
+          value={step.label}
+          fontSize={16}
+          color={green ? STEP_GREEN : STEP_BROWN}
+          textAlign="middle-center"
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: STEP_TEXT_TOP, left: step.labelLeft },
+            width: step.labelWidth,
+            height: 24,
+          }}
+        />
+      )
+    })}
+  </UiEntity>
+)
+
+const LoadingProgressBar = ({ progress }: { progress: number }) => {
+  const fillWidth = Math.max(0, Math.round((PROGRESS_W - PROGRESS_FILL_INSET * 2) * progress))
+
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: PROGRESS_TOP, left: PROGRESS_LEFT },
+        width: PROGRESS_W,
+        height: PROGRESS_H,
+      }}
+    >
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 0, left: 0 },
+          width: PROGRESS_W,
+          height: PROGRESS_H,
+          borderRadius: PROGRESS_RADIUS,
+        }}
+        uiBackground={{ color: TRACK_COLOR }}
+      />
+
+      {fillWidth > 0 && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: PROGRESS_FILL_INSET, left: PROGRESS_FILL_INSET },
+            width: fillWidth,
+            height: PROGRESS_FILL_H,
+            borderRadius: 6,
+          }}
+          uiBackground={{ color: PROGRESS_GREEN }}
+        />
+      )}
+    </UiEntity>
+  )
 }
 
 export const FarmAssignmentOverlay = () => {
   if (!playerState.farmAssignmentOverlayActive) return null
 
-  const startedAt = playerState.farmAssignmentOverlayStartedAt
-  const hasAssignedFarm = playerState.farmAssignmentOverlaySlotId >= 0
-  const elapsedMs = hasAssignedFarm ? Math.max(0, Date.now() - startedAt) : 0
-  const loadElapsedMs = Math.max(0, elapsedMs - INTRO_HOLD_MS)
-  const progress = Math.min(1, loadElapsedMs / PROGRESS_DURATION_MS)
-  const progressPct = Math.round(progress * 100)
-  const farmNumber = playerState.farmAssignmentOverlaySlotId + 1
-  const shimmerLeft = Math.max(0, Math.min(PROGRESS_W - 42, Math.round(progress * PROGRESS_W) - 21))
-  const isConnectingPhase = !hasAssignedFarm || elapsedMs < INTRO_HOLD_MS
+  const { progress, progressPct, isConnectingPhase, subtitle } = getLoadProgress()
 
   return (
     <UiEntity
@@ -54,140 +256,61 @@ export const FarmAssignmentOverlay = () => {
         justifyContent: 'center',
         pointerFilter: 'block',
       }}
-      uiBackground={{ color: { r: 0.03, g: 0.025, b: 0.015, a: 0.9 } }}
     >
       <UiEntity
         uiTransform={{
-          width: OVERLAY_W,
-          height: OVERLAY_H,
-          padding: { top: 28, bottom: 34, left: 36, right: 36 },
-          flexDirection: 'column',
-          justifyContent: 'space-between',
+          width: BACKGROUND_W,
+          height: BACKGROUND_H,
         }}
-        uiBackground={{ color: { r: 0.08, g: 0.065, b: 0.04, a: 0.98 } }}
+        uiBackground={{
+          texture: { src: LOADING_BACKGROUND, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+          color: { r: 1, g: 1, b: 1, a: 1 },
+        }}
       >
-        <UiEntity
+        <LoadingTitle />
+
+        <Label
+          value={subtitle}
+          fontSize={24}
+          color={SUBTITLE_COLOR}
+          textAlign="middle-left"
           uiTransform={{
-            width: '100%',
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            positionType: 'absolute',
+            position: { top: SUBTITLE_TOP, left: SUBTITLE_LEFT },
+            width: 520,
+            height: 32,
           }}
-        >
-          <UiEntity
-            uiTransform={{
-              width: 164,
-              height: 42,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            uiBackground={{ color: { r: 0.26, g: 0.19, b: 0.08, a: 1 } }}
-          >
-            <Label value={hasAssignedFarm ? `FARM ${farmNumber}` : 'COZYFARM'} fontSize={20} color={C.header} textAlign="middle-center" />
-          </UiEntity>
+        />
 
-          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
-            {[0, 1.9, 3.8].map((offset, i) => {
-              const size = dotSize(offset)
-              const alpha = pulseValue(offset)
-              return (
-                <UiEntity
-                  key={`assign-dot-${i}`}
-                  uiTransform={{
-                    width: size,
-                    height: size,
-                    borderRadius: Math.round(size / 2),
-                    margin: { left: i === 0 ? 0 : 10 },
-                  }}
-                  uiBackground={{ color: { r: 1, g: 0.82, b: 0.34, a: alpha } }}
-                />
-              )
-            })}
-          </UiEntity>
-        </UiEntity>
+        <LoadingStepsRow progress={progress} isConnectingPhase={isConnectingPhase} />
+        <LoadingProgressBar progress={progress} />
 
-        <UiEntity uiTransform={{ width: '100%', flexDirection: 'column' }}>
-          <Label
-            value="Preparing your new home"
-            fontSize={46}
-            color={C.textMain}
-            textAlign="middle-left"
-            uiTransform={{ width: '100%', height: 56, margin: { bottom: 10 } }}
-          />
-
-          <Label
-            value={getPhaseText(isConnectingPhase, progress, farmNumber)}
-            fontSize={24}
-            color={{ r: 0.88, g: 0.82, b: 0.72, a: 1 }}
-            textAlign="middle-left"
-            uiTransform={{ width: '100%', height: 30, margin: { bottom: 28 } }}
-          />
-
-          <UiEntity
-            uiTransform={{
-              width: '100%',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              margin: { bottom: 16 },
-            }}
-          >
-            <Label value="Connecting" fontSize={18} color={isConnectingPhase ? C.gold : C.textMute} />
-            <Label value="Claiming slot" fontSize={18} color={!isConnectingPhase && progress < 0.34 ? C.gold : (progress >= 0.34 ? C.gold : C.textMute)} />
-            <Label value="Loading farm" fontSize={18} color={progress >= 0.34 ? C.gold : C.textMute} />
-            <Label value="Teleporting" fontSize={18} color={progress >= 0.84 ? C.gold : C.textMute} />
-          </UiEntity>
-
-          <UiEntity
-            uiTransform={{ width: PROGRESS_W, height: 20, margin: { bottom: 18 } }}
-            uiBackground={{ color: { r: 0.14, g: 0.11, b: 0.07, a: 1 } }}
-          >
-            <UiEntity
-              uiTransform={{ width: `${progressPct}%`, height: '100%' }}
-              uiBackground={{ color: { r: 0.82, g: 0.60, b: 0.18, a: 1 } }}
-            />
-            <UiEntity
-              uiTransform={{
-                positionType: 'absolute',
-                position: { left: shimmerLeft, top: 0 },
-                width: 42,
-                height: 20,
-              }}
-              uiBackground={{ color: { r: 1, g: 0.92, b: 0.66, a: 0.32 } }}
-            />
-          </UiEntity>
-
-          <UiEntity
-            uiTransform={{
-              width: '100%',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Label
-              value="Setting up your plots, buildings, and spawn point"
-              fontSize={18}
-              color={C.textMute}
-              textAlign="middle-left"
-              uiTransform={{ width: 520, height: 22 }}
-            />
-            <Label
-              value={`${progressPct}%`}
-              fontSize={24}
-              color={C.header}
-              textAlign="middle-right"
-              uiTransform={{ width: 90, height: 28 }}
-            />
-          </UiEntity>
-        </UiEntity>
-
-        <UiEntity
+        <Label
+          value="Setting up your plots, buildings, and spawn point"
+          fontSize={18}
+          color={STEP_BROWN}
+          textAlign="middle-left"
           uiTransform={{
-            width: '100%',
-            height: 4,
+            positionType: 'absolute',
+            position: { top: FOOTER_TOP, left: FOOTER_LEFT },
+            width: FOOTER_W,
+            height: 26,
           }}
-          uiBackground={{ color: { r: 0.38, g: 0.28, b: 0.12, a: 0.75 } }}
+        />
+
+        <Label
+          value={`${progressPct}%`}
+          fontSize={34}
+          color={TITLE_COLOR}
+          textAlign="middle-right"
+          textWrap="nowrap"
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: FOOTER_TOP - 6, right: 285 },
+            width: 120,
+            height: 40,
+          }}
         />
       </UiEntity>
     </UiEntity>
