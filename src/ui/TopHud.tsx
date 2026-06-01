@@ -17,17 +17,31 @@ const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 const HUD_BROWN = { r: 0.32, g: 0.18, b: 0.06, a: 1 }
 const HUD_BROWN_DARK = { r: 0.18, g: 0.09, b: 0.03, a: 1 }
 const HUD_WHITE = { r: 0.98, g: 0.95, b: 0.9, a: 1 }
-const HUD_GOLD = { r: 1, g: 0.84, b: 0.22, a: 1 }
 
 type AtlasRect = { x: number; y: number; w: number; h: number }
 
 const PANEL_RECT: AtlasRect = { x: 60, y: 69, w: 817, h: 261 }
 const BAR_TRACK_RECT: AtlasRect = { x: 13, y: 762, w: 632, h: 67 }
 const BAR_FILL_RECT: AtlasRect = { x: 16, y: 842, w: 751, h: 63 }
-const COIN_STACK_RECT: AtlasRect = { x: 682, y: 559, w: 172, h: 64 }
+const LEVEL_WORD_RECT: AtlasRect = { x: 682, y: 559, w: 172, h: 64 }
+const ARROW_RECT: AtlasRect = { x: 901, y: 572, w: 53, h: 44 }
+const COIN_STACK_RECT: AtlasRect = { x: 865, y: 652, w: 120, h: 89 }
 const LEVEL_SPROUT_RECT: AtlasRect = { x: 685, y: 652, w: 74, h: 68 }
 const ONLINE_SPROUT_RECT: AtlasRect = { x: 687, y: 755, w: 67, h: 69 }
 const ONLINE_TEXT_RECT: AtlasRect = { x: 862, y: 778, w: 137, h: 43 }
+
+const DIGIT_RECTS: Record<string, AtlasRect> = {
+  '0': { x: 35, y: 930, w: 52, h: 67 },
+  '1': { x: 126, y: 931, w: 36, h: 65 },
+  '2': { x: 216, y: 930, w: 47, h: 66 },
+  '3': { x: 309, y: 930, w: 49, h: 67 },
+  '4': { x: 393, y: 931, w: 54, h: 65 },
+  '5': { x: 486, y: 931, w: 48, h: 66 },
+  '6': { x: 571, y: 930, w: 51, h: 67 },
+  '7': { x: 663, y: 931, w: 49, h: 65 },
+  '8': { x: 750, y: 930, w: 51, h: 67 },
+  '9': { x: 836, y: 930, w: 51, h: 67 },
+}
 
 const OUTLINE_OFFSETS = [
   { left: -1, top: 0 },
@@ -108,6 +122,38 @@ function OutlinedLabel(props: {
   )
 }
 
+function AtlasNumber(props: { value: number; digitHeight: number; gap?: number }) {
+  const chars = `${Math.max(0, Math.floor(props.value))}`.split('')
+  const gap = props.gap ?? 2
+  const widths = chars.map((char) => Math.round((props.digitHeight * DIGIT_RECTS[char].w) / DIGIT_RECTS[char].h))
+  const totalWidth = widths.reduce((sum, width) => sum + width, 0) + Math.max(0, chars.length - 1) * gap
+
+  let left = 0
+
+  return (
+    <UiEntity uiTransform={{ width: totalWidth, height: props.digitHeight }}>
+      {chars.map((char, index) => {
+        const width = widths[index]
+        const node = (
+          <UiEntity
+            key={`${char}-${index}`}
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: 0, left },
+              width,
+              height: props.digitHeight,
+            }}
+          >
+            <AtlasSprite rect={DIGIT_RECTS[char]} width={width} height={props.digitHeight} />
+          </UiEntity>
+        )
+        left += width + gap
+        return node
+      })}
+    </UiEntity>
+  )
+}
+
 export const TopHud = () => {
   const xp = getXpProgress()
   const xpPct = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
@@ -130,9 +176,10 @@ export const TopHud = () => {
     playerState.levelUpToastExpiresAt = 0
   }
 
-  const boardWidth = 620
-  const boardHeight = 198
-  const barFillWidth = Math.max(0, Math.round(330 * xpPct / 100))
+  const boardWidth = 800
+  const boardHeight = 228
+  const barWidth = 458
+  const barFillWidth = Math.max(0, Math.round(436 * xpPct / 100))
 
   return (
     <UiEntity
@@ -222,218 +269,211 @@ export const TopHud = () => {
         </UiEntity>
       )}
 
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { top: 26, left: 608 },
-            width: boardWidth,
-            height: boardHeight,
-            pointerFilter: 'none',
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 26, left: 0 },
+          width: '100%',
+          height: boardHeight,
+          justifyContent: 'center',
+          alignItems: 'center',
+          pointerFilter: 'none',
         }}
       >
-        <AtlasSprite rect={PANEL_RECT} width={boardWidth} height={boardHeight} />
+        <UiEntity uiTransform={{ width: boardWidth, height: boardHeight, pointerFilter: 'none' }}>
+          <AtlasSprite rect={PANEL_RECT} width={boardWidth} height={boardHeight} />
 
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { top: 43, left: 31 },
-            width: 112,
-            height: 112,
-            pointerFilter: 'block',
-          }}
-          onMouseDown={() => {
-            triggerBtnAnim('stats')
-            playerState.activeMenu = playerState.activeMenu === 'stats' ? 'none' : 'stats'
-          }}
-        >
           <UiEntity
             uiTransform={{
               positionType: 'absolute',
-              position: { top: 14, left: 16 },
-              width: 78,
-              height: 78,
+              position: { top: 47, left: 54 },
+              width: 138,
+              height: 138,
+              pointerFilter: 'block',
             }}
-            uiBackground={
-              playerState.userId
-                ? { avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }
-                : { color: { r: 0.52, g: 0.37, b: 0.04, a: 1 } }
-            }
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: 0, left: 0 },
-              width: 112,
-              height: 112,
-            }}
-            uiBackground={{
-              texture: { src: BTN_PROFILE, wrapMode: 'clamp' },
-              textureMode: 'stretch',
-            }}
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { bottom: -2, right: -4 },
-              width: 34,
-              height: 34,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            uiBackground={{ color: { r: 0.92, g: 0.77, b: 0.22, a: 1 } }}
-          >
-            <Label value={`${playerState.level}`} fontSize={16} color={HUD_BROWN} textAlign="middle-center" />
-          </UiEntity>
-          {LEVEL_REWARDS.some((reward) => playerState.level >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
-            <BadgeDot top={-4} right={-4} size={16} />
-          )}
-        </UiEntity>
-
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { top: 28, left: 182 },
-            width: 396,
-            height: 134,
-          }}
-        >
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: 0, left: 0 },
-              width: 396,
-              height: 32,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
+            onMouseDown={() => {
+              triggerBtnAnim('stats')
+              playerState.activeMenu = playerState.activeMenu === 'stats' ? 'none' : 'stats'
             }}
           >
             <UiEntity
               uiTransform={{
-                width: 246,
-                height: 32,
-                flexDirection: 'row',
-                alignItems: 'center',
+                positionType: 'absolute',
+                position: { top: 17, left: 20 },
+                width: 96,
+                height: 96,
               }}
-            >
-              <AtlasSprite rect={LEVEL_SPROUT_RECT} width={22} height={20} />
-              <UiEntity uiTransform={{ width: 8, height: 1 }} />
-              <OutlinedLabel
-                value={isMaxLvl ? `Level ${playerState.level}` : `Level ${playerState.level} --> Level ${playerState.level + 1}`}
-                fontSize={20}
-                width={216}
-                height={30}
-                color={HUD_GOLD}
-                outlineColor={HUD_BROWN_DARK}
-                textAlign="middle-left"
-              />
-            </UiEntity>
-
+              uiBackground={
+                playerState.userId
+                  ? { avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }
+                  : { color: { r: 0.52, g: 0.37, b: 0.04, a: 1 } }
+              }
+            />
             <UiEntity
               uiTransform={{
-                width: 132,
-                height: 32,
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'flex-end',
+                positionType: 'absolute',
+                position: { top: 0, left: 0 },
+                width: 138,
+                height: 138,
               }}
-            >
-              <OutlinedLabel
-                value={`${playerState.coins}`}
-                fontSize={22}
-                width={72}
-                height={30}
-                color={HUD_GOLD}
-                outlineColor={HUD_BROWN_DARK}
-                textAlign="middle-right"
-              />
-              <UiEntity uiTransform={{ width: 6, height: 1 }} />
-              <AtlasSprite rect={COIN_STACK_RECT} width={58} height={22} />
-            </UiEntity>
-          </UiEntity>
-
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: 46, left: 8 },
-              width: 348,
-              height: 38,
-            }}
-          >
-            <AtlasSprite rect={BAR_TRACK_RECT} width={348} height={38} />
-            {barFillWidth > 0 && (
-              <AtlasSprite rect={BAR_FILL_RECT} width={barFillWidth} height={22} position={{ top: 8, left: 13 }} />
-            )}
-          </UiEntity>
-
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: 92, left: 8 },
-              width: 384,
-              height: 28,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
+              uiBackground={{
+                texture: { src: BTN_PROFILE, wrapMode: 'clamp' },
+                textureMode: 'stretch',
+              }}
+            />
             <UiEntity
               uiTransform={{
-                width: 182,
-                height: 28,
+                positionType: 'absolute',
+                position: { bottom: -2, right: -5 },
+                width: 40,
+                height: 40,
+                alignItems: 'center',
                 justifyContent: 'center',
               }}
+              uiBackground={{ color: { r: 0.92, g: 0.77, b: 0.22, a: 1 } }}
             >
-              <OutlinedLabel
-                value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
-                fontSize={16}
-                width={182}
-                height={24}
-                color={HUD_WHITE}
-                outlineColor={HUD_BROWN_DARK}
-                textAlign="middle-left"
-              />
+              <Label value={`${playerState.level}`} fontSize={18} color={HUD_BROWN} textAlign="middle-center" />
+            </UiEntity>
+            {LEVEL_REWARDS.some((reward) => playerState.level >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
+              <BadgeDot top={-4} right={-4} size={16} />
+            )}
+          </UiEntity>
+
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: 28, left: 250 },
+              width: 510,
+              height: 154,
+            }}
+          >
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { top: 0, left: 0 },
+                width: 510,
+                height: 38,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <UiEntity
+                uiTransform={{
+                  width: 334,
+                  height: 38,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                }}
+              >
+                <AtlasSprite rect={LEVEL_SPROUT_RECT} width={26} height={24} />
+                <UiEntity uiTransform={{ width: 10, height: 1 }} />
+                <AtlasSprite rect={LEVEL_WORD_RECT} width={108} height={40} />
+                <UiEntity uiTransform={{ width: 10, height: 1 }} />
+                <AtlasNumber value={playerState.level} digitHeight={40} gap={2} />
+                {!isMaxLvl && <UiEntity uiTransform={{ width: 8, height: 1 }} />}
+                {!isMaxLvl && <AtlasSprite rect={ARROW_RECT} width={38} height={30} />}
+                {!isMaxLvl && <UiEntity uiTransform={{ width: 8, height: 1 }} />}
+                {!isMaxLvl && <AtlasNumber value={playerState.level + 1} digitHeight={40} gap={2} />}
+              </UiEntity>
+
+              <UiEntity
+                uiTransform={{
+                  width: 176,
+                  height: 38,
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'flex-end',
+                }}
+              >
+                <AtlasNumber value={playerState.coins} digitHeight={40} gap={2} />
+                <UiEntity uiTransform={{ width: 16, height: 1 }} />
+                <AtlasSprite rect={COIN_STACK_RECT} width={52} height={38} />
+              </UiEntity>
             </UiEntity>
 
-            {SHOW_SERVER_INDICATOR && isConnected && (
-              <UiEntity
-                uiTransform={{
-                  width: 132,
-                  height: 28,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <AtlasSprite rect={ONLINE_SPROUT_RECT} width={26} height={26} />
-                <UiEntity uiTransform={{ width: 6, height: 1 }} />
-                <AtlasSprite rect={ONLINE_TEXT_RECT} width={78} height={24} />
-              </UiEntity>
-            )}
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { top: 58, left: 8 },
+                width: barWidth,
+                height: 46,
+              }}
+            >
+              <AtlasSprite rect={BAR_TRACK_RECT} width={barWidth} height={46} />
+              {barFillWidth > 0 && (
+                <AtlasSprite rect={BAR_FILL_RECT} width={barFillWidth} height={26} position={{ top: 10, left: 11 }} />
+              )}
+            </UiEntity>
 
-            {SHOW_SERVER_INDICATOR && !isConnected && (
-              <UiEntity
-                uiTransform={{
-                  width: 150,
-                  height: 24,
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  justifyContent: 'flex-end',
-                }}
-              >
-                <UiEntity
-                  uiTransform={{ width: 10, height: 10, borderRadius: 5, margin: { right: 6 } }}
-                  uiBackground={{ color: { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.35 } }}
-                />
-                <Label
-                  value="Connecting..."
-                  fontSize={14}
-                  color={{ ...HUD_BROWN, a: connectingBlinkOn ? 1 : 0.7 }}
-                  textAlign="middle-right"
-                  uiTransform={{ width: 120, height: 24 }}
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { top: 112, left: 8 },
+                width: 500,
+                height: 34,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}
+            >
+              <UiEntity uiTransform={{ width: 214, height: 34, justifyContent: 'center' }}>
+                <OutlinedLabel
+                  value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
+                  fontSize={20}
+                  width={214}
+                  height={30}
+                  color={HUD_WHITE}
+                  outlineColor={HUD_BROWN_DARK}
+                  textAlign="middle-left"
                 />
               </UiEntity>
-            )}
+
+              {SHOW_SERVER_INDICATOR && isConnected && (
+                <UiEntity
+                  uiTransform={{
+                    width: 150,
+                    height: 34,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <AtlasSprite rect={ONLINE_SPROUT_RECT} width={30} height={30} />
+                  <UiEntity uiTransform={{ width: 8, height: 1 }} />
+                  <AtlasSprite rect={ONLINE_TEXT_RECT} width={92} height={28} />
+                </UiEntity>
+              )}
+
+              {SHOW_SERVER_INDICATOR && !isConnected && (
+                <UiEntity
+                  uiTransform={{
+                    width: 150,
+                    height: 24,
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                  }}
+                >
+                  <UiEntity
+                    uiTransform={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: 5,
+                      margin: { right: 6 },
+                    }}
+                    uiBackground={{ color: { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.35 } }}
+                  />
+                  <Label
+                    value="Connecting..."
+                    fontSize={14}
+                    color={{ ...HUD_BROWN, a: connectingBlinkOn ? 1 : 0.7 }}
+                    textAlign="middle-right"
+                    uiTransform={{ width: 120, height: 24 }}
+                  />
+                </UiEntity>
+              )}
+            </UiEntity>
           </UiEntity>
         </UiEntity>
       </UiEntity>
