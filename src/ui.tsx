@@ -26,6 +26,7 @@ import { VisitHud }         from './ui/VisitHud'
 import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 import { FarmAssignmentOverlay } from './ui/FarmAssignmentOverlay'
+import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -33,8 +34,9 @@ export function setupUi() {
 
 const MainUi = () => {
   const showVisitHud = playerState.viewingFarm !== null
-  const showOwnFarmUi = playerState.viewingFarm === null && playerState.farmGameplayUiReady
+  const showOwnFarmUi = PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmGameplayUiReady)
   const waitingForSlot =
+    !PROFILE_HUD_DEBUG &&
     playerState.viewingFarm === null &&
     playerState.mySlotId < 0 &&
     playerState.farmSlots.length > 0
@@ -70,7 +72,7 @@ const MainUi = () => {
 
       {showOwnFarmUi && playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
-      {(waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
+      {!PROFILE_HUD_DEBUG && (waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
 
       {showOwnFarmUi && playerState.activeMenu === 'inventory' && <InventoryPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'stats'     && <StatsPanel />}

@@ -23,6 +23,12 @@ type AtlasRect = { x: number; y: number; w: number; h: number }
 const PANEL_RECT: AtlasRect = { x: 60, y: 69, w: 817, h: 261 }
 const BAR_TRACK_RECT: AtlasRect = { x: 13, y: 762, w: 632, h: 67 }
 const BAR_FILL_RECT: AtlasRect = { x: 16, y: 842, w: 751, h: 63 }
+const FILL_H = 33
+const FILL_CAP_ATLAS_W = 32
+const FILL_CAP_PX = Math.round(FILL_CAP_ATLAS_W * FILL_H / BAR_FILL_RECT.h)
+const BAR_LEFT_CAP_RECT: AtlasRect  = { x: BAR_FILL_RECT.x, y: BAR_FILL_RECT.y, w: FILL_CAP_ATLAS_W, h: BAR_FILL_RECT.h }
+const BAR_FILL_MID_RECT: AtlasRect  = { x: BAR_FILL_RECT.x + FILL_CAP_ATLAS_W, y: BAR_FILL_RECT.y, w: BAR_FILL_RECT.w - FILL_CAP_ATLAS_W * 2, h: BAR_FILL_RECT.h }
+const BAR_RIGHT_CAP_RECT: AtlasRect = { x: BAR_FILL_RECT.x + BAR_FILL_RECT.w - FILL_CAP_ATLAS_W, y: BAR_FILL_RECT.y, w: FILL_CAP_ATLAS_W, h: BAR_FILL_RECT.h }
 const LEVEL_WORD_RECT: AtlasRect = { x: 682, y: 559, w: 172, h: 64 }
 const ARROW_RECT: AtlasRect = { x: 901, y: 572, w: 53, h: 44 }
 const COIN_STACK_RECT: AtlasRect = { x: 865, y: 652, w: 120, h: 89 }
@@ -49,6 +55,11 @@ const OUTLINE_OFFSETS = [
   { left: 0, top: -1 },
   { left: 0, top: 1 },
 ]
+const HUD_SCALE = 0.8
+
+function s(value: number): number {
+  return Math.round(value * HUD_SCALE)
+}
 
 function atlasUvs(rect: AtlasRect): number[] {
   const left = rect.x / ATLAS_SIZE
@@ -176,11 +187,10 @@ export const TopHud = () => {
     playerState.levelUpToastExpiresAt = 0
   }
 
-  const boardWidth = 800
-  const boardHeight = 228
-  const barWidth = 458
-  const barFillWidth = Math.max(0, Math.round(436 * xpPct / 100))
-
+  const boardWidth = s(800)
+  const boardHeight = s(228)
+  const barWidth = s(458)
+  const barFillWidth = Math.max(0, Math.round(s(436) * xpPct / 100))
   return (
     <UiEntity
       uiTransform={{
@@ -286,9 +296,9 @@ export const TopHud = () => {
           <UiEntity
             uiTransform={{
               positionType: 'absolute',
-              position: { top: 47, left: 54 },
-              width: 138,
-              height: 138,
+              position: { top: s(47), left: s(54) },
+              width: s(138),
+              height: s(138),
               pointerFilter: 'block',
             }}
             onMouseDown={() => {
@@ -299,60 +309,69 @@ export const TopHud = () => {
             <UiEntity
               uiTransform={{
                 positionType: 'absolute',
-                position: { top: 17, left: 20 },
-                width: 96,
-                height: 96,
-              }}
-              uiBackground={
-                playerState.userId
-                  ? { avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }
-                  : { color: { r: 0.52, g: 0.37, b: 0.04, a: 1 } }
-              }
-            />
-            <UiEntity
-              uiTransform={{
-                positionType: 'absolute',
                 position: { top: 0, left: 0 },
-                width: 138,
-                height: 138,
+                width: s(138),
+                height: s(138),
               }}
               uiBackground={{
                 texture: { src: BTN_PROFILE, wrapMode: 'clamp' },
                 textureMode: 'stretch',
               }}
             />
+            {playerState.userId && (
+              <UiEntity
+                uiTransform={{
+                  positionType: 'absolute',
+                  position: { top: s(14), left: s(20) },
+                  width: s(96),
+                  height: s(114),
+                }}
+                uiBackground={{ color: { r: 1, g: 1, b: 1, a: 1 } }}
+              />
+            )}
+            {playerState.userId && (
+              <UiEntity
+                uiTransform={{
+                  positionType: 'absolute',
+                  position: { top: s(20), left: s(20) },
+                  width: s(96),
+                  height: s(108),
+                }}
+                uiBackground={{ avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }}
+              />
+            )}
             <UiEntity
               uiTransform={{
                 positionType: 'absolute',
-                position: { bottom: -2, right: -5 },
-                width: 40,
-                height: 40,
+                position: { bottom: -2, right: -4 },
+                width: s(40),
+                height: s(40),
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
               uiBackground={{ color: { r: 0.92, g: 0.77, b: 0.22, a: 1 } }}
             >
-              <Label value={`${playerState.level}`} fontSize={18} color={HUD_BROWN} textAlign="middle-center" />
+              <Label value={`${playerState.level}`} fontSize={s(18)} color={HUD_BROWN} textAlign="middle-center" />
             </UiEntity>
             {LEVEL_REWARDS.some((reward) => playerState.level >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
-              <BadgeDot top={-4} right={-4} size={16} />
+              <BadgeDot top={-3} right={-3} size={s(16)} />
             )}
           </UiEntity>
 
           <UiEntity
             uiTransform={{
               positionType: 'absolute',
-              position: { top: 28, left: 250 },
-              width: 510,
-              height: 154,
+              position: { top: s(42), left: s(220) },
+              width: s(510),
+              height: s(154),
             }}
           >
             <UiEntity
               uiTransform={{
                 positionType: 'absolute',
                 position: { top: 0, left: 0 },
-                width: 510,
-                height: 38,
+                width: s(510),
+                height: s(38),
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -360,69 +379,107 @@ export const TopHud = () => {
             >
               <UiEntity
                 uiTransform={{
-                  width: 334,
-                  height: 38,
+                  width: s(334),
+                  height: s(38),
                   flexDirection: 'row',
                   alignItems: 'center',
                 }}
               >
-                <AtlasSprite rect={LEVEL_SPROUT_RECT} width={26} height={24} />
-                <UiEntity uiTransform={{ width: 10, height: 1 }} />
-                <AtlasSprite rect={LEVEL_WORD_RECT} width={108} height={40} />
-                <UiEntity uiTransform={{ width: 10, height: 1 }} />
-                <AtlasNumber value={playerState.level} digitHeight={40} gap={2} />
-                {!isMaxLvl && <UiEntity uiTransform={{ width: 8, height: 1 }} />}
-                {!isMaxLvl && <AtlasSprite rect={ARROW_RECT} width={38} height={30} />}
-                {!isMaxLvl && <UiEntity uiTransform={{ width: 8, height: 1 }} />}
-                {!isMaxLvl && <AtlasNumber value={playerState.level + 1} digitHeight={40} gap={2} />}
+                <AtlasSprite rect={LEVEL_SPROUT_RECT} width={s(26)} height={s(24)} />
+                <UiEntity uiTransform={{ width: s(10), height: 1 }} />
+                <AtlasSprite rect={LEVEL_WORD_RECT} width={s(108)} height={s(40)} />
+                <UiEntity uiTransform={{ width: s(10), height: 1 }} />
+                <AtlasNumber value={playerState.level} digitHeight={s(40)} gap={s(2)} />
+                {!isMaxLvl && <UiEntity uiTransform={{ width: s(8), height: 1 }} />}
+                {!isMaxLvl && <AtlasSprite rect={ARROW_RECT} width={s(38)} height={s(30)} />}
+                {!isMaxLvl && <UiEntity uiTransform={{ width: s(8), height: 1 }} />}
+                {!isMaxLvl && <AtlasNumber value={playerState.level + 1} digitHeight={s(40)} gap={s(2)} />}
               </UiEntity>
 
               <UiEntity
                 uiTransform={{
-                  width: 176,
-                  height: 38,
+                  width: s(176),
+                  height: s(38),
                   flexDirection: 'row',
                   alignItems: 'center',
                   justifyContent: 'flex-end',
                 }}
               >
-                <AtlasNumber value={playerState.coins} digitHeight={40} gap={2} />
-                <UiEntity uiTransform={{ width: 16, height: 1 }} />
-                <AtlasSprite rect={COIN_STACK_RECT} width={52} height={38} />
+                <AtlasNumber value={playerState.coins} digitHeight={s(40)} gap={s(2)} />
+                <UiEntity uiTransform={{ width: s(16), height: 1 }} />
+                <AtlasSprite rect={COIN_STACK_RECT} width={s(52)} height={s(38)} />
               </UiEntity>
             </UiEntity>
 
             <UiEntity
               uiTransform={{
                 positionType: 'absolute',
-                position: { top: 58, left: 8 },
+                position: { top: s(58), left: s(8) },
                 width: barWidth,
-                height: 46,
+                height: s(46),
               }}
             >
-              <AtlasSprite rect={BAR_TRACK_RECT} width={barWidth} height={46} />
+              <AtlasSprite rect={BAR_TRACK_RECT} width={barWidth} height={s(46)} />
               {barFillWidth > 0 && (
-                <AtlasSprite rect={BAR_FILL_RECT} width={barFillWidth} height={26} position={{ top: 10, left: 11 }} />
+                <UiEntity
+                  uiTransform={{
+                    positionType: 'absolute',
+                    position: { top: -3, left: s(11) },
+                    width: barFillWidth,
+                    height: FILL_H,
+                  }}
+                >
+                  <AtlasSprite
+                    rect={BAR_LEFT_CAP_RECT}
+                    width={Math.min(barFillWidth, FILL_CAP_PX)}
+                    height={FILL_H}
+                    position={{ top: 0, left: 0 }}
+                  />
+                  {barFillWidth > FILL_CAP_PX && barFillWidth <= FILL_CAP_PX * 2 && (
+                    <AtlasSprite
+                      rect={BAR_FILL_MID_RECT}
+                      width={barFillWidth - FILL_CAP_PX}
+                      height={FILL_H}
+                      position={{ top: 0, left: FILL_CAP_PX }}
+                    />
+                  )}
+                  {barFillWidth > FILL_CAP_PX * 2 && (
+                    <AtlasSprite
+                      rect={BAR_FILL_MID_RECT}
+                      width={barFillWidth - FILL_CAP_PX * 2}
+                      height={FILL_H}
+                      position={{ top: 0, left: FILL_CAP_PX }}
+                    />
+                  )}
+                  {barFillWidth > FILL_CAP_PX * 2 && (
+                    <AtlasSprite
+                      rect={BAR_RIGHT_CAP_RECT}
+                      width={FILL_CAP_PX}
+                      height={FILL_H}
+                      position={{ top: 0, left: barFillWidth - FILL_CAP_PX }}
+                    />
+                  )}
+                </UiEntity>
               )}
             </UiEntity>
 
             <UiEntity
               uiTransform={{
                 positionType: 'absolute',
-                position: { top: 112, left: 8 },
-                width: 500,
-                height: 34,
+                position: { top: s(112), left: s(8) },
+                width: s(500),
+                height: s(34),
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'space-between',
               }}
             >
-              <UiEntity uiTransform={{ width: 214, height: 34, justifyContent: 'center' }}>
+              <UiEntity uiTransform={{ width: s(214), height: s(34), justifyContent: 'center' }}>
                 <OutlinedLabel
                   value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
-                  fontSize={20}
-                  width={214}
-                  height={30}
+                  fontSize={s(20)}
+                  width={s(214)}
+                  height={s(30)}
                   color={HUD_WHITE}
                   outlineColor={HUD_BROWN_DARK}
                   textAlign="middle-left"
@@ -432,24 +489,24 @@ export const TopHud = () => {
               {SHOW_SERVER_INDICATOR && isConnected && (
                 <UiEntity
                   uiTransform={{
-                    width: 150,
-                    height: 34,
+                    width: s(150),
+                    height: s(34),
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
                   }}
                 >
-                  <AtlasSprite rect={ONLINE_SPROUT_RECT} width={30} height={30} />
-                  <UiEntity uiTransform={{ width: 8, height: 1 }} />
-                  <AtlasSprite rect={ONLINE_TEXT_RECT} width={92} height={28} />
+                  <AtlasSprite rect={ONLINE_SPROUT_RECT} width={s(30)} height={s(30)} />
+                  <UiEntity uiTransform={{ width: s(8), height: 1 }} />
+                  <AtlasSprite rect={ONLINE_TEXT_RECT} width={s(92)} height={s(28)} />
                 </UiEntity>
               )}
 
               {SHOW_SERVER_INDICATOR && !isConnected && (
                 <UiEntity
                   uiTransform={{
-                    width: 150,
-                    height: 24,
+                    width: s(150),
+                    height: s(24),
                     flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'flex-end',
@@ -457,19 +514,19 @@ export const TopHud = () => {
                 >
                   <UiEntity
                     uiTransform={{
-                      width: 10,
-                      height: 10,
+                      width: s(10),
+                      height: s(10),
                       borderRadius: 5,
-                      margin: { right: 6 },
+                      margin: { right: s(6) },
                     }}
                     uiBackground={{ color: { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.35 } }}
                   />
                   <Label
                     value="Connecting..."
-                    fontSize={14}
+                    fontSize={s(14)}
                     color={{ ...HUD_BROWN, a: connectingBlinkOn ? 1 : 0.7 }}
                     textAlign="middle-right"
-                    uiTransform={{ width: 120, height: 24 }}
+                    uiTransform={{ width: s(120), height: s(24) }}
                   />
                 </UiEntity>
               )}
