@@ -1,4 +1,5 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { BTN_PROFILE } from '../data/imagePaths'
@@ -10,13 +11,12 @@ import { BadgeDot } from './BadgeDot'
 const HUD_ATLAS = 'assets/images/ui_loading/profile_atlas.png'
 const ATLAS_SIZE = 1024
 
-const DEBUG_SOCIAL_TOAST = false
 const SHOW_SERVER_INDICATOR = true // set to true for internal testing only
-const DEBUG_SOCIAL_TOAST_TEXT = 'Debug social toast: Alice liked your farm!'
 
 const HUD_BROWN = { r: 0.32, g: 0.18, b: 0.06, a: 1 }
 const HUD_BROWN_DARK = { r: 0.18, g: 0.09, b: 0.03, a: 1 }
 const HUD_WHITE = { r: 0.98, g: 0.95, b: 0.9, a: 1 }
+const COIN_GOLD = { r: 1.0, g: 0.82, b: 0.15, a: 1 }
 
 type AtlasRect = { x: number; y: number; w: number; h: number }
 
@@ -171,14 +171,13 @@ export const TopHud = () => {
   const isMaxLvl = playerState.level >= 20
   const isConnected = playerState.serverConnected
   const connectingBlinkOn = Math.floor(Date.now() / 500) % 2 === 0
-  const liveSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
-  const showSocialToast = DEBUG_SOCIAL_TOAST || liveSocialToast
-  const socialToastText = DEBUG_SOCIAL_TOAST ? DEBUG_SOCIAL_TOAST_TEXT : playerState.socialToastText
+  const showSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
+  const socialToastText = playerState.socialToastText
   const showLevelUpToast = playerState.levelUpToastText !== '' && Date.now() < playerState.levelUpToastExpiresAt
   const showWorkerAlert = playerState.farmerHired && playerState.workerOutstandingWages > 0
   const workerDebtDays = getWorkerDebtDays(playerState.workerOutstandingWages)
 
-  if (!DEBUG_SOCIAL_TOAST && !showSocialToast && playerState.socialToastText !== '') {
+  if (!showSocialToast && playerState.socialToastText !== '') {
     playerState.socialToastText = ''
     playerState.socialToastExpiresAt = 0
   }
@@ -322,18 +321,18 @@ export const TopHud = () => {
               <UiEntity
                 uiTransform={{
                   positionType: 'absolute',
-                  position: { top: s(14), left: s(20) },
+                  position: { top: isMobile() ? s(10) : s(14), left: s(20) },
                   width: s(96),
                   height: s(114),
                 }}
-                uiBackground={{ color: { r: 1, g: 1, b: 1, a: 1 } }}
+                uiBackground={{ color: { r: 0.996, g: 0.945, b: 0.820, a: 1 } }}
               />
             )}
             {playerState.userId && (
               <UiEntity
                 uiTransform={{
                   positionType: 'absolute',
-                  position: { top: s(20), left: s(20) },
+                  position: { top: isMobile() ? s(16) : s(20), left: s(20) },
                   width: s(96),
                   height: s(108),
                 }}
@@ -405,7 +404,15 @@ export const TopHud = () => {
                   justifyContent: 'flex-end',
                 }}
               >
-                <AtlasNumber value={playerState.coins} digitHeight={s(40)} gap={s(2)} />
+                <OutlinedLabel
+                  value={`${Math.max(0, Math.floor(playerState.coins))}`}
+                  fontSize={s(28)}
+                  width={s(100)}
+                  height={s(40)}
+                  color={COIN_GOLD}
+                  outlineColor={HUD_BROWN_DARK}
+                  textAlign="middle-right"
+                />
                 <UiEntity uiTransform={{ width: s(16), height: 1 }} />
                 <AtlasSprite rect={COIN_STACK_RECT} width={s(52)} height={s(38)} />
               </UiEntity>
