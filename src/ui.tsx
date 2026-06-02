@@ -27,8 +27,6 @@ import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 import { FarmAssignmentOverlay } from './ui/FarmAssignmentOverlay'
 import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
-import { NPC_DIALOG_DEBUG }  from './debug/npcDialogDebug'
-import { NpcDialogDebugPanel } from './ui/NpcDialogDebugPanel'
 
 export function setupUi() {
   ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
@@ -74,14 +72,13 @@ const MainUi = () => {
 
       {showOwnFarmUi && playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
-      {!PROFILE_HUD_DEBUG && !NPC_DIALOG_DEBUG && (waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
+      {!PROFILE_HUD_DEBUG && (waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
 
       {showOwnFarmUi && playerState.activeMenu === 'inventory' && <InventoryPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'stats'     && <StatsPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'quests'    && <QuestPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'farm'      && <FarmPanel />}
       <FarmAssignmentOverlay />
-      {NPC_DIALOG_DEBUG && <NpcDialogDebugPanel />}
     </UiEntity>
   )
 }
