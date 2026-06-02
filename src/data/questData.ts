@@ -26,7 +26,7 @@ export const QUEST_DEFINITIONS: QuestDefinition[] = [
   },
   {
     id: 'gerald', npcName: 'Gerald', title: 'Water crops 10 times',
-    description: "Hmph.\n If you can water your crops 10 times without making a mess, I'll admit you know what you're doing.",
+    description: "Hmph.\nIf you can water your crops 10 times without making a mess, I'll admit you know what you're doing.",
     type: 'water_total', cropType: null, target: 10,
     rewardCoins: 40, rewardXp: 50,
     prerequisite: { minLevel: 3 },

@@ -142,43 +142,6 @@ function DialogButton(props: {
   )
 }
 
-function OutlinedText(props: {
-  value: string
-  fontSize: number
-  width: number
-  height: number
-  color: { r: number; g: number; b: number; a: number }
-  outlineColor: { r: number; g: number; b: number; a: number }
-  textAlign: 'middle-left' | 'middle-center' | 'middle-right'
-}) {
-  return (
-    <UiEntity uiTransform={{ width: props.width, height: props.height }}>
-      {OUTLINE_OFFSETS.map((offset, index) => (
-        <Label
-          key={`outlined-${index}`}
-          value={props.value}
-          fontSize={props.fontSize}
-          color={props.outlineColor}
-          textAlign={props.textAlign}
-          uiTransform={{
-            width: props.width,
-            height: props.height,
-            positionType: 'absolute',
-            position: offset,
-          }}
-        />
-      ))}
-      <Label
-        value={props.value}
-        fontSize={props.fontSize}
-        color={props.color}
-        textAlign={props.textAlign}
-        uiTransform={{ width: props.width, height: props.height, positionType: 'absolute' }}
-      />
-    </UiEntity>
-  )
-}
-
 function closeDialog() {
   const cb = npcDialogState.onClose
   npcDialogState.onClose  = null
@@ -563,11 +526,15 @@ export const NpcDialogMenu = () => {
         )}
 
         {npcDialogState.mode === 'quest_claimable' && (
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: BTN_CENTER, bottom: BTN_BOTTOM } }}>
+          <UiEntity uiTransform={{
+            positionType: 'absolute',
+            position: { left: BTN_PAIR_L, bottom: BTN_BOTTOM },
+            flexDirection: 'row',
+          }}>
             <DialogButton
               label="Claim Reward!"
               primary
-              width={BTN_W_SINGLE}
+              width={BTN_W_PAIR}
               height={BTN_H}
               fontSize={BTN_FONT}
               zoomScale={getZoomScale(ZOOM_KEY)}
@@ -577,6 +544,19 @@ export const NpcDialogMenu = () => {
                 const claim = npcDialogState.onClaim
                 triggerCardZoom(ZOOM_KEY)
                 setTimeout(() => { closeDialog(); claim?.() }, ZOOM_DURATION)
+              }}
+            />
+            <UiEntity uiTransform={{ width: 10, height: 1 }} />
+            <DialogButton
+              label="Later"
+              width={BTN_W_PAIR}
+              height={BTN_H}
+              fontSize={BTN_FONT}
+              onClick={() => {
+                if (isShaking('dialog_claim_later')) return
+                playSound('buttonclick')
+                triggerCardShake('dialog_claim_later')
+                setTimeout(closeDialog, SHAKE_DURATION)
               }}
             />
           </UiEntity>
