@@ -187,6 +187,10 @@ export const NpcDialogMenu = () => {
   const QUEST_ACTIVE_COL_GAP = d(BASE_QUEST_ACTIVE_COL_GAP)
 
   const isQuestMode = npcDialogState.mode === 'quest_active' || npcDialogState.mode === 'quest_offer'
+  const isMayorWelcomeDialog =
+    npcDialogState.mode === 'tutorial' &&
+    npcDialogState.npcId === 'mayorchen' &&
+    npcDialogState.dialogLine.includes("Welcome to CozyFarm!")
   const activeQuest = isQuestMode ? getQuestForNpc(npcDialogState.npcId) : null
   const activeQuestProgress = activeQuest ? questProgressMap.get(activeQuest.id) : null
 
@@ -215,6 +219,13 @@ export const NpcDialogMenu = () => {
   const mobileQuestCardGap = d(12)
   const mobileQuestCardW = Math.round((TEXT_W - d(12)) / 2)
   const mobileQuestButtonLeft = TEXT_LEFT
+  const standardDialogTextTop = NAME_TOP + NAME_H + d(52)
+  const mayorWelcomeTextTop = NAME_TOP + NAME_H + d(mobileDialog ? 28 : 16)
+  const dialogTextTop = isMayorWelcomeDialog ? mayorWelcomeTextTop : standardDialogTextTop
+  const dialogTextHeight = BTN_TOP - dialogTextTop + d(4)
+  const dialogBodyFontSize = isMayorWelcomeDialog
+    ? (mobileDialog ? d(15) : d(19))
+    : d(19)
 
   return (
     <UiEntity
@@ -260,9 +271,9 @@ export const NpcDialogMenu = () => {
           <UiEntity
             uiTransform={{
               positionType: 'absolute',
-              position: { top: NAME_TOP + NAME_H + 52, left: TEXT_LEFT },
+              position: { top: dialogTextTop, left: TEXT_LEFT },
               width: TEXT_W,
-              height: BTN_TOP - (NAME_TOP + NAME_H + 4),
+              height: dialogTextHeight,
               flexDirection: 'column',
               justifyContent: 'flex-start',
               alignItems: 'flex-start',
@@ -270,7 +281,7 @@ export const NpcDialogMenu = () => {
           >
             <Label
               value={npcDialogState.dialogLine}
-              fontSize={d(19)}
+              fontSize={dialogBodyFontSize}
               color={TEXT_BROWN}
               textAlign="top-left"
               uiTransform={{ width: TEXT_W }}
