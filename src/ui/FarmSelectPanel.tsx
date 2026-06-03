@@ -293,7 +293,7 @@ function getPlayerMarkerSrc(): string {
     1 - 2 * (q.y * q.y + q.x * q.x),
   ) * (180 / Math.PI)
 
-  const mapAngle = normalizeDegrees(180 - yaw)
+  const mapAngle = normalizeDegrees(90 - yaw)
 
   if (mapAngle >= 45 && mapAngle < 135) return SHOVEL_ICON_DOWN
   if (mapAngle >= 135 && mapAngle < 225) return SHOVEL_ICON_LEFT
@@ -625,7 +625,7 @@ const ExtendedMapFarmTile = ({
   const glowRect = mode === 'own' ? GLOW_YELLOW_RECT : GLOW_WHITE_RECT
   const mobileSelected = selected && isMobile()
   const desktopSelected = selected && !isMobile()
-  const glowWidth = Math.min(MAP_EXT_TILE_W, cardWidth + (isMobile() ? 34 : 20))
+  const glowWidth = Math.min(MAP_EXT_TILE_W, cardWidth + (isMobile() ? 34 : 30))
   const glowHeight = Math.min(MAP_EXT_TILE_H, cardHeight + (isMobile() ? 30 : 16))
   const mobileFrameColor = mode === 'own'
     ? { r: 0.98, g: 0.79, b: 0.16, a: 1 }
@@ -672,45 +672,11 @@ const ExtendedMapFarmTile = ({
             width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
             height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
             zIndex: 4,
+            borderWidth: MOBILE_SELECTED_FRAME_THICKNESS,
+            borderColor: mobileFrameColor,
+            borderRadius: 6,
           }}
-        >
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { left: 0, top: 0 },
-              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
-              height: MOBILE_SELECTED_FRAME_THICKNESS,
-            }}
-            uiBackground={{ color: mobileFrameColor }}
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { left: 0, bottom: 0 },
-              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
-              height: MOBILE_SELECTED_FRAME_THICKNESS,
-            }}
-            uiBackground={{ color: mobileFrameColor }}
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { left: 0, top: 0 },
-              width: MOBILE_SELECTED_FRAME_THICKNESS,
-              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
-            }}
-            uiBackground={{ color: mobileFrameColor }}
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { right: 0, top: 0 },
-              width: MOBILE_SELECTED_FRAME_THICKNESS,
-              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
-            }}
-            uiBackground={{ color: mobileFrameColor }}
-          />
-        </UiEntity>
+        />
       )}
       <UiEntity
         uiTransform={{
