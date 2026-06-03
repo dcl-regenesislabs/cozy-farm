@@ -10,7 +10,9 @@ import { teleportToSlot } from '../services/saveService'
 
 const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
 const SHOVEL_ICON = 'assets/images/ui_loading/shovel_icon.png'
+const MAP_EXTENDED_ATLAS = 'assets/images/ui_loading/map_extended.png'
 const MINIMAP_ATLAS_SIZE = 512
+const MAP_EXTENDED_ATLAS_SIZE = 1024
 const MAP_TILE_W = 176
 const MAP_TILE_H = 126
 const MAP_ROAD = 16
@@ -44,7 +46,28 @@ const MAP_WORLD_PADDING = 40
 const BIG_MARKER_SIZE = 20
 const MINI_MARKER_SIZE = 14
 const MARKER_SCALE = 4
-const MAP_PANEL_TOP = 190
+const MAP_PANEL_TOP = 248
+const MAP_EXT_BG_RECT = { x: 8, y: 5, w: 908, h: 771 } as const
+const MAP_EXT_WINDOW_RECT = { x: 33, y: 76, w: 853, h: 627 } as const
+const MAP_EXT_EMPTY_RECT = { x: 19, y: 801, w: 252, h: 201 } as const
+const MAP_EXT_OCCUPIED_RECT = { x: 303, y: 801, w: 253, h: 201 } as const
+const MAP_EXT_OWN_RECT = { x: 588, y: 800, w: 252, h: 202 } as const
+const MAP_EXT_BUTTON_RECT = { x: 330, y: 719, w: 243, h: 49 } as const
+const MAP_EXT_WIDGET_H = 730
+const MAP_EXT_WIDGET_W = Math.round((MAP_EXT_WIDGET_H * MAP_EXT_BG_RECT.w) / MAP_EXT_BG_RECT.h)
+const MAP_EXT_SCALE = MAP_EXT_WIDGET_W / MAP_EXT_BG_RECT.w
+const MAP_EXT_WINDOW_LEFT = Math.round((MAP_EXT_WINDOW_RECT.x - MAP_EXT_BG_RECT.x) * MAP_EXT_SCALE)
+const MAP_EXT_WINDOW_TOP = Math.round((MAP_EXT_WINDOW_RECT.y - MAP_EXT_BG_RECT.y) * MAP_EXT_SCALE)
+const MAP_EXT_WINDOW_W = Math.round(MAP_EXT_WINDOW_RECT.w * MAP_EXT_SCALE)
+const MAP_EXT_WINDOW_H = Math.round(MAP_EXT_WINDOW_RECT.h * MAP_EXT_SCALE)
+const MAP_EXT_TILE_W = Math.round(MAP_EXT_EMPTY_RECT.w * MAP_EXT_SCALE)
+const MAP_EXT_TILE_H = Math.round(MAP_EXT_EMPTY_RECT.h * MAP_EXT_SCALE)
+const MAP_EXT_ROAD_X = Math.max(0, Math.round((MAP_EXT_WINDOW_W - MAP_EXT_TILE_W * 3) / 2) - 24)
+const MAP_EXT_ROAD_Y = Math.max(0, Math.round((MAP_EXT_WINDOW_H - MAP_EXT_TILE_H * 3) / 2) - 14)
+const MAP_EXT_BUTTON_LEFT = Math.round((MAP_EXT_BUTTON_RECT.x - MAP_EXT_BG_RECT.x) * MAP_EXT_SCALE)
+const MAP_EXT_BUTTON_TOP = Math.round((MAP_EXT_BUTTON_RECT.y - MAP_EXT_BG_RECT.y) * MAP_EXT_SCALE)
+const MAP_EXT_BUTTON_W = Math.round(MAP_EXT_BUTTON_RECT.w * MAP_EXT_SCALE)
+const MAP_EXT_BUTTON_H = Math.round(MAP_EXT_BUTTON_RECT.h * MAP_EXT_SCALE)
 
 type MapSlotMode = 'available' | 'occupied' | 'own'
 type MapViewMode = 'waiting' | 'overview'
@@ -63,6 +86,24 @@ function atlasUvs(rect: AtlasRect): number[] {
   const bottom = 1 - (rect.y + rect.h) / MINIMAP_ATLAS_SIZE
 
   return [left, top, right, top, right, bottom, left, bottom]
+}
+
+function extendedAtlasUvs(rect: AtlasRect): number[] {
+  const left = rect.x / MAP_EXTENDED_ATLAS_SIZE
+  const right = (rect.x + rect.w) / MAP_EXTENDED_ATLAS_SIZE
+  const top = 1 - rect.y / MAP_EXTENDED_ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / MAP_EXTENDED_ATLAS_SIZE
+
+  return [left, top, right, top, right, bottom, left, bottom]
+}
+
+function extendedAtlasUvsRotatedRight(rect: AtlasRect): number[] {
+  const left = rect.x / MAP_EXTENDED_ATLAS_SIZE
+  const right = (rect.x + rect.w) / MAP_EXTENDED_ATLAS_SIZE
+  const top = 1 - rect.y / MAP_EXTENDED_ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / MAP_EXTENDED_ATLAS_SIZE
+
+  return [left, bottom, left, top, right, top, right, bottom]
 }
 
 function atlasUvsRotatedRight(rect: AtlasRect): number[] {
@@ -105,6 +146,22 @@ function formatOwnerLabel(slot: FarmSlot): string {
 
 function formatMapOwnerLabel(slot: FarmSlot): string {
   return formatOwnerLabel(slot)
+}
+
+function formatPossessive(name: string): string {
+  const trimmed = name.trim()
+  if (!trimmed) return ''
+  return /s$/i.test(trimmed) ? `${trimmed}'` : `${trimmed}'s`
+}
+
+function formatExtendedFarmTitle(slot: FarmSlot, mode: MapSlotMode): string {
+  if (mode === 'available') return 'Empty Farm'
+
+  const displayName = slot.displayName.trim()
+  if (displayName) return `${formatPossessive(displayName)} Farm`
+
+  if (mode === 'own') return 'Your Farm'
+  return 'Occupied Farm'
 }
 
 function clamp01(value: number): number {
@@ -470,6 +527,72 @@ const MiniMapPlazaTile = () => (
   />
 )
 
+const ExtendedMapFarmTile = ({
+  slot,
+  mode,
+  viewMode,
+}: {
+  key?: string
+  slot: FarmSlot
+  mode: MapSlotMode
+  viewMode: MapViewMode
+}) => {
+  const onClick =
+    mode === 'available' && viewMode === 'waiting'
+      ? () => requestClaimSlot(slot.slotId)
+      : mode === 'own'
+        ? () => {
+            playSound('buttonclick')
+            teleportToFarm(slot.slotId)
+          }
+        : mode === 'occupied'
+          ? () => visitSlot(slot)
+          : undefined
+  const title = formatExtendedFarmTitle(slot, mode)
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width: MAP_EXT_TILE_W,
+        height: MAP_EXT_TILE_H,
+      }}
+      uiBackground={{
+        texture: { src: MAP_EXTENDED_ATLAS, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+        uvs: extendedAtlasUvsRotatedRight(
+          mode === 'own' ? MAP_EXT_OWN_RECT :
+          mode === 'available' ? MAP_EXT_EMPTY_RECT :
+          MAP_EXT_OCCUPIED_RECT
+        ),
+      }}
+      onMouseDown={onClick}
+    >
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { left: 12, bottom: 12 },
+          width: MAP_EXT_TILE_W - 24,
+          height: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        uiBackground={{ color: { r: 0.31, g: 0.18, b: 0.08, a: 0.92 } }}
+      >
+        <Label
+          value={title}
+          fontSize={16}
+          color={{ r: 1, g: 1, b: 1, a: 1 }}
+          textAlign="middle-center"
+          uiTransform={{
+            width: MAP_EXT_TILE_W - 36,
+            height: 20,
+          }}
+        />
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
 const MapPlayerMarker = ({
   marker,
   size,
@@ -524,32 +647,27 @@ export const FarmSelectPanel = () => {
   if (viewMode) {
     const slotById = new Map(slots.map((slot) => [slot.slotId, slot]))
     const highlightedSlotId = getHighlightedSlotId()
-    const mapCardWidth = MAP_TILE_W * 3 + MAP_ROAD * 2 + 24
-    const mapCardHeight = MAP_TILE_H * 3 + MAP_ROAD * 2 + 24
-    const mapGridWidth = MAP_TILE_W * 3 + MAP_ROAD * 2
-    const mapGridHeight = MAP_TILE_H * 3 + MAP_ROAD * 2
+    const mapGridWidth = MAP_EXT_TILE_W * 3 + MAP_EXT_ROAD_X * 2
+    const mapGridHeight = MAP_EXT_TILE_H * 3 + MAP_EXT_ROAD_Y * 2
+    const mapGridLeft = MAP_EXT_WINDOW_LEFT + Math.round((MAP_EXT_WINDOW_W - mapGridWidth) / 2)
+    const mapGridTop = MAP_EXT_WINDOW_TOP + Math.round((MAP_EXT_WINDOW_H - mapGridHeight) / 2)
     const miniMapWidth = MINIMAP_GRID_W
     const miniMapHeight = MINIMAP_GRID_H
     const miniGridWidth = MINI_TILE_W * 3 + MINI_ROAD * 2
     const miniGridHeight = MINI_TILE_H * 3 + MINI_ROAD * 2
     const bigMarker = getPlayerMarkerPosition(mapGridWidth, mapGridHeight)
     const miniMarker = getPlayerMarkerPosition(miniGridWidth, miniGridHeight)
+    const bottomButtonLabel = mySlot ? 'Back to My Plot' : 'Close Map'
+    const handleBottomButton = mySlot
+      ? () => {
+          playSound('buttonclick')
+          teleportToFarm(mySlot.slotId)
+        }
+      : () => closeMap(viewMode)
     const showMiniMap =
       viewMode === 'waiting'
         ? playerState.plazaMapMinimized
         : playerState.activeMenu !== 'farmSelect'
-    const headerTitle = viewMode === 'waiting' ? 'Plaza Map' : 'Neighborhood Map'
-    const headerLine1 = viewMode === 'waiting'
-      ? (allFull
-        ? 'All 8 farms are currently occupied. Please wait for a slot to open.'
-        : 'A farm slot is available. Claim it from the map below.')
-      : `Farm ${mySlot!.slotId + 1} is yours. Yellow marks your parcel.`
-    const headerLine2 = viewMode === 'waiting'
-      ? (allFull
-        ? "But don't worry, you can still visit your friends' farms."
-        : 'Blue parcels are free to claim. Green parcels are occupied.')
-      : 'Tap a green farm to visit. Tap Home to return to your parcel.'
-
     if (showMiniMap) {
       return (
         <UiEntity
@@ -612,64 +730,29 @@ export const FarmSelectPanel = () => {
           pointerFilter: 'none',
         }}
       >
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: MAP_PANEL_TOP },
-            width: 760,
-            height: 730,
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'flex-start',
-            padding: { top: 22, bottom: 22, left: 22, right: 22 },
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: MAP_PANEL_TOP },
+            width: MAP_EXT_WIDGET_W,
+            height: MAP_EXT_WIDGET_H,
             pointerFilter: 'block',
           }}
-          uiBackground={{ color: { r: 0.09, g: 0.07, b: 0.04, a: 0.96 } }}
+          uiBackground={{
+            texture: { src: MAP_EXTENDED_ATLAS, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+            uvs: extendedAtlasUvsRotatedRight(MAP_EXT_BG_RECT),
+          }}
         >
-          <Label
-            value={headerTitle}
-            fontSize={34}
-            color={C.header}
-            textAlign="middle-center"
-            uiTransform={{ width: 620, height: 34, margin: { bottom: 10 } }}
-          />
-          <UiEntity
-            uiTransform={{
-              positionType: 'absolute',
-              position: { top: 18, right: 18 },
-              width: 68,
-              height: 34,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-            uiBackground={{ color: { r: 0.20, g: 0.08, b: 0.04, a: 1 } }}
-            onMouseDown={() => closeMap(viewMode)}
-          >
-            <Label value="Close" fontSize={16} color={C.orange} textAlign="middle-center" uiTransform={{ width: 52, height: 20 }} />
-          </UiEntity>
-          <Label
-            value={headerLine1}
-            fontSize={21}
-            color={viewMode === 'waiting' ? C.orange : C.header}
-            textAlign="middle-center"
-            uiTransform={{ width: 620, height: 72, margin: { bottom: 6 } }}
-          />
-          <Label
-            value={headerLine2}
-            fontSize={18}
-            color={C.textMute}
-            textAlign="middle-center"
-            uiTransform={{ width: 620, height: 60, margin: { bottom: 12 } }}
-          />
-          <UiEntity
-            uiTransform={{
-              width: mapCardWidth,
-              height: mapCardHeight,
-              padding: { top: 12, bottom: 12, left: 12, right: 12 },
-              flexDirection: 'column',
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { left: mapGridLeft, top: mapGridTop },
+                width: mapGridWidth,
+                height: mapGridHeight,
+                flexDirection: 'column',
               justifyContent: 'space-between',
             }}
-            uiBackground={{ color: { r: 0.03, g: 0.03, b: 0.03, a: 1 } }}
           >
             {MAP_LAYOUT.map((row, rowIndex) => (
               <UiEntity
@@ -682,16 +765,44 @@ export const FarmSelectPanel = () => {
               >
                 {row.map((slotId, colIndex) => {
                   if (slotId === -1) {
-                    return <MapPlazaTile key={`plaza-${rowIndex}-${colIndex}`} />
+                    return <UiEntity key={`plaza-${rowIndex}-${colIndex}`} uiTransform={{ width: MAP_EXT_TILE_W, height: MAP_EXT_TILE_H }} />
                   }
 
                   const slot = slotById.get(slotId)
-                  return slot ? <MapFarmTile key={`map-slot-${slotId}`} slot={slot} mode={getSlotMode(slot, highlightedSlotId)} viewMode={viewMode} /> : <UiEntity key={`empty-${slotId}`} />
+                  return slot ? <ExtendedMapFarmTile key={`map-slot-${slotId}`} slot={slot} mode={getSlotMode(slot, highlightedSlotId)} viewMode={viewMode} /> : <UiEntity key={`empty-${slotId}`} />
                 })}
               </UiEntity>
             ))}
-            <MapPlayerMarker marker={bigMarker} size={BIG_MARKER_SIZE} inset={12} />
+            <MapPlayerMarker marker={bigMarker} size={BIG_MARKER_SIZE} inset={0} />
           </UiEntity>
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: MAP_EXT_BUTTON_LEFT, top: MAP_EXT_BUTTON_TOP },
+              width: MAP_EXT_BUTTON_W,
+              height: MAP_EXT_BUTTON_H,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+            onMouseDown={handleBottomButton}
+          >
+            <Label
+              value={bottomButtonLabel}
+              fontSize={18}
+              color={{ r: 1, g: 1, b: 1, a: 1 }}
+              textAlign="middle-center"
+              uiTransform={{ width: MAP_EXT_BUTTON_W - 20, height: 24 }}
+            />
+          </UiEntity>
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: 10, right: 10 },
+              width: 56,
+              height: 56,
+            }}
+            onMouseDown={() => closeMap(viewMode)}
+          />
         </UiEntity>
       </UiEntity>
     )
