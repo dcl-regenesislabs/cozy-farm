@@ -8,6 +8,9 @@ import { playSound } from '../systems/sfxSystem'
 import { FARM_SPAWN_POSITIONS, PLAZA_SPAWN_POSITION } from '../systems/interactionSetup'
 import { teleportToSlot } from '../services/saveService'
 
+const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
+const SHOVEL_ICON = 'assets/images/ui_loading/shovel_icon.png'
+const MINIMAP_ATLAS_SIZE = 512
 const MAP_TILE_W = 176
 const MAP_TILE_H = 126
 const MAP_ROAD = 16
@@ -17,17 +20,59 @@ const MAP_LAYOUT = [
   [1, -1, 5],
   [2, 3, 4],
 ] as const
-const MINI_TILE_W = 52
-const MINI_TILE_H = 38
-const MINI_ROAD = 5
+const MINIMAP_BG_RECT = { x: 7, y: 6, w: 360, h: 493 } as const
+const MINIMAP_WINDOW_RECT = { x: 26, y: 80, w: 322, h: 346 } as const
+const MINIMAP_EMPTY_RECT = { x: 394, y: 20, w: 97, h: 108 } as const
+const MINIMAP_PLAZA_RECT = { x: 395, y: 137, w: 101, h: 105 } as const
+const MINIMAP_OCCUPIED_RECT = { x: 398, y: 254, w: 96, h: 107 } as const
+const MINIMAP_OWN_RECT = { x: 395, y: 368, w: 100, h: 108 } as const
+const MINIMAP_WIDGET_W = 246
+const MINIMAP_WIDGET_H = Math.round((MINIMAP_WIDGET_W * MINIMAP_BG_RECT.h) / MINIMAP_BG_RECT.w)
+const MINIMAP_SCALE = MINIMAP_WIDGET_W / MINIMAP_BG_RECT.w
+const MINIMAP_WINDOW_LEFT = Math.round((MINIMAP_WINDOW_RECT.x - MINIMAP_BG_RECT.x) * MINIMAP_SCALE)
+const MINIMAP_WINDOW_TOP = Math.round((MINIMAP_WINDOW_RECT.y - MINIMAP_BG_RECT.y) * MINIMAP_SCALE)
+const MINIMAP_WINDOW_W = Math.round(MINIMAP_WINDOW_RECT.w * MINIMAP_SCALE)
+const MINIMAP_WINDOW_H = Math.round(MINIMAP_WINDOW_RECT.h * MINIMAP_SCALE)
+const MINIMAP_GRID_PAD_X = 10
+const MINIMAP_GRID_PAD_Y = 12
+const MINIMAP_GRID_W = MINIMAP_WINDOW_W - MINIMAP_GRID_PAD_X * 2
+const MINIMAP_GRID_H = MINIMAP_WINDOW_H - MINIMAP_GRID_PAD_Y * 2
+const MINI_ROAD = 12
+const MINI_TILE_W = Math.floor((MINIMAP_GRID_W - MINI_ROAD * 2) / 3)
+const MINI_TILE_H = Math.floor((MINIMAP_GRID_H - MINI_ROAD * 2) / 3)
 const MAP_WORLD_PADDING = 40
 const BIG_MARKER_SIZE = 20
 const MINI_MARKER_SIZE = 14
+const MARKER_SCALE = 4
 const MAP_PANEL_TOP = 190
 
 type MapSlotMode = 'available' | 'occupied' | 'own'
 type MapViewMode = 'waiting' | 'overview'
 type MarkerPosition = { left: number; top: number }
+type AtlasRect = { x: number; y: number; w: number; h: number }
+
+const FULL_TEXTURE_UVS_UP = [0, 1, 1, 1, 1, 0, 0, 0]
+const FULL_TEXTURE_UVS_RIGHT = [0, 0, 0, 1, 1, 1, 1, 0]
+const FULL_TEXTURE_UVS_DOWN = [1, 0, 0, 0, 0, 1, 1, 1]
+const FULL_TEXTURE_UVS_LEFT = [1, 1, 1, 0, 0, 0, 0, 1]
+
+function atlasUvs(rect: AtlasRect): number[] {
+  const left = rect.x / MINIMAP_ATLAS_SIZE
+  const right = (rect.x + rect.w) / MINIMAP_ATLAS_SIZE
+  const top = 1 - rect.y / MINIMAP_ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / MINIMAP_ATLAS_SIZE
+
+  return [left, top, right, top, right, bottom, left, bottom]
+}
+
+function atlasUvsRotatedRight(rect: AtlasRect): number[] {
+  const left = rect.x / MINIMAP_ATLAS_SIZE
+  const right = (rect.x + rect.w) / MINIMAP_ATLAS_SIZE
+  const top = 1 - rect.y / MINIMAP_ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / MINIMAP_ATLAS_SIZE
+
+  return [left, bottom, left, top, right, top, right, bottom]
+}
 
 function getHighlightedSlotId(): number {
   return playerState.mySlotId
@@ -93,6 +138,30 @@ function getPlayerMarkerPosition(width: number, height: number): MarkerPosition 
     left: normalizedX * width,
     top: normalizedZ * height,
   }
+}
+
+function normalizeDegrees(angle: number): number {
+  let value = angle % 360
+  if (value < 0) value += 360
+  return value
+}
+
+function getPlayerMarkerUvs(): number[] {
+  const playerTransform = Transform.getOrNull(engine.PlayerEntity)
+  if (!playerTransform) return FULL_TEXTURE_UVS_UP
+
+  const q = playerTransform.rotation
+  const yaw = Math.atan2(
+    2 * (q.y * q.w + q.x * q.z),
+    1 - 2 * (q.y * q.y + q.x * q.x),
+  ) * (180 / Math.PI)
+
+  const mapAngle = normalizeDegrees(180 - yaw)
+
+  if (mapAngle >= 45 && mapAngle < 135) return FULL_TEXTURE_UVS_DOWN
+  if (mapAngle >= 135 && mapAngle < 225) return FULL_TEXTURE_UVS_LEFT
+  if (mapAngle >= 225 && mapAngle < 315) return FULL_TEXTURE_UVS_UP
+  return FULL_TEXTURE_UVS_RIGHT
 }
 
 export function requestClaimSlot(slotId: number): void {
@@ -374,10 +443,13 @@ const MiniMapFarmTile = ({ mode }: { key?: string; mode: MapSlotMode }) => (
   <UiEntity
     uiTransform={{ width: MINI_TILE_W, height: MINI_TILE_H }}
     uiBackground={{
-      color:
-        mode === 'own' ? { r: 0.56, g: 0.47, b: 0.08, a: 1 } :
-        mode === 'available' ? { r: 0.16, g: 0.28, b: 0.52, a: 1 } :
-        { r: 0.17, g: 0.42, b: 0.16, a: 1 },
+      texture: { src: MINIMAP_ATLAS, wrapMode: 'clamp' },
+      textureMode: 'stretch',
+      uvs: atlasUvsRotatedRight(
+        mode === 'own' ? MINIMAP_OWN_RECT :
+        mode === 'available' ? MINIMAP_EMPTY_RECT :
+        MINIMAP_OCCUPIED_RECT
+      ),
     }}
   />
 )
@@ -390,7 +462,11 @@ const MiniMapPlazaTile = () => (
       alignItems: 'center',
       justifyContent: 'center',
     }}
-    uiBackground={{ color: { r: 0.17, g: 0.14, b: 0.10, a: 1 } }}
+    uiBackground={{
+      texture: { src: MINIMAP_ATLAS, wrapMode: 'clamp' },
+      textureMode: 'stretch',
+      uvs: atlasUvsRotatedRight(MINIMAP_PLAZA_RECT),
+    }}
   />
 )
 
@@ -404,25 +480,30 @@ const MapPlayerMarker = ({
   inset: number
 }) => {
   if (!marker) return null
+  const uvs = getPlayerMarkerUvs()
+  const renderSize = size * MARKER_SCALE
 
   return (
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
         position: {
-          left: inset + marker.left - size / 2,
-          top: inset + marker.top - size / 2,
+          left: inset + marker.left - renderSize / 2,
+          top: inset + marker.top - renderSize / 2,
         },
-        width: size,
-        height: size,
-        alignItems: 'center',
-        justifyContent: 'center',
+        width: renderSize,
+        height: renderSize,
+      }}
+      uiBackground={{
+        texture: { src: SHOVEL_ICON, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+        uvs,
       }}
     >
       <Label
       value="•"
-        fontSize={size * 2.2}
-        color={{ r: 0.88, g: 0.18, b: 0.12, a: 1 }}
+        fontSize={1}
+        color={{ r: 0, g: 0, b: 0, a: 0 }}
         textAlign="middle-center"
         uiTransform={{ width: size, height: size }}
       />
@@ -447,8 +528,8 @@ export const FarmSelectPanel = () => {
     const mapCardHeight = MAP_TILE_H * 3 + MAP_ROAD * 2 + 24
     const mapGridWidth = MAP_TILE_W * 3 + MAP_ROAD * 2
     const mapGridHeight = MAP_TILE_H * 3 + MAP_ROAD * 2
-    const miniMapWidth = MINI_TILE_W * 3 + MINI_ROAD * 2 + 12
-    const miniMapHeight = MINI_TILE_H * 3 + MINI_ROAD * 2 + 12
+    const miniMapWidth = MINIMAP_GRID_W
+    const miniMapHeight = MINIMAP_GRID_H
     const miniGridWidth = MINI_TILE_W * 3 + MINI_ROAD * 2
     const miniGridHeight = MINI_TILE_H * 3 + MINI_ROAD * 2
     const bigMarker = getPlayerMarkerPosition(mapGridWidth, mapGridHeight)
@@ -474,34 +555,27 @@ export const FarmSelectPanel = () => {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: 220, right: 220 },
-            width: miniMapWidth + 20,
-            height: miniMapHeight + 58,
-            padding: { top: 10, bottom: 10, left: 10, right: 10 },
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'space-between',
+            position: { top: 180, right: 190 },
+            width: MINIMAP_WIDGET_W,
+            height: MINIMAP_WIDGET_H,
             pointerFilter: 'block',
           }}
-          uiBackground={{ color: { r: 0.09, g: 0.07, b: 0.04, a: 0.94 } }}
+          uiBackground={{
+            texture: { src: MINIMAP_ATLAS, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+            uvs: atlasUvsRotatedRight(MINIMAP_BG_RECT),
+          }}
           onMouseDown={openMap}
         >
-          <Label
-            value={viewMode === 'waiting' ? 'Plaza Map' : 'Map'}
-            fontSize={18}
-            color={C.header}
-            textAlign="middle-center"
-            uiTransform={{ width: miniMapWidth, height: 16 }}
-          />
           <UiEntity
             uiTransform={{
+              positionType: 'absolute',
+              position: { left: MINIMAP_WINDOW_LEFT + MINIMAP_GRID_PAD_X, top: MINIMAP_WINDOW_TOP + MINIMAP_GRID_PAD_Y },
               width: miniMapWidth,
               height: miniMapHeight,
-              padding: { top: 6, bottom: 6, left: 6, right: 6 },
               flexDirection: 'column',
               justifyContent: 'space-between',
             }}
-            uiBackground={{ color: { r: 0.03, g: 0.03, b: 0.03, a: 1 } }}
           >
             {MAP_LAYOUT.map((row, rowIndex) => (
               <UiEntity
@@ -520,15 +594,8 @@ export const FarmSelectPanel = () => {
                 })}
               </UiEntity>
             ))}
-            <MapPlayerMarker marker={miniMarker} size={MINI_MARKER_SIZE} inset={6} />
+            <MapPlayerMarker marker={miniMarker} size={MINI_MARKER_SIZE} inset={0} />
           </UiEntity>
-          <Label
-            value="Open"
-            fontSize={14}
-            color={C.textMute}
-            textAlign="middle-center"
-            uiTransform={{ width: miniMapWidth, height: 14 }}
-          />
         </UiEntity>
       )
     }
