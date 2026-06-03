@@ -11,8 +11,10 @@ import { teleportToSlot } from '../services/saveService'
 const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
 const SHOVEL_ICON = 'assets/images/ui_loading/shovel_icon.png'
 const MAP_EXTENDED_ATLAS = 'assets/images/ui_loading/map_extended.png'
+const GLOW_ATLAS = 'assets/images/ui_loading/glow.png'
 const MINIMAP_ATLAS_SIZE = 512
 const MAP_EXTENDED_ATLAS_SIZE = 1024
+const GLOW_ATLAS_SIZE = 1024
 const MAP_TILE_W = 176
 const MAP_TILE_H = 126
 const MAP_ROAD = 16
@@ -68,6 +70,14 @@ const MAP_EXT_BUTTON_LEFT = Math.round((MAP_EXT_BUTTON_RECT.x - MAP_EXT_BG_RECT.
 const MAP_EXT_BUTTON_TOP = Math.round((MAP_EXT_BUTTON_RECT.y - MAP_EXT_BG_RECT.y) * MAP_EXT_SCALE)
 const MAP_EXT_BUTTON_W = Math.round(MAP_EXT_BUTTON_RECT.w * MAP_EXT_SCALE)
 const MAP_EXT_BUTTON_H = Math.round(MAP_EXT_BUTTON_RECT.h * MAP_EXT_SCALE)
+const MAP_EXT_TILE_DISPLAY_SCALE = 0.82
+const GLOW_YELLOW_RECT = { x: 92, y: 94, w: 316, h: 262 } as const
+const GLOW_WHITE_RECT = { x: 474, y: 95, w: 316, h: 262 } as const
+const MAP_EXT_GLOW_W = Math.round(MAP_EXT_TILE_W * 0.92)
+const MAP_EXT_GLOW_H = Math.round(MAP_EXT_TILE_H * 0.92)
+const CARD_FARM_TITLE_MAX_CHARS = 15
+const BUTTON_FARM_TITLE_MAX_CHARS = 18
+let selectedExtendedSlotId = -1
 
 type MapSlotMode = 'available' | 'occupied' | 'own'
 type MapViewMode = 'waiting' | 'overview'
@@ -93,6 +103,15 @@ function extendedAtlasUvs(rect: AtlasRect): number[] {
   const right = (rect.x + rect.w) / MAP_EXTENDED_ATLAS_SIZE
   const top = 1 - rect.y / MAP_EXTENDED_ATLAS_SIZE
   const bottom = 1 - (rect.y + rect.h) / MAP_EXTENDED_ATLAS_SIZE
+
+  return [left, top, right, top, right, bottom, left, bottom]
+}
+
+function glowAtlasUvs(rect: AtlasRect): number[] {
+  const left = rect.x / GLOW_ATLAS_SIZE
+  const right = (rect.x + rect.w) / GLOW_ATLAS_SIZE
+  const top = 1 - rect.y / GLOW_ATLAS_SIZE
+  const bottom = 1 - (rect.y + rect.h) / GLOW_ATLAS_SIZE
 
   return [left, top, right, top, right, bottom, left, bottom]
 }
@@ -154,14 +173,76 @@ function formatPossessive(name: string): string {
   return /s$/i.test(trimmed) ? `${trimmed}'` : `${trimmed}'s`
 }
 
-function formatExtendedFarmTitle(slot: FarmSlot, mode: MapSlotMode): string {
-  if (mode === 'available') return 'Empty Farm'
+function truncateWithEllipsis(text: string, maxChars: number): string {
+  if (text.length <= maxChars) return text
+  if (maxChars <= 3) return text.slice(0, maxChars)
+  return `${text.slice(0, maxChars - 3)}...`
+}
+
+function formatExtendedFarmTitle(slot: FarmSlot, mode: MapSlotMode, maxChars = Number.MAX_SAFE_INTEGER): string {
+  if (mode === 'available') return truncateWithEllipsis('Empty Farm', maxChars)
 
   const displayName = slot.displayName.trim()
-  if (displayName) return `${formatPossessive(displayName)} Farm`
+  if (displayName) return truncateWithEllipsis(`${formatPossessive(displayName)} Farm`, maxChars)
 
-  if (mode === 'own') return 'Your Farm'
-  return 'Occupied Farm'
+  if (mode === 'own') return truncateWithEllipsis('Your Farm', maxChars)
+  return truncateWithEllipsis('Occupied Farm', maxChars)
+}
+
+function getDefaultSelectedSlotId(slots: FarmSlot[], highlightedSlotId: number): number {
+  const own = slots.find((slot) => slot.slotId === highlightedSlotId)
+  if (own) return own.slotId
+
+  const available = slots.find((slot) => slot.wallet === '')
+  if (available) return available.slotId
+
+  return slots[0]?.slotId ?? -1
+}
+
+function OutlinedLabel(props: {
+  value: string
+  fontSize: number
+  width: number
+  height: number
+  color: { r: number; g: number; b: number; a: number }
+  outlineColor: { r: number; g: number; b: number; a: number }
+  textAlign: 'middle-left' | 'middle-center' | 'middle-right'
+  outlineSize?: number
+}) {
+  const outlineSize = props.outlineSize ?? 1
+  const offsets = [
+    { left: -outlineSize, top: 0 },
+    { left: outlineSize, top: 0 },
+    { left: 0, top: -outlineSize },
+    { left: 0, top: outlineSize },
+  ]
+
+  return (
+    <UiEntity uiTransform={{ width: props.width, height: props.height }}>
+      {offsets.map((offset, index) => (
+        <Label
+          key={`outline-${index}`}
+          value={props.value}
+          fontSize={props.fontSize}
+          color={props.outlineColor}
+          textAlign={props.textAlign}
+          uiTransform={{
+            width: props.width,
+            height: props.height,
+            positionType: 'absolute',
+            position: offset,
+          }}
+        />
+      ))}
+      <Label
+        value={props.value}
+        fontSize={props.fontSize}
+        color={props.color}
+        textAlign={props.textAlign}
+        uiTransform={{ width: props.width, height: props.height }}
+      />
+    </UiEntity>
+  )
 }
 
 function clamp01(value: number): number {
@@ -530,64 +611,85 @@ const MiniMapPlazaTile = () => (
 const ExtendedMapFarmTile = ({
   slot,
   mode,
-  viewMode,
+  selected,
+  onSelect,
 }: {
   key?: string
   slot: FarmSlot
   mode: MapSlotMode
-  viewMode: MapViewMode
+  selected: boolean
+  onSelect: () => void
 }) => {
-  const onClick =
-    mode === 'available' && viewMode === 'waiting'
-      ? () => requestClaimSlot(slot.slotId)
-      : mode === 'own'
-        ? () => {
-            playSound('buttonclick')
-            teleportToFarm(slot.slotId)
-          }
-        : mode === 'occupied'
-          ? () => visitSlot(slot)
-          : undefined
-  const title = formatExtendedFarmTitle(slot, mode)
+  const title = formatExtendedFarmTitle(slot, mode, CARD_FARM_TITLE_MAX_CHARS)
+  const cardWidth = Math.round(MAP_EXT_TILE_W * MAP_EXT_TILE_DISPLAY_SCALE)
+  const cardHeight = Math.round(MAP_EXT_TILE_H * MAP_EXT_TILE_DISPLAY_SCALE)
+  const glowRect = mode === 'own' ? GLOW_YELLOW_RECT : GLOW_WHITE_RECT
 
   return (
     <UiEntity
       uiTransform={{
         width: MAP_EXT_TILE_W,
         height: MAP_EXT_TILE_H,
+        alignItems: 'center',
+        justifyContent: 'center',
       }}
-      uiBackground={{
-        texture: { src: MAP_EXTENDED_ATLAS, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-        uvs: extendedAtlasUvsRotatedRight(
-          mode === 'own' ? MAP_EXT_OWN_RECT :
-          mode === 'available' ? MAP_EXT_EMPTY_RECT :
-          MAP_EXT_OCCUPIED_RECT
-        ),
-      }}
-      onMouseDown={onClick}
+      onMouseDown={onSelect}
     >
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { left: 12, bottom: 12 },
-          width: MAP_EXT_TILE_W - 24,
-          height: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        uiBackground={{ color: { r: 0.31, g: 0.18, b: 0.08, a: 0.92 } }}
-      >
-        <Label
-          value={title}
-          fontSize={16}
-          color={{ r: 1, g: 1, b: 1, a: 1 }}
-          textAlign="middle-center"
+      {selected && (
+        <UiEntity
           uiTransform={{
-            width: MAP_EXT_TILE_W - 36,
-            height: 20,
+            positionType: 'absolute',
+            position: {
+              left: Math.round((MAP_EXT_TILE_W - MAP_EXT_GLOW_W) / 2),
+              top: Math.round((MAP_EXT_TILE_H - MAP_EXT_GLOW_H) / 2),
+            },
+            width: MAP_EXT_GLOW_W,
+            height: MAP_EXT_GLOW_H,
+          }}
+          uiBackground={{
+            texture: { src: GLOW_ATLAS, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+            uvs: glowAtlasUvs(glowRect),
           }}
         />
+      )}
+      <UiEntity
+        uiTransform={{
+          width: cardWidth,
+          height: cardHeight,
+        }}
+        uiBackground={{
+          texture: { src: MAP_EXTENDED_ATLAS, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+          uvs: extendedAtlasUvsRotatedRight(
+            mode === 'own' ? MAP_EXT_OWN_RECT :
+            mode === 'available' ? MAP_EXT_EMPTY_RECT :
+            MAP_EXT_OCCUPIED_RECT
+          ),
+        }}
+      >
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { left: 12, bottom: 10 },
+            width: cardWidth - 24,
+            height: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          uiBackground={{ color: { r: 0.31, g: 0.18, b: 0.08, a: 0.92 } }}
+        >
+          <Label
+            value={title}
+            fontSize={16}
+            color={{ r: 1, g: 1, b: 1, a: 1 }}
+            textAlign="middle-center"
+            uiTransform={{
+              width: cardWidth - 36,
+              height: 20,
+            }}
+          />
+        </UiEntity>
       </UiEntity>
     </UiEntity>
   )
@@ -647,6 +749,10 @@ export const FarmSelectPanel = () => {
   if (viewMode) {
     const slotById = new Map(slots.map((slot) => [slot.slotId, slot]))
     const highlightedSlotId = getHighlightedSlotId()
+    const defaultSelectedSlotId = getDefaultSelectedSlotId(slots, highlightedSlotId)
+    if (!slotById.has(selectedExtendedSlotId)) selectedExtendedSlotId = defaultSelectedSlotId
+    const selectedSlot = slotById.get(selectedExtendedSlotId) ?? null
+    const selectedMode = selectedSlot ? getSlotMode(selectedSlot, highlightedSlotId) : null
     const mapGridWidth = MAP_EXT_TILE_W * 3 + MAP_EXT_ROAD_X * 2
     const mapGridHeight = MAP_EXT_TILE_H * 3 + MAP_EXT_ROAD_Y * 2
     const mapGridLeft = MAP_EXT_WINDOW_LEFT + Math.round((MAP_EXT_WINDOW_W - mapGridWidth) / 2)
@@ -657,13 +763,34 @@ export const FarmSelectPanel = () => {
     const miniGridHeight = MINI_TILE_H * 3 + MINI_ROAD * 2
     const bigMarker = getPlayerMarkerPosition(mapGridWidth, mapGridHeight)
     const miniMarker = getPlayerMarkerPosition(miniGridWidth, miniGridHeight)
-    const bottomButtonLabel = mySlot ? 'Back to My Plot' : 'Close Map'
-    const handleBottomButton = mySlot
-      ? () => {
-          playSound('buttonclick')
-          teleportToFarm(mySlot.slotId)
-        }
-      : () => closeMap(viewMode)
+    const canClaimSelectedEmptyFarm = !!selectedSlot && selectedMode === 'available' && !mySlot
+    const bottomButtonLabel =
+      selectedSlot && selectedMode === 'own' ? 'Back to My Plot' :
+      selectedSlot && selectedMode === 'occupied' ? `Visit ${formatExtendedFarmTitle(selectedSlot, selectedMode, BUTTON_FARM_TITLE_MAX_CHARS)}` :
+      selectedSlot && selectedMode === 'available' ? (canClaimSelectedEmptyFarm ? 'Claim Empty Farm' : 'Visit Empty Farm') :
+      mySlot ? 'Back to My Plot' :
+      'Close Map'
+    const handleBottomButton =
+      selectedSlot && selectedMode === 'own'
+        ? () => {
+            playSound('buttonclick')
+            teleportToFarm(selectedSlot.slotId)
+          }
+        : selectedSlot && selectedMode === 'occupied'
+          ? () => visitSlot(selectedSlot)
+        : selectedSlot && selectedMode === 'available'
+            ? (canClaimSelectedEmptyFarm
+              ? () => requestClaimSlot(selectedSlot.slotId)
+              : () => {
+                  playSound('buttonclick')
+                  teleportToFarm(selectedSlot.slotId)
+                })
+            : mySlot
+              ? () => {
+                  playSound('buttonclick')
+                  teleportToFarm(mySlot.slotId)
+                }
+              : () => closeMap(viewMode)
     const showMiniMap =
       viewMode === 'waiting'
         ? playerState.plazaMapMinimized
@@ -769,7 +896,18 @@ export const FarmSelectPanel = () => {
                   }
 
                   const slot = slotById.get(slotId)
-                  return slot ? <ExtendedMapFarmTile key={`map-slot-${slotId}`} slot={slot} mode={getSlotMode(slot, highlightedSlotId)} viewMode={viewMode} /> : <UiEntity key={`empty-${slotId}`} />
+                  return slot ? (
+                    <ExtendedMapFarmTile
+                      key={`map-slot-${slotId}`}
+                      slot={slot}
+                      mode={getSlotMode(slot, highlightedSlotId)}
+                      selected={slot.slotId === selectedExtendedSlotId}
+                      onSelect={() => {
+                        playSound('buttonclick')
+                        selectedExtendedSlotId = slot.slotId
+                      }}
+                    />
+                  ) : <UiEntity key={`empty-${slotId}`} />
                 })}
               </UiEntity>
             ))}
@@ -786,12 +924,15 @@ export const FarmSelectPanel = () => {
             }}
             onMouseDown={handleBottomButton}
           >
-            <Label
+            <OutlinedLabel
               value={bottomButtonLabel}
-              fontSize={18}
-              color={{ r: 1, g: 1, b: 1, a: 1 }}
+              fontSize={21}
+              color={{ r: 0.98, g: 0.83, b: 0.32, a: 1 }}
+              outlineColor={{ r: 0, g: 0, b: 0, a: 1 }}
               textAlign="middle-center"
-              uiTransform={{ width: MAP_EXT_BUTTON_W - 20, height: 24 }}
+              outlineSize={2}
+              width={MAP_EXT_BUTTON_W - 20}
+              height={28}
             />
           </UiEntity>
           <UiEntity
