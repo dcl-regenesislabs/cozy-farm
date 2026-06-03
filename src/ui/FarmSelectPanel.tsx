@@ -178,10 +178,10 @@ function truncateWithEllipsis(text: string, maxChars: number): string {
   return `${text.slice(0, maxChars - 3)}...`
 }
 
-function formatExtendedFarmTitle(slot: FarmSlot, mode: MapSlotMode, maxChars = Number.MAX_SAFE_INTEGER): string {
+function formatExtendedFarmTitle(slot: FarmSlot, mode: MapSlotMode, maxChars = Number.MAX_SAFE_INTEGER, maxNameChars = Number.MAX_SAFE_INTEGER): string {
   if (mode === 'available') return truncateWithEllipsis('Empty Farm', maxChars)
 
-  const displayName = slot.displayName.trim()
+  const displayName = truncateWithEllipsis(slot.displayName.trim(), maxNameChars)
   if (displayName) return truncateWithEllipsis(`${formatPossessive(displayName)} Farm`, maxChars)
 
   if (mode === 'own') return truncateWithEllipsis('Your Farm', maxChars)
@@ -642,7 +642,7 @@ const ExtendedMapFarmTile = ({
       }}
       onMouseDown={onSelect}
     >
-      {desktopSelected && (
+      {selected && (
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -671,12 +671,48 @@ const ExtendedMapFarmTile = ({
             },
             width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
             height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
-            zIndex: 4,
-            borderWidth: MOBILE_SELECTED_FRAME_THICKNESS,
-            borderColor: mobileFrameColor,
+            zIndex: 5,
             borderRadius: 6,
+            overflow: 'hidden',
           }}
-        />
+        >
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, top: 0 },
+              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
+              height: MOBILE_SELECTED_FRAME_THICKNESS,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, bottom: 0 },
+              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
+              height: MOBILE_SELECTED_FRAME_THICKNESS,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, top: 0 },
+              width: MOBILE_SELECTED_FRAME_THICKNESS,
+              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { right: 0, top: 0 },
+              width: MOBILE_SELECTED_FRAME_THICKNESS,
+              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+        </UiEntity>
       )}
       <UiEntity
         uiTransform={{
@@ -791,7 +827,7 @@ export const FarmSelectPanel = () => {
     const canClaimSelectedEmptyFarm = !!selectedSlot && selectedMode === 'available' && !mySlot
     const bottomButtonLabel =
       selectedSlot && selectedMode === 'own' ? 'Back to My Plot' :
-      selectedSlot && selectedMode === 'occupied' ? `Visit ${formatExtendedFarmTitle(selectedSlot, selectedMode, BUTTON_FARM_TITLE_MAX_CHARS)}` :
+      selectedSlot && selectedMode === 'occupied' ? `Visit ${formatExtendedFarmTitle(selectedSlot, selectedMode, BUTTON_FARM_TITLE_MAX_CHARS, 7)}` :
       selectedSlot && selectedMode === 'available' ? (canClaimSelectedEmptyFarm ? 'Claim Empty Farm' : 'Visit Empty Farm') :
       mySlot ? 'Back to My Plot' :
       'Close Map'
