@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine, Transform } from '@dcl/sdk/ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
 import { room } from '../shared/farmMessages'
 import type { FarmSlot } from '../shared/farmMessages'
@@ -9,7 +10,10 @@ import { FARM_SPAWN_POSITIONS, PLAZA_SPAWN_POSITION } from '../systems/interacti
 import { teleportToSlot } from '../services/saveService'
 
 const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
-const SHOVEL_ICON = 'assets/images/ui_loading/shovel_icon.png'
+const SHOVEL_ICON_UP = 'assets/images/ui_loading/shovel_icon_up.png'
+const SHOVEL_ICON_RIGHT = 'assets/images/ui_loading/shovel_icon_right.png'
+const SHOVEL_ICON_DOWN = 'assets/images/ui_loading/shovel_icon_down.png'
+const SHOVEL_ICON_LEFT = 'assets/images/ui_loading/shovel_icon_left.png'
 const MAP_EXTENDED_ATLAS = 'assets/images/ui_loading/map_extended.png'
 const GLOW_ATLAS = 'assets/images/ui_loading/glow.png'
 const MINIMAP_ATLAS_SIZE = 512
@@ -73,21 +77,16 @@ const MAP_EXT_BUTTON_H = Math.round(MAP_EXT_BUTTON_RECT.h * MAP_EXT_SCALE)
 const MAP_EXT_TILE_DISPLAY_SCALE = 0.82
 const GLOW_YELLOW_RECT = { x: 92, y: 94, w: 316, h: 262 } as const
 const GLOW_WHITE_RECT = { x: 474, y: 95, w: 316, h: 262 } as const
-const MAP_EXT_GLOW_W = Math.round(MAP_EXT_TILE_W * 0.92)
-const MAP_EXT_GLOW_H = Math.round(MAP_EXT_TILE_H * 0.92)
 const CARD_FARM_TITLE_MAX_CHARS = 15
 const BUTTON_FARM_TITLE_MAX_CHARS = 18
+const MOBILE_SELECTED_FRAME_PAD = 8
+const MOBILE_SELECTED_FRAME_THICKNESS = 4
 let selectedExtendedSlotId = -1
 
 type MapSlotMode = 'available' | 'occupied' | 'own'
 type MapViewMode = 'waiting' | 'overview'
 type MarkerPosition = { left: number; top: number }
 type AtlasRect = { x: number; y: number; w: number; h: number }
-
-const FULL_TEXTURE_UVS_UP = [0, 1, 1, 1, 1, 0, 0, 0]
-const FULL_TEXTURE_UVS_RIGHT = [0, 0, 0, 1, 1, 1, 1, 0]
-const FULL_TEXTURE_UVS_DOWN = [1, 0, 0, 0, 0, 1, 1, 1]
-const FULL_TEXTURE_UVS_LEFT = [1, 1, 1, 0, 0, 0, 0, 1]
 
 function atlasUvs(rect: AtlasRect): number[] {
   const left = rect.x / MINIMAP_ATLAS_SIZE
@@ -284,9 +283,9 @@ function normalizeDegrees(angle: number): number {
   return value
 }
 
-function getPlayerMarkerUvs(): number[] {
+function getPlayerMarkerSrc(): string {
   const playerTransform = Transform.getOrNull(engine.PlayerEntity)
-  if (!playerTransform) return FULL_TEXTURE_UVS_UP
+  if (!playerTransform) return SHOVEL_ICON_UP
 
   const q = playerTransform.rotation
   const yaw = Math.atan2(
@@ -296,10 +295,10 @@ function getPlayerMarkerUvs(): number[] {
 
   const mapAngle = normalizeDegrees(180 - yaw)
 
-  if (mapAngle >= 45 && mapAngle < 135) return FULL_TEXTURE_UVS_DOWN
-  if (mapAngle >= 135 && mapAngle < 225) return FULL_TEXTURE_UVS_LEFT
-  if (mapAngle >= 225 && mapAngle < 315) return FULL_TEXTURE_UVS_UP
-  return FULL_TEXTURE_UVS_RIGHT
+  if (mapAngle >= 45 && mapAngle < 135) return SHOVEL_ICON_DOWN
+  if (mapAngle >= 135 && mapAngle < 225) return SHOVEL_ICON_LEFT
+  if (mapAngle >= 225 && mapAngle < 315) return SHOVEL_ICON_UP
+  return SHOVEL_ICON_RIGHT
 }
 
 export function requestClaimSlot(slotId: number): void {
@@ -624,6 +623,13 @@ const ExtendedMapFarmTile = ({
   const cardWidth = Math.round(MAP_EXT_TILE_W * MAP_EXT_TILE_DISPLAY_SCALE)
   const cardHeight = Math.round(MAP_EXT_TILE_H * MAP_EXT_TILE_DISPLAY_SCALE)
   const glowRect = mode === 'own' ? GLOW_YELLOW_RECT : GLOW_WHITE_RECT
+  const mobileSelected = selected && isMobile()
+  const desktopSelected = selected && !isMobile()
+  const glowWidth = Math.min(MAP_EXT_TILE_W, cardWidth + (isMobile() ? 34 : 20))
+  const glowHeight = Math.min(MAP_EXT_TILE_H, cardHeight + (isMobile() ? 30 : 16))
+  const mobileFrameColor = mode === 'own'
+    ? { r: 0.98, g: 0.79, b: 0.16, a: 1 }
+    : { r: 1, g: 0.98, b: 0.92, a: 1 }
 
   return (
     <UiEntity
@@ -632,19 +638,21 @@ const ExtendedMapFarmTile = ({
         height: MAP_EXT_TILE_H,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'visible',
       }}
       onMouseDown={onSelect}
     >
-      {selected && (
+      {desktopSelected && (
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
             position: {
-              left: Math.round((MAP_EXT_TILE_W - MAP_EXT_GLOW_W) / 2),
-              top: Math.round((MAP_EXT_TILE_H - MAP_EXT_GLOW_H) / 2),
+              left: Math.round((MAP_EXT_TILE_W - glowWidth) / 2),
+              top: Math.round((MAP_EXT_TILE_H - glowHeight) / 2),
             },
-            width: MAP_EXT_GLOW_W,
-            height: MAP_EXT_GLOW_H,
+            width: glowWidth,
+            height: glowHeight,
+            zIndex: 4,
           }}
           uiBackground={{
             texture: { src: GLOW_ATLAS, wrapMode: 'clamp' },
@@ -653,10 +661,62 @@ const ExtendedMapFarmTile = ({
           }}
         />
       )}
+      {mobileSelected && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: {
+              left: Math.round((MAP_EXT_TILE_W - cardWidth) / 2) - MOBILE_SELECTED_FRAME_PAD,
+              top: Math.round((MAP_EXT_TILE_H - cardHeight) / 2) - MOBILE_SELECTED_FRAME_PAD,
+            },
+            width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
+            height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
+            zIndex: 4,
+          }}
+        >
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, top: 0 },
+              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
+              height: MOBILE_SELECTED_FRAME_THICKNESS,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, bottom: 0 },
+              width: cardWidth + MOBILE_SELECTED_FRAME_PAD * 2,
+              height: MOBILE_SELECTED_FRAME_THICKNESS,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { left: 0, top: 0 },
+              width: MOBILE_SELECTED_FRAME_THICKNESS,
+              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { right: 0, top: 0 },
+              width: MOBILE_SELECTED_FRAME_THICKNESS,
+              height: cardHeight + MOBILE_SELECTED_FRAME_PAD * 2,
+            }}
+            uiBackground={{ color: mobileFrameColor }}
+          />
+        </UiEntity>
+      )}
       <UiEntity
         uiTransform={{
           width: cardWidth,
           height: cardHeight,
+          zIndex: 3,
         }}
         uiBackground={{
           texture: { src: MAP_EXTENDED_ATLAS, wrapMode: 'clamp' },
@@ -705,7 +765,7 @@ const MapPlayerMarker = ({
   inset: number
 }) => {
   if (!marker) return null
-  const uvs = getPlayerMarkerUvs()
+  const markerSrc = getPlayerMarkerSrc()
   const renderSize = size * MARKER_SCALE
 
   return (
@@ -720,9 +780,8 @@ const MapPlayerMarker = ({
         height: renderSize,
       }}
       uiBackground={{
-        texture: { src: SHOVEL_ICON, wrapMode: 'clamp' },
+        texture: { src: markerSrc, wrapMode: 'clamp' },
         textureMode: 'stretch',
-        uvs,
       }}
     >
       <Label
