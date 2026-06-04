@@ -107,6 +107,8 @@ export const playerState = {
   farmAssignmentOverlayDurationMs: 0,
   // Runtime-only: enables the gameplay HUD/panels only after the player reaches a farm parcel
   farmGameplayUiReady: false,
+  // Runtime-only: debug escape hatch to keep movement enabled while menus are open
+  menuInputLockDisabled: false,
   // Runtime-only: waiting-in-plaza UI state when no farm slot is available
   plazaMapMinimized: false,
 }
