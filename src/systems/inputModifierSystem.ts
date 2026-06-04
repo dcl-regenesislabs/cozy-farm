@@ -13,7 +13,9 @@ let menuWasOpen = false
 
 export function setupInputModifierSystem() {
   engine.addSystem(() => {
-    const menuOpen = playerState.activeMenu !== 'none' || playerState.farmAssignmentOverlayActive
+    const menuOpen =
+      !playerState.menuInputLockDisabled &&
+      (playerState.activeMenu !== 'none' || playerState.farmAssignmentOverlayActive)
 
     if (menuOpen === menuWasOpen) return
     menuWasOpen = menuOpen
