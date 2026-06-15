@@ -25,13 +25,17 @@ export function setOnPigTutorialComplete(cb: () => void):     void { onPigTutori
 // ---------------------------------------------------------------------------
 // Dialog helper — identical pattern to progressionEventsSystem.ts
 // ---------------------------------------------------------------------------
-function showDialog(text: string, buttonLabel: string, onButton: () => void): void {
+function showDialog(text: string | string[], buttonLabel: string, onButton: () => void): void {
+  const pages = Array.isArray(text) ? text : [text]
   npcDialogState.npcName             = MAYOR_DEF.name
   npcDialogState.npcId               = MAYOR_DEF.id
   npcDialogState.npcHeadImage        = MAYOR_DEF.headImage
-  npcDialogState.dialogLine          = text
+  npcDialogState.tutorialPages       = pages
+  npcDialogState.tutorialPage        = 0
+  npcDialogState.tutorialFinalButtonLabel = buttonLabel
+  npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -55,7 +59,10 @@ function goToChickenBuyCoop(): void {
   setArrowTarget(coopEntity)
 
   showDialog(
-    "Congratulations on reaching Level 8! You've unlocked the Chicken Coop!\n\nHead over to the coop plot and buy it — chickens will provide eggs and keep your farm buzzing with life!",
+    [
+      "Congratulations on reaching Level 8! You've unlocked the Chicken Coop!...",
+      "Head over to the coop plot and buy it — chickens will provide eggs and keep your farm buzzing with life!",
+    ],
     "Let's go!",
     () => {
       playerState.activeMenu = 'none'
@@ -97,7 +104,10 @@ function goToChickenFeed(): void {
   setArrowTarget(foodEntity)
 
   showDialog(
-    "Welcome to the flock! Your chickens need grain to produce eggs — they lay 1-2 eggs every 6 hours while there's food in the bowl.\n\nFill up the food bowl to get them started!",
+    [
+      "Welcome to the flock! Your chickens need grain to produce eggs — they lay 1-2 eggs every 6 hours while there's food in the bowl...",
+      "Fill up the food bowl to get them started!",
+    ],
     "Fill the bowl!",
     () => { playerState.activeMenu = 'none' }
   )
@@ -114,7 +124,11 @@ function goToChickenCleanIntro(): void {
   setArrowTarget(null)
 
   showDialog(
-    "Great! The chickens are eating!\n\nOne more thing — the coop gets dirty every 12 hours. When you see dirt appear, click it to clean up. You'll earn organic waste for your compost bin as a bonus!\n\nEnjoy your new flock!",
+    [
+      "Great! The chickens are eating!",
+      "One more thing — the coop gets dirty every 12 hours.\n\nWhen you see dirt appear, click it to clean up.",
+      "You'll earn organic waste for your compost bin as a bonus!\n\nEnjoy your new flock!",
+    ],
     "Thanks, Mayor!",
     () => {
       playerState.activeMenu = 'none'
@@ -215,7 +229,10 @@ function goToPigBuyPen(): void {
   setArrowTarget(penEntity)
 
   showDialog(
-    "Level 12 — you've truly become a seasoned farmer! You've unlocked the Pig Pen!\n\nHead over to the pig pen plot and buy it. Pigs are a rewarding long-term investment!",
+    [
+      "Level 12 — you've truly become a seasoned farmer! You've unlocked the Pig Pen!...",
+      "Head over to the pig pen plot and buy it. Pigs are a rewarding long-term investment!",
+    ],
     "Let's go!",
     () => {
       playerState.activeMenu = 'none'
@@ -236,7 +253,10 @@ function goToPigBuyPig(): void {
   setArrowTarget(computer)
 
   showDialog(
-    "The pen is ready!\n\nNow head to the shop and buy your first pig. You can have up to 5 pigs. They start as adults — the shop sells grown pigs!",
+    [
+      "The pen is ready!...",
+      "Now head to the shop and buy your first pig. You can have up to 5 pigs. They start as adults — the shop sells grown pigs!",
+    ],
     "To the shop!",
     () => { playerState.activeMenu = 'none' }
   )
@@ -255,7 +275,10 @@ function goToPigFeed(): void {
   setArrowTarget(foodEntity)
 
   showDialog(
-    "There's your pig!\n\nPigs eat grain, veggie scraps, and harvested crops. Feeding them harvested crops also raises their feed score — a higher score means bigger pigs and more meat at harvest time. Fill the bowl!",
+    [
+      "There's your pig!\n\nPigs eat grain, veggie scraps, and harvested crops...",
+      "Feeding them harvested crops also raises their feed score — a higher score means bigger pigs and more meat at harvest time. Fill the bowl!",
+    ],
     "Fill the bowl!",
     () => { playerState.activeMenu = 'none' }
   )
@@ -272,7 +295,11 @@ function goToPigCleanIntro(): void {
   setArrowTarget(null)
 
   showDialog(
-    "Great job! The pigs are eating!\n\nKeep the pen clean — dirt appears over time and clicking it earns you organic waste for your compost bin. Adult pigs also produce manure every 8 hours automatically.",
+    [
+      "Great job! The pigs are eating!",
+      "Keep the pen clean — dirt appears over time, and clicking it earns you organic waste for your compost bin.",
+      "Adult pigs also produce manure every 8 hours automatically.",
+    ],
     "Good to know!",
     () => {
       playerState.activeMenu = 'none'
@@ -286,7 +313,11 @@ function goToPigGrowthExplained(): void {
   setArrowTarget(null)
 
   showDialog(
-    "Here's how pigs grow — shop-bought pigs start as adults. But if you breed them, piglets grow in stages:\n\n• Piglet → Adolescent in 24 hours\n• Adolescent → Adult in 72 hours\n\nFeed them well and watch them grow bigger as their feed score rises!",
+    [
+      "Here's how pigs grow — shop-bought pigs start as adults.",
+      "But if you breed them, piglets grow in stages:\n\n• Piglet → Adolescent in 24 hours\n• Adolescent → Adult in 72 hours",
+      "Feed them well and watch them grow bigger as their feed score rises!",
+    ],
     "Fascinating!",
     () => {
       playerState.activeMenu = 'none'
@@ -300,7 +331,11 @@ function goToPigBreedExplained(): void {
   setArrowTarget(null)
 
   showDialog(
-    "Once you have two adult pigs, you can breed them to get a free piglet — no coins needed! There's a cooldown between breeds, so plan ahead.\n\nOpen the animal panel and tap a pig to see breeding options.",
+    [
+      "Once you have two adult pigs, you can breed them to get a free piglet — no coins needed.",
+      "There's a cooldown between breeds, so plan ahead.",
+      "Open the animal panel and tap a pig to see breeding options.",
+    ],
     "Got it!",
     () => {
       playerState.activeMenu = 'none'

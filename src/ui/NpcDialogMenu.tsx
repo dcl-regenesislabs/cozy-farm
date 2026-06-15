@@ -143,10 +143,27 @@ function DialogButton(props: {
 }
 
 function closeDialog() {
+  if (
+    npcDialogState.mode === 'tutorial' &&
+    npcDialogState.tutorialPages.length > 1 &&
+    npcDialogState.tutorialPage < npcDialogState.tutorialPages.length - 1
+  ) {
+    npcDialogState.tutorialPage += 1
+    npcDialogState.dialogLine = npcDialogState.tutorialPages[npcDialogState.tutorialPage]
+    npcDialogState.tutorialButtonLabel =
+      npcDialogState.tutorialPage < npcDialogState.tutorialPages.length - 1
+        ? 'Next'
+        : npcDialogState.tutorialFinalButtonLabel
+    return
+  }
+
   const cb = npcDialogState.onClose
   npcDialogState.onClose  = null
   npcDialogState.onAccept = null
   npcDialogState.onClaim  = null
+  npcDialogState.tutorialPages = []
+  npcDialogState.tutorialPage = 0
+  npcDialogState.tutorialFinalButtonLabel = 'Got it!'
   playerState.activeMenu  = 'none'
   cb?.()
 }
