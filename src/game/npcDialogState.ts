@@ -8,6 +8,9 @@ export const npcDialogState = {
   npcHeadImage:        '',
   dialogLine:          '',
   mode:                'greeting' as NpcDialogMode,
+  tutorialPages:       [] as string[],
+  tutorialPage:        0,
+  tutorialFinalButtonLabel: 'Got it!',
   tutorialButtonLabel: 'Got it!',
   onClose:             null as (() => void) | null,
   onAccept:            null as (() => void) | null,  // quest_offer: called when player accepts

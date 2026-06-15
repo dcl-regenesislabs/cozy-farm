@@ -43,13 +43,17 @@ export function fireCompostCollected(): void {
 // ---------------------------------------------------------------------------
 // Dialog helper
 // ---------------------------------------------------------------------------
-function showProgressionDialog(text: string, buttonLabel: string, onButton: () => void): void {
+function showProgressionDialog(text: string | string[], buttonLabel: string, onButton: () => void): void {
+  const pages = Array.isArray(text) ? text : [text]
   npcDialogState.npcName             = MAYOR_DEF.name
   npcDialogState.npcId               = MAYOR_DEF.id
   npcDialogState.npcHeadImage        = MAYOR_DEF.headImage
-  npcDialogState.dialogLine          = text
+  npcDialogState.tutorialPages       = pages
+  npcDialogState.tutorialPage        = 0
+  npcDialogState.tutorialFinalButtonLabel = buttonLabel
+  npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -74,7 +78,11 @@ function goToBuyCompostBin(): void {
   setArrowTarget(computer)
 
   showProgressionDialog(
-    "Wow, you've been busy! Looks like your farm has really grown since we last spoke!\n\nNow that you're levelling up, crops will start to rot if left unharvested too long. Let me help you deal with that.\n\nHead to the shop and buy a Compost Bin — it turns rotten crops into powerful fertilizers!",
+    [
+      "Wow, you've been busy! Looks like your farm has really grown since we last spoke!",
+      "Now that you're levelling up, crops will start to rot if left unharvested too long.\n\nLet me help you deal with that.",
+      "Head to the shop and buy a Compost Bin — it turns rotten crops into powerful fertilizers!",
+    ],
     "Let's go!",
     () => {
       // Arrow hides when shop opens; reappears when shop closes without buying
@@ -125,7 +133,10 @@ function goToWasteStep(): void {
   setArrowTarget(binEntity)
 
   showProgressionDialog(
-    "Great, you bought the Compost Bin! I've added 3 organic waste to your inventory.\n\nOpen the compost bin and add all 3 units — I've set it to process quickly so you can see how it works!",
+    [
+      "Great, you bought the Compost Bin! I've added 3 organic waste to your inventory...",
+      "Open the compost bin and add all 3 units — I've set it to process quickly so you can see how it works!",
+    ],
     "Got it!",
     () => {
       playerState.activeMenu = 'none'
@@ -256,7 +267,11 @@ function completeProgressionChain(): void {
   unlockFertilizerQuest()
 
   showProgressionDialog(
-    "Incredible work! Your farm is really coming together.\n\nRemember — crops will rot if left too long after harvest. Use RotShield fertilizer to prevent it, or just stay on top of your harvests!\n\nI've left you with a challenge: generate 5 more fertilizers. Come find me when you're done and I'll make it worth your while!",
+    [
+      "Incredible work! Your farm is really coming together.",
+      "Remember — crops will rot if left too long after harvest.\nUse RotShield fertilizer to prevent it, or just stay on top of your harvests.",
+      "I've left you with a challenge: generate 5 more fertilizers. Come find me when you're done and I'll make it worth your while!",
+    ],
     "Thanks, Mayor!",
     () => {
       playerState.activeMenu     = 'none'

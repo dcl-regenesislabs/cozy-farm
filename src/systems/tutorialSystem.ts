@@ -25,13 +25,17 @@ const HARVEST_MORE_TARGET   = 3
 // ---------------------------------------------------------------------------
 // Dialog helper — opens Mayor Chen's tutorial dialog panel
 // ---------------------------------------------------------------------------
-function showTutorialDialog(text: string, buttonLabel: string, onButton: () => void) {
+function showTutorialDialog(text: string | string[], buttonLabel: string, onButton: () => void) {
+  const pages = Array.isArray(text) ? text : [text]
   npcDialogState.npcName             = MAYOR_DEF.name
   npcDialogState.npcId               = MAYOR_DEF.id
   npcDialogState.npcHeadImage        = MAYOR_DEF.headImage
-  npcDialogState.dialogLine          = text
+  npcDialogState.tutorialPages       = pages
+  npcDialogState.tutorialPage        = 0
+  npcDialogState.tutorialFinalButtonLabel = buttonLabel
+  npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -60,7 +64,10 @@ function goToPlantFirst() {
   walkMayorToSoil(0, -1.2)
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
-    "Excellent! Now come here to this soil plot and try to plant your first seed.\n\nClick the soil to open the planting menu, then select Onion.",
+    [
+      "Excellent! Now come here to this soil plot and try to plant your first seed...",
+      "Click the soil to open the planting menu, then select Onion.",
+    ],
     "On my way!",
     () => {},
   )
@@ -81,7 +88,10 @@ function goToWaitGrow() {
   tutorialCallbacks.unlockSoilsPhase1()
   setArrowTarget(null)   // just waiting — no arrow needed
   showTutorialDialog(
-    "Good — now it's time to wait for the plant to grow!\n\nI'll apply a quick Fertilizer to this soil so it goes faster. I've also unlocked two more plots for you — practice planting while you wait!",
+    [
+      "Good — now it's time to wait for the plant to grow!...",
+      "I'll apply a quick Fertilizer to this soil so it goes faster. I've also unlocked two more plots for you — practice planting while you wait!",
+    ],
     "Nice, let's go!",
     () => {},
   )
@@ -114,7 +124,10 @@ function goToOpenQuests() {
   setArrowTarget(null)                      // quests button is 2D UI — no 3D arrow
   tutorialNavState.highlightQuests = true   // dim other nav buttons, bounce quests
   showTutorialDialog(
-    "On your farm you'll get a lot of nearby visitors and neighbours with requests!\n\nOpen the Quests panel using the button at the bottom of the screen to see what awaits you.",
+    [
+      "On your farm you'll get a lot of nearby visitors and neighbours with requests!...",
+      "Open the Quests panel using the button at the bottom of the screen to see what awaits you.",
+    ],
     "Show me!",
     () => {},
   )
