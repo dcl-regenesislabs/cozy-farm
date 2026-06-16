@@ -1,24 +1,67 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
-import { PanelShell, C } from './PanelShell'
 import {
-  PIG_CYCLE_MS, PIG_HARVEST_AGE_MS, PIG_PEN_UNLOCK_LEVEL, BUILDING_BUY_PRICE,
+  PIG_HARVEST_AGE_MS, PIG_PEN_UNLOCK_LEVEL, BUILDING_BUY_PRICE,
   MAX_ANIMALS_PER_BUILDING, getPigStage, PIG_BREED_COOLDOWN, getDirtIntervalMs, DIRT_BASE_INTERVAL_MS,
+  PIG_CYCLE_MS,
 } from '../data/animalData'
 import { PIG_ICON, MANURE_ICON, COINS_IMAGE } from '../data/imagePaths'
 import { breedPigs, harvestPig, purchaseBuilding } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { C } from './PanelShell'
 import type { PigData } from '../game/gameState'
 
-// ---------------------------------------------------------------------------
-// Tab state
-// ---------------------------------------------------------------------------
+// ─── Pig atlas frame — same layout as chicken_atlas ───────────────────────────
+const PIG_ATLAS       = 'assets/images/ui_loading/pig_atlas.png'
+const ATLAS_SIZE      = 1024
+const BG_RECT         = { x: 17, y: 13, w: 993, h: 682 } as const
+const UI_SCALE        = 0.8
+const ss              = (v: number) => Math.round(v * UI_SCALE)
 
-const pigPenTab = { value: 'animals' as 'animals' | 'breeding' }
+const PANEL_W          = ss(1290)
+const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
+const PANEL_TOP_MARGIN = ss(120)
+const CONTENT_LEFT     = ss(82)
+const CONTENT_RIGHT    = ss(34)
+const CONTENT_TOP      = ss(176)
+const CONTENT_BOTTOM   = ss(74)
+const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
+const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
+const CLOSE_SIZE       = ss(74)
+const CLOSE_RIGHT      = ss(28)
+const CLOSE_TOP        = ss(16)
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+// ─── Card colours ─────────────────────────────────────────────────────────────
+const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
+const CARD_FILL       = { r: 0.95, g: 0.88, b: 0.70, a: 0.55 }
+const CARD_TEXT       = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const CARD_TEXT_MUTE  = { r: 0.45, g: 0.28, b: 0.10, a: 1 }
+const FRAME_THICKNESS = 4
+
+// ─── Card dimensions ─────────────────────────────────────────────────────────
+const CARD_W      = ss(210)
+const CARD_H      = ss(256)
+const CARD_MARGIN = ss(14)
+const CARD_ICON   = ss(88)
+const CARD_TITLE  = ss(24)
+const CARD_STATUS = ss(21)
+const CARD_SMALL  = ss(17)
+const CARD_PAD_V  = ss(14)
+const CARD_PAD_H  = ss(12)
+const BAR_H       = 12
+const BAR_RADIUS  = 6
+
+type CardColor = { r: number; g: number; b: number; a: number }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
+  const S = ATLAS_SIZE
+  const l = rect.x / S, r = (rect.x + rect.w) / S
+  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
+  return [l, b, l, t, r, t, r, b]
+}
 
 function formatMs(ms: number): string {
   if (ms <= 0) return 'Ready!'
@@ -37,10 +80,116 @@ const STAGE_LABEL: Record<string, string> = {
   harvestable: 'Ready to harvest',
 }
 
-// ---------------------------------------------------------------------------
-// Pig tile
-// ---------------------------------------------------------------------------
+// ─── Tab state ────────────────────────────────────────────────────────────────
+const pigPenTab = { value: 'animals' as 'animals' | 'breeding' }
 
+// ─── PigCard ──────────────────────────────────────────────────────────────────
+const PigCard = ({
+  borderColor = CARD_BORDER,
+  children,
+}: {
+  borderColor?: CardColor
+  children?: ReactEcs.JSX.ReactNode
+}) => {
+  const mobile = isMobile()
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        alignItems: 'center',
+        width: CARD_W,
+        height: CARD_H,
+        margin: { right: CARD_MARGIN, bottom: CARD_MARGIN },
+        padding: { top: CARD_PAD_V, bottom: CARD_PAD_V, left: CARD_PAD_H, right: CARD_PAD_H },
+        borderWidth: 3,
+        borderColor,
+        borderRadius: 12,
+      }}
+      uiBackground={{ color: CARD_FILL }}
+    >
+      {mobile && (
+        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: CARD_W, height: CARD_H }}>
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
+          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
+        </UiEntity>
+      )}
+      {children}
+    </UiEntity>
+  )
+}
+
+// ─── PigPanelFrame ────────────────────────────────────────────────────────────
+const PigPanelFrame = ({
+  onClose,
+  children,
+}: {
+  onClose: () => void
+  children?: ReactEcs.JSX.ReactNode
+}) => (
+  <UiEntity
+    uiTransform={{
+      positionType: 'absolute',
+      position: { top: 0, left: 0 },
+      width: '100%',
+      height: '100%',
+      alignItems: 'center',
+      justifyContent: 'center',
+      pointerFilter: 'none',
+    }}
+  >
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { top: 0, left: 0 },
+        width: '100%',
+        height: '100%',
+        pointerFilter: 'block',
+      }}
+    />
+    <UiEntity
+      uiTransform={{
+        width: PANEL_W,
+        height: PANEL_H,
+        margin: { top: PANEL_TOP_MARGIN },
+        pointerFilter: 'block',
+      }}
+      uiBackground={{
+        texture: { src: PIG_ATLAS, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+        uvs: bgUvs(BG_RECT),
+      }}
+    >
+      {/* Content area */}
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { left: CONTENT_LEFT, top: CONTENT_TOP },
+          width: CONTENT_W,
+          height: CONTENT_H,
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+      >
+        {children}
+      </UiEntity>
+
+      {/* Close button hotspot */}
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
+          width: CLOSE_SIZE,
+          height: CLOSE_SIZE,
+        }}
+        onMouseDown={() => { playSound('buttonclick'); onClose() }}
+      />
+    </UiEntity>
+  </UiEntity>
+)
+
+// ─── PigTile ──────────────────────────────────────────────────────────────────
 type PigTileProps = { key?: string | number; pig: PigData; index: number; now: number }
 
 const PigTile = ({ pig, index, now }: PigTileProps) => {
@@ -48,43 +197,43 @@ const PigTile = ({ pig, index, now }: PigTileProps) => {
   const hasFood    = playerState.pigFoodInBowl > 0
   const canHarvest = stage === 'harvestable'
 
-  let tileBg: { r: number; g: number; b: number; a: number }
   let midLabel: string
   let subLabel = ''
   let barPct   = 0
-  let barColor: { r: number; g: number; b: number; a: number }
+  let barColor: CardColor
+  let borderColor: CardColor
 
   if (stage === 'piglet') {
     const born    = pig.bornAt ?? now
     const elapsed = now - born
     const total   = 24 * 60 * 60 * 1000
-    barPct   = Math.min(100, Math.floor((elapsed / total) * 100))
-    barColor = { r: 0.8, g: 0.6, b: 0.9, a: 1 }
-    tileBg   = { r: 0.14, g: 0.10, b: 0.16, a: 1 }
-    midLabel = STAGE_LABEL.piglet
-    subLabel = `Adolescent in ${formatMs(total - elapsed)}`
+    barPct      = Math.min(100, Math.floor((elapsed / total) * 100))
+    barColor    = { r: 0.7, g: 0.5, b: 0.9, a: 1 }
+    borderColor = { r: 0.7, g: 0.5, b: 0.9, a: 0.95 }
+    midLabel    = STAGE_LABEL.piglet
+    subLabel    = `Adolescent in ${formatMs(total - elapsed)}`
   } else if (stage === 'adolescent') {
     const born    = pig.bornAt ?? now
     const elapsed = now - born
     const total   = 3 * 24 * 60 * 60 * 1000
-    barPct   = Math.min(100, Math.floor((elapsed / total) * 100))
-    barColor = { r: 0.6, g: 0.5, b: 0.9, a: 1 }
-    tileBg   = { r: 0.12, g: 0.10, b: 0.18, a: 1 }
-    midLabel = STAGE_LABEL.adolescent
-    subLabel = `Adult in ${formatMs(total - elapsed)}`
+    barPct      = Math.min(100, Math.floor((elapsed / total) * 100))
+    barColor    = { r: 0.5, g: 0.5, b: 0.9, a: 1 }
+    borderColor = { r: 0.5, g: 0.5, b: 0.9, a: 0.95 }
+    midLabel    = STAGE_LABEL.adolescent
+    subLabel    = `Adult in ${formatMs(total - elapsed)}`
   } else if (stage === 'harvestable') {
-    barPct   = 100
-    barColor = C.green
-    tileBg   = { r: 0.07, g: 0.18, b: 0.07, a: 1 }
-    midLabel = STAGE_LABEL.harvestable
-    subLabel = 'Tap harvest to collect meat'
+    barPct      = 100
+    barColor    = C.green
+    borderColor = { r: 0.32, g: 0.78, b: 0.32, a: 0.95 }
+    midLabel    = STAGE_LABEL.harvestable
+    subLabel    = 'Tap harvest to collect meat'
   } else {
-    const adultAt      = pig.becameAdultAt ?? pig.purchasedAt
-    const timeAsAdult  = now - adultAt
-    barPct   = Math.min(100, Math.floor((timeAsAdult / PIG_HARVEST_AGE_MS) * 100))
-    barColor = C.gold
-    tileBg   = { r: 0.14, g: 0.12, b: 0.04, a: 1 }
-    midLabel = STAGE_LABEL.adult
+    const adultAt     = pig.becameAdultAt ?? pig.purchasedAt
+    const timeAsAdult = now - adultAt
+    barPct      = Math.min(100, Math.floor((timeAsAdult / PIG_HARVEST_AGE_MS) * 100))
+    barColor    = C.gold
+    borderColor = !hasFood ? { r: 0.8, g: 0.32, b: 0.24, a: 0.95 } : CARD_BORDER
+    midLabel    = STAGE_LABEL.adult
     if (!hasFood) {
       subLabel = 'No food in bowl'
     } else if (pig.lastManureAt > 0) {
@@ -94,109 +243,122 @@ const PigTile = ({ pig, index, now }: PigTileProps) => {
   }
 
   return (
-    <UiEntity
-      uiTransform={{
-        flexDirection: 'column', alignItems: 'center',
-        width: 260, height: 260,
-        margin: { right: 12, bottom: 12 },
-        padding: { top: 14, bottom: 14, left: 12, right: 12 },
-      }}
-      uiBackground={{ color: tileBg }}
-    >
+    <PigCard borderColor={borderColor}>
       <UiEntity
-        uiTransform={{ width: 72, height: 72, margin: { bottom: 8 }, flexShrink: 0 }}
+        uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={`Pig ${index + 1}`} fontSize={21} color={C.textMain} textAlign="middle-center" />
+      <Label value={`Pig ${index + 1}`} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
       <Label
-        value={midLabel} fontSize={19}
-        color={canHarvest ? C.green : C.textMute}
+        value={midLabel}
+        fontSize={CARD_STATUS}
+        color={canHarvest ? C.green : CARD_TEXT_MUTE}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 3 } }}
+        uiTransform={{ margin: { top: ss(4) } }}
       />
       {subLabel !== '' && (
-        <Label value={subLabel} fontSize={15} color={C.textMute}
-          textAlign="middle-center" uiTransform={{ margin: { top: 3 } }} />
+        <Label value={subLabel} fontSize={CARD_SMALL} color={CARD_TEXT_MUTE}
+          textAlign="middle-center" uiTransform={{ margin: { top: ss(3) } }} />
       )}
-      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { top: 8 } }}>
-        <UiEntity uiTransform={{ width: '100%', height: 10 }} uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}>
-          <UiEntity uiTransform={{ width: `${barPct}%`, height: '100%' }} uiBackground={{ color: barColor }} />
+      <UiEntity uiTransform={{ width: '100%', margin: { top: ss(8) } }}>
+        <UiEntity
+          uiTransform={{ width: '100%', height: BAR_H, borderRadius: BAR_RADIUS }}
+          uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 1 } }}
+        >
+          <UiEntity
+            uiTransform={{ width: `${barPct}%`, height: '100%', borderRadius: BAR_RADIUS }}
+            uiBackground={{ color: barColor }}
+          />
         </UiEntity>
       </UiEntity>
       {canHarvest && (
         <UiEntity
-          uiTransform={{ width: 200, height: 42, margin: { top: 8 }, justifyContent: 'center', alignItems: 'center' }}
-          uiBackground={{ color: { r: 0.6, g: 0.25, b: 0.05, a: 1 } }}
+          uiTransform={{
+            width: ss(160), height: ss(38), margin: { top: ss(8) },
+            justifyContent: 'center', alignItems: 'center', borderRadius: 8,
+          }}
+          uiBackground={{ color: { r: 0.45, g: 0.26, b: 0.06, a: 1 } }}
           onMouseDown={() => { playSound('harvest'); harvestPig(pig.id) }}
         >
-          <Label value="Harvest Meat" fontSize={19} color={C.textMain} textAlign="middle-center" />
+          <Label value="Harvest Meat" fontSize={ss(18)} color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }} textAlign="middle-center" />
         </UiEntity>
       )}
-    </UiEntity>
+    </PigCard>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Dirt tile — uses MANURE_ICON
-// ---------------------------------------------------------------------------
-
+// ─── DirtTile ─────────────────────────────────────────────────────────────────
 const DirtTile = ({ now: _now }: { now: number }) => {
   const isDirty   = playerState.pigPenDirtyAt > 0
   const count     = playerState.pigs.length
   const interval  = count > 0 ? getDirtIntervalMs(count) : DIRT_BASE_INTERVAL_MS
   const accumMs   = playerState.penDirtAccumMs
   const barPct    = isDirty ? 100 : Math.min(100, Math.floor((accumMs / interval) * 100))
-  const barColor  = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.gold
-  const tileBg    = isDirty ? { r: 0.22, g: 0.14, b: 0.04, a: 1 } : { r: 0.11, g: 0.14, b: 0.09, a: 1 }
-  const hasFood   = playerState.pigFoodInBowl > 0
   const remaining = Math.max(0, interval - accumMs)
+  const barColor  = isDirty ? { r: 0.85, g: 0.55, b: 0.1, a: 1 } : C.gold
+  const borderColor = isDirty
+    ? { r: 0.85, g: 0.55, b: 0.1, a: 0.95 } as CardColor
+    : CARD_BORDER
 
   return (
-    <UiEntity
-      uiTransform={{
-        flexDirection: 'column', alignItems: 'center',
-        width: 260, height: 260,
-        margin: { right: 12, bottom: 12 },
-        padding: { top: 14, bottom: 14, left: 12, right: 12 },
-      }}
-      uiBackground={{ color: tileBg }}
-    >
+    <PigCard borderColor={borderColor}>
       <UiEntity
-        uiTransform={{ width: 72, height: 72, margin: { bottom: 8 }, flexShrink: 0 }}
-        uiBackground={{ texture: { src: MANURE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch', color: isDirty ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 } }}
+        uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
+        uiBackground={{
+          texture: { src: MANURE_ICON, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+          color: isDirty ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.65, g: 0.65, b: 0.65, a: 1 },
+        }}
       />
-      <Label value="Pen Cleanliness" fontSize={20} color={C.textMain} textAlign="middle-center" />
+      <Label value="Pen Cleanliness" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
       <Label
         value={isDirty ? 'Needs cleaning!' : 'Clean'}
-        fontSize={19}
+        fontSize={CARD_STATUS}
         color={isDirty ? { r: 1, g: 0.6, b: 0.1, a: 1 } : C.green}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 3 } }}
+        uiTransform={{ margin: { top: ss(4) } }}
       />
-      <Label
-        value={hasFood ? `Bowl: ${playerState.pigFoodInBowl} units` : 'Bowl empty — click in scene'}
-        fontSize={15}
-        color={hasFood ? C.gold : { r: 0.9, g: 0.35, b: 0.35, a: 1 }}
-        textAlign="middle-center"
-        uiTransform={{ margin: { top: 3 } }}
-      />
-      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { top: 8 } }}>
-        <UiEntity uiTransform={{ width: '100%', height: 10 }} uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}>
-          <UiEntity uiTransform={{ width: `${barPct}%`, height: '100%' }} uiBackground={{ color: barColor }} />
+      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { top: ss(8) } }}>
+        <UiEntity
+          uiTransform={{ width: '100%', height: BAR_H, borderRadius: BAR_RADIUS }}
+          uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 1 } }}
+        >
+          <UiEntity
+            uiTransform={{ width: `${barPct}%`, height: '100%', borderRadius: BAR_RADIUS }}
+            uiBackground={{ color: barColor }}
+          />
         </UiEntity>
         <Label
           value={isDirty ? 'Click the dirt pile in the scene' : (count > 0 ? `Next mess in ${formatMs(remaining)}` : 'No pigs')}
-          fontSize={15} color={C.textMute}
-          textAlign="middle-center" uiTransform={{ margin: { top: 5 } }} />
+          fontSize={CARD_SMALL}
+          color={CARD_TEXT_MUTE}
+          textAlign="middle-center"
+          uiTransform={{ margin: { top: ss(4) } }}
+        />
       </UiEntity>
-    </UiEntity>
+    </PigCard>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Breeding tab content
-// ---------------------------------------------------------------------------
+// ─── MeatTile ─────────────────────────────────────────────────────────────────
+const MeatTile = () => (
+  <PigCard borderColor={{ r: 0.85, g: 0.45, b: 0.15, a: 0.95 }}>
+    <UiEntity
+      uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
+      uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+    />
+    <Label value="Pig Meat" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+    <Label
+      value={`x${playerState.pigMeatCount} — sell at market`}
+      fontSize={CARD_STATUS}
+      color={C.orange}
+      textAlign="middle-center"
+      uiTransform={{ margin: { top: ss(4) } }}
+    />
+  </PigCard>
+)
 
+// ─── BreedingTab ──────────────────────────────────────────────────────────────
 const BreedingTab = ({ now }: { now: number }) => {
   const eligibleCount = playerState.pigs.filter((p) => {
     const stage = getPigStage(p, now)
@@ -207,62 +369,72 @@ const BreedingTab = ({ now }: { now: number }) => {
 
   return (
     <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-      {/* Breed tile */}
-      <UiEntity
-        uiTransform={{
-          flexDirection: 'column', alignItems: 'center',
-          width: 260, height: 260,
-          margin: { right: 12, bottom: 12 },
-          padding: { top: 14, bottom: 14, left: 12, right: 12 },
-        }}
-        uiBackground={{ color: canBreed ? { r: 0.07, g: 0.15, b: 0.20, a: 1 } : C.rowBg }}
-      >
+      <PigCard borderColor={canBreed ? { r: 0.32, g: 0.78, b: 0.32, a: 0.95 } : CARD_BORDER}>
         <UiEntity
-          uiTransform={{ width: 72, height: 72, margin: { bottom: 8 }, flexShrink: 0 }}
+          uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
           uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
-        <Label value="Breeding" fontSize={20} color={C.textMain} textAlign="middle-center" />
+        <Label value="Breeding" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
         <Label
           value={atMax ? `Pen full (${MAX_ANIMALS_PER_BUILDING}/${MAX_ANIMALS_PER_BUILDING})` :
                  canBreed ? `${eligibleCount} adults ready` :
                  `Need 2 adults (${eligibleCount} ready)`}
-          fontSize={17}
-          color={canBreed ? C.green : C.textMute}
+          fontSize={CARD_STATUS}
+          color={canBreed ? C.green : CARD_TEXT_MUTE}
           textAlign="middle-center"
-          uiTransform={{ margin: { top: 4 } }}
+          uiTransform={{ margin: { top: ss(4) } }}
         />
         <UiEntity
-          uiTransform={{ width: 200, height: 42, margin: { top: 12 }, justifyContent: 'center', alignItems: 'center' }}
-          uiBackground={{ color: canBreed ? { r: 0.2, g: 0.45, b: 0.6, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
+          uiTransform={{
+            width: ss(160), height: ss(38), margin: { top: ss(10) },
+            justifyContent: 'center', alignItems: 'center', borderRadius: 8,
+          }}
+          uiBackground={{ color: canBreed ? { r: 0.45, g: 0.26, b: 0.06, a: 1 } : { r: 0.30, g: 0.22, b: 0.10, a: 1 } }}
           onMouseDown={canBreed ? () => { playSound('buttonclick'); breedPigs() } : undefined}
         >
-          <Label value="Breed Pigs" fontSize={19} color={canBreed ? C.textMain : C.textMute} textAlign="middle-center" />
+          <Label value="Breed Pigs" fontSize={ss(18)} color={canBreed ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : CARD_TEXT_MUTE} textAlign="middle-center" />
         </UiEntity>
-      </UiEntity>
+      </PigCard>
 
-      {/* Info */}
-      <UiEntity
-        uiTransform={{
-          flexDirection: 'column',
-          width: 320,
-          padding: { top: 14, bottom: 14, left: 14, right: 14 },
-          margin: { bottom: 12 },
-        }}
-        uiBackground={{ color: C.rowBg }}
-      >
-        <Label value="How breeding works" fontSize={20} color={C.header} uiTransform={{ margin: { bottom: 8 } }} />
-        <Label value="Need 2 adult pigs, each off a 24h cooldown." fontSize={16} color={C.textMute} uiTransform={{ margin: { bottom: 4 } }} />
-        <Label value="Produces a piglet that grows over 3 days." fontSize={16} color={C.textMute} uiTransform={{ margin: { bottom: 4 } }} />
-        <Label value="Piglets inherit feed bonuses from parents." fontSize={16} color={C.textMute} />
-      </UiEntity>
+      {/* Info card */}
+      <PigCard>
+        <Label value="How it works" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center"
+          uiTransform={{ margin: { bottom: ss(8) } }} />
+        <Label value="Need 2 adult pigs off a 24h cooldown." fontSize={CARD_SMALL} color={CARD_TEXT_MUTE}
+          uiTransform={{ margin: { bottom: ss(4) } }} />
+        <Label value="Produces a piglet that grows over 3 days." fontSize={CARD_SMALL} color={CARD_TEXT_MUTE}
+          uiTransform={{ margin: { bottom: ss(4) } }} />
+        <Label value="Piglets inherit feed bonuses from parents." fontSize={CARD_SMALL} color={CARD_TEXT_MUTE} />
+      </PigCard>
     </UiEntity>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Main panel
-// ---------------------------------------------------------------------------
+// ─── Tab bar ─────────────────────────────────────────────────────────────────
+const TAB_H    = ss(44)
+const TAB_W    = ss(160)
+const TAB_GAP  = ss(10)
 
+const TabBar = ({ tab }: { tab: 'animals' | 'breeding' }) => (
+  <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: ss(14) }, flexShrink: 0 }}>
+    <UiEntity
+      uiTransform={{ width: TAB_W, height: TAB_H, margin: { right: TAB_GAP }, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+      uiBackground={{ color: tab === 'animals' ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.30, g: 0.18, b: 0.05, a: 0.5 } }}
+      onMouseDown={() => { playSound('buttonclick'); pigPenTab.value = 'animals' }}
+    >
+      <Label value="Animals" fontSize={ss(20)} color={tab === 'animals' ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : CARD_TEXT_MUTE} textAlign="middle-center" />
+    </UiEntity>
+    <UiEntity
+      uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+      uiBackground={{ color: tab === 'breeding' ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.30, g: 0.18, b: 0.05, a: 0.5 } }}
+      onMouseDown={() => { playSound('buttonclick'); pigPenTab.value = 'breeding' }}
+    >
+      <Label value="Breeding" fontSize={ss(20)} color={tab === 'breeding' ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : CARD_TEXT_MUTE} textAlign="middle-center" />
+    </UiEntity>
+  </UiEntity>
+)
+
+// ─── Main panel ───────────────────────────────────────────────────────────────
 export const PigPenPanel = () => {
   const now = Date.now()
   const tab = pigPenTab.value
@@ -271,115 +443,98 @@ export const PigPenPanel = () => {
     const canAfford = playerState.coins >= BUILDING_BUY_PRICE
     const levelMet  = playerState.level >= PIG_PEN_UNLOCK_LEVEL
     return (
-      <PanelShell title="Pig Pen" onClose={() => { playerState.activeMenu = 'none' }}>
+      <PigPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
           <UiEntity
-            uiTransform={{ width: 90, height: 90, margin: { bottom: 16 }, flexShrink: 0 }}
-            uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch', color: levelMet ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 } }}
+            uiTransform={{ width: ss(100), height: ss(100), margin: { bottom: ss(16) }, flexShrink: 0 }}
+            uiBackground={{
+              texture: { src: PIG_ICON, wrapMode: 'clamp' },
+              textureMode: 'stretch',
+              color: levelMet ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.65, g: 0.65, b: 0.65, a: 1 },
+            }}
           />
           {!levelMet ? (
             <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
-              <Label value="Locked" fontSize={32} color={C.textMute} textAlign="middle-center" />
-              <Label value={`Unlocks at Level ${PIG_PEN_UNLOCK_LEVEL}`} fontSize={24} color={C.textMute}
-                textAlign="middle-center" uiTransform={{ margin: { top: 10 } }} />
+              <Label value="Locked" fontSize={ss(32)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
+              <Label
+                value={`Unlocks at Level ${PIG_PEN_UNLOCK_LEVEL}`}
+                fontSize={ss(24)} color={CARD_TEXT_MUTE}
+                textAlign="middle-center"
+                uiTransform={{ margin: { top: ss(10) } }}
+              />
             </UiEntity>
           ) : (
             <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
-              <Label value="Pig Pen available!" fontSize={30} color={C.textMain} textAlign="middle-center" />
-              <Label value={`Cost: ${BUILDING_BUY_PRICE} coins`} fontSize={24} color={C.gold}
-                textAlign="middle-center" uiTransform={{ margin: { top: 8, bottom: 20 } }} />
+              <Label value="Pig Pen available!" fontSize={ss(30)} color={CARD_TEXT} textAlign="middle-center" />
+              <Label
+                value={`Cost: ${BUILDING_BUY_PRICE} coins`}
+                fontSize={ss(24)} color={C.gold}
+                textAlign="middle-center"
+                uiTransform={{ margin: { top: ss(8), bottom: ss(20) } }}
+              />
               <UiEntity
-                uiTransform={{ width: 240, height: 60, justifyContent: 'center', alignItems: 'center', flexDirection: 'row' }}
-                uiBackground={{ color: canAfford ? { r: 0.2, g: 0.55, b: 0.2, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
+                uiTransform={{
+                  width: ss(260), height: ss(64),
+                  justifyContent: 'center', alignItems: 'center',
+                  flexDirection: 'row', borderRadius: 10,
+                }}
+                uiBackground={{ color: canAfford ? { r: 0.45, g: 0.26, b: 0.06, a: 1 } : { r: 0.30, g: 0.22, b: 0.10, a: 1 } }}
                 onMouseDown={canAfford ? () => { playSound('buttonclick'); purchaseBuilding('pig') } : undefined}
               >
-                {canAfford ? (
-                  <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Label value={`Buy for ${BUILDING_BUY_PRICE}`} fontSize={24} color={C.textMain} textAlign="middle-center" uiTransform={{ margin: { right: 8 } }} />
-                    <UiEntity uiTransform={{ width: 28, height: 28 }} uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }} />
-                  </UiEntity>
-                ) : (
-                  <Label value="Not enough coins" fontSize={24} color={C.textMute} textAlign="middle-center" />
+                <Label
+                  value={canAfford ? `Buy for ${BUILDING_BUY_PRICE}` : 'Not enough coins'}
+                  fontSize={ss(24)}
+                  color={canAfford ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : CARD_TEXT_MUTE}
+                  textAlign="middle-center"
+                  uiTransform={{ margin: { right: ss(8) } }}
+                />
+                {canAfford && (
+                  <UiEntity
+                    uiTransform={{ width: ss(28), height: ss(28), flexShrink: 0 }}
+                    uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+                  />
                 )}
               </UiEntity>
             </UiEntity>
           )}
         </UiEntity>
-      </PanelShell>
+      </PigPanelFrame>
     )
   }
 
   return (
-    <PanelShell title="Pig Pen" onClose={() => { playerState.activeMenu = 'none' }}>
+    <PigPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
+      <TabBar tab={tab} />
 
-      {/* Tab bar */}
-      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 16 } }}>
-        <UiEntity
-          uiTransform={{ width: 180, height: 52, margin: { right: 12 }, alignItems: 'center', justifyContent: 'center' }}
-          uiBackground={{ color: tab === 'animals' ? { r: 0.6, g: 0.35, b: 0.05, a: 1 } : { r: 0.18, g: 0.14, b: 0.08, a: 1 } }}
-          onMouseDown={() => { playSound('buttonclick'); pigPenTab.value = 'animals' }}
-        >
-          <Label value="Animals" fontSize={22} color={tab === 'animals' ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
-        <UiEntity
-          uiTransform={{ width: 180, height: 52, alignItems: 'center', justifyContent: 'center' }}
-          uiBackground={{ color: tab === 'breeding' ? { r: 0.6, g: 0.35, b: 0.05, a: 1 } : { r: 0.18, g: 0.14, b: 0.08, a: 1 } }}
-          onMouseDown={() => { playSound('buttonclick'); pigPenTab.value = 'breeding' }}
-        >
-          <Label value="Breeding" fontSize={22} color={tab === 'breeding' ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
-      </UiEntity>
-
-      {/* Animals tab */}
       {tab === 'animals' && (
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
+        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', justifyContent: 'center', alignContent: 'flex-start' }}>
           <DirtTile now={now} />
 
           {playerState.pigs.length === 0 ? (
-            <UiEntity
-              uiTransform={{
-                flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                width: 260, height: 260,
-                margin: { right: 12, bottom: 12 },
-                padding: { top: 14, bottom: 14, left: 12, right: 12 },
-              }}
-              uiBackground={{ color: { r: 0.11, g: 0.11, b: 0.11, a: 1 } }}
-            >
-              <Label value="No pigs yet" fontSize={22} color={C.textMute} textAlign="middle-center" />
-              <Label value="Buy some in the Shop" fontSize={18} color={C.textMute}
-                textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
-            </UiEntity>
+            <PigCard>
+              <UiEntity
+                uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
+                uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch', color: { r: 0.65, g: 0.65, b: 0.65, a: 1 } }}
+              />
+              <Label value="No pigs yet" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+              <Label
+                value="Buy some in the Shop"
+                fontSize={CARD_STATUS} color={CARD_TEXT_MUTE}
+                textAlign="middle-center"
+                uiTransform={{ margin: { top: ss(8) } }}
+              />
+            </PigCard>
           ) : (
             playerState.pigs.map((pig, i) => (
               <PigTile key={pig.id} pig={pig} index={i} now={now} />
             ))
           )}
 
-          {playerState.pigMeatCount > 0 && (
-            <UiEntity
-              uiTransform={{
-                flexDirection: 'column', alignItems: 'center',
-                width: 260, height: 260,
-                margin: { right: 12, bottom: 12 },
-                padding: { top: 14, bottom: 14, left: 12, right: 12 },
-              }}
-              uiBackground={{ color: { r: 0.16, g: 0.08, b: 0.05, a: 1 } }}
-            >
-              <UiEntity
-                uiTransform={{ width: 72, height: 72, margin: { bottom: 8 }, flexShrink: 0 }}
-                uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-              />
-              <Label value="Pig Meat" fontSize={22} color={C.textMain} textAlign="middle-center" />
-              <Label value={`x${playerState.pigMeatCount} — sell at market`} fontSize={17}
-                color={C.orange} textAlign="middle-center" uiTransform={{ margin: { top: 4 } }} />
-            </UiEntity>
-          )}
+          {playerState.pigMeatCount > 0 && <MeatTile />}
         </UiEntity>
       )}
 
-      {/* Breeding tab */}
       {tab === 'breeding' && <BreedingTab now={now} />}
-
-    </PanelShell>
+    </PigPanelFrame>
   )
 }

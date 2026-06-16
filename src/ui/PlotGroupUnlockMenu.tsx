@@ -33,7 +33,7 @@ const BASE_NAME_TOP   = 68
 const BASE_NAME_H     = 36
 const BASE_TEXT_RIGHT = 48
 const BASE_BTN_H      = 46
-const BASE_BTN_FONT   = 16
+const BASE_BTN_FONT   = 18
 const BASE_BTN_W_PAIR = 140
 const BASE_BTN_BOTTOM = 68
 
@@ -128,7 +128,7 @@ export const PlotGroupUnlockMenu = () => {
 
         {/* Description */}
         <Label
-          value={`Unlock 3 new soil plots to grow more crops.\nMore land, more harvest!`}
+          value="Unlock 3 new soil plots and expand your farm."
           fontSize={d(mobile ? 15 : 18)}
           color={TEXT_BROWN}
           textAlign="top-left"
@@ -157,7 +157,7 @@ export const PlotGroupUnlockMenu = () => {
           />
           <Label
             value={`${cost}`}
-            fontSize={d(16)}
+            fontSize={d(18)}
             color={canAfford ? TEXT_BROWN : { r: 0.7, g: 0.15, b: 0.05, a: 1 }}
           />
           <Label
@@ -186,24 +186,7 @@ export const PlotGroupUnlockMenu = () => {
           )}
         </UiEntity>
 
-        {/* X close button */}
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { right: d(14), top: d(12) },
-            width: d(30),
-            height: d(30),
-            alignItems: 'center',
-            justifyContent: 'center',
-            borderRadius: 4,
-          }}
-          uiBackground={{ color: { r: 0.45, g: 0.26, b: 0.06, a: 0.85 } }}
-          onMouseDown={() => { playSound('buttonclick'); playerState.activeMenu = 'none' }}
-        >
-          <Label value="✕" fontSize={d(14)} color={BTN_TEXT} textAlign="middle-center" />
-        </UiEntity>
-
-        {/* Button row — BUY + Not now */}
+{/* Button row — BUY + Not now */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -234,9 +217,10 @@ export const PlotGroupUnlockMenu = () => {
                 fontSize={BTN_FONT}
                 color={canBuy ? BTN_TEXT : BTN_TEXT_MUTED}
                 textAlign="middle-center"
+                uiTransform={{ width: d(88), height: BTN_H, flexShrink: 0 }}
               />
               <UiEntity
-                uiTransform={{ width: d(14), height: d(14), margin: { left: d(5) }, flexShrink: 0 }}
+                uiTransform={{ width: d(16), height: d(16), flexShrink: 0 }}
                 uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
               />
             </UiEntity>
@@ -258,7 +242,8 @@ export const PlotGroupUnlockMenu = () => {
               setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
             }}
           >
-            <Label value="Not now" fontSize={BTN_FONT} color={BTN_TEXT} textAlign="middle-center" />
+            <Label value="Not now" fontSize={BTN_FONT} color={BTN_TEXT} textAlign="middle-center"
+              uiTransform={{ width: BTN_W, height: BTN_H }} />
           </UiEntity>
         </UiEntity>
 
