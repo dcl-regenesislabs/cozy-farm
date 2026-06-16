@@ -1,37 +1,74 @@
-import ReactEcs, { Button, Label, UiEntity } from '@dcl/sdk/react-ecs'
+import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
 import { getPlotGroupDef } from '../data/plotGroupData'
 import { unlockPlotGroupByName, hidePlotGroupSign } from '../systems/interactionSetup'
-import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
-import { triggerCardShake, getShakeOffset, isShaking } from './cardShakeSystem'
+import { triggerCardShake, isShaking } from './cardShakeSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
-import { COINS_ICON, SOIL_ICON } from '../data/imagePaths'
+import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
+import { OutlineLabel } from './OutlineLabel'
 
-const DIALOG_H       = 400
-const BTN_H          = 64
-const BTN_FONT       = 22
-const BTN_W_BUY      = 220
-const BTN_W_CANCEL   = 180
-const BTN_BOTTOM     = 24
-const BTN_RIGHT      = 24
+const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
+
 const ZOOM_DURATION  = 290
 const SHAKE_DURATION = 320
 
-const BUY_BTN_BG          = { r: 0.17, g: 0.52, b: 0.17, a: 1 }
-const BUY_BTN_BG_DISABLED = { r: 0.22, g: 0.22, b: 0.22, a: 1 }
+// Warm parchment palette — mirrors NpcDialogMenu
+const TEXT_BROWN       = { r: 0.28, g: 0.15, b: 0.04, a: 1 }
+const TEXT_BROWN_MUTE  = { r: 0.48, g: 0.30, b: 0.10, a: 1 }
+const BTN_BG_PRIMARY   = { r: 0.45, g: 0.26, b: 0.06, a: 1 }
+const BTN_BG_SECONDARY = { r: 0.62, g: 0.42, b: 0.16, a: 1 }
+const BTN_BG_DISABLED  = { r: 0.30, g: 0.22, b: 0.10, a: 1 }
+const BTN_TEXT         = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
+const BTN_TEXT_MUTED   = { r: 0.60, g: 0.50, b: 0.35, a: 1 }
+
+// Base dimensions — same reference frame as NpcDialogMenu
+const BASE_W          = 740
+const BASE_H          = 380
+const BASE_PORT_SIZE  = 145
+const BASE_PORT_LEFT  = 72
+const BASE_PORT_TOP   = 118
+const BASE_NAME_TOP   = 68
+const BASE_NAME_H     = 36
+const BASE_TEXT_RIGHT = 48
+const BASE_BTN_H      = 46
+const BASE_BTN_FONT   = 16
+const BASE_BTN_W_PAIR = 140
+const BASE_BTN_BOTTOM = 68
 
 export const PlotGroupUnlockMenu = () => {
-  const def       = getPlotGroupDef(playerState.activePlotGroupName)
-  const cost      = def?.coinCost ?? 0
-  const minLevel  = def?.requiredLevel ?? 0
-  const canAfford = playerState.coins >= cost
-  const meetsLevel = playerState.level >= minLevel
-  const canBuy    = canAfford && meetsLevel
+  const mobile = isMobile()
+  const d = (v: number) => Math.round(v * (mobile ? 1.5 : 1))
 
-  const buyScale = getZoomScale('plotgroup_confirm')
-  const buyW     = Math.round(BTN_W_BUY * buyScale)
-  const buyH     = Math.round(BTN_H * buyScale)
+  const def        = getPlotGroupDef(playerState.activePlotGroupName)
+  const cost       = def?.coinCost ?? 0
+  const minLevel   = def?.requiredLevel ?? 0
+  const canAfford  = playerState.coins >= cost
+  const meetsLevel = playerState.level >= minLevel
+  const canBuy     = canAfford && meetsLevel
+
+  const W         = d(BASE_W)
+  const H         = d(BASE_H)
+  const PORT_SIZE = d(BASE_PORT_SIZE)
+  const PORT_LEFT = d(BASE_PORT_LEFT)
+  const PORT_TOP  = d(BASE_PORT_TOP)
+  const NAME_TOP  = d(BASE_NAME_TOP)
+  const NAME_H    = d(BASE_NAME_H)
+  const NAME_LEFT = PORT_LEFT + PORT_SIZE + d(14)
+  const TEXT_W    = W - NAME_LEFT - d(BASE_TEXT_RIGHT)
+  const BTN_H     = d(BASE_BTN_H)
+  const BTN_FONT  = d(BASE_BTN_FONT)
+  const BTN_W     = d(BASE_BTN_W_PAIR)
+  const BTN_BOTTOM = d(BASE_BTN_BOTTOM)
+  const BTN_LEFT  = Math.round((W - BTN_W * 2 - d(10)) / 2)
+  const TEXT_TOP  = NAME_TOP + NAME_H + d(28)
+  const COST_TOP  = TEXT_TOP + d(62)
+  const buyScale  = getZoomScale('plotgroup_confirm')
+
+  const levelBadgeColor = meetsLevel
+    ? { r: 0.18, g: 0.45, b: 0.12, a: 0.85 }
+    : { r: 0.50, g: 0.12, b: 0.05, a: 0.85 }
 
   function doConfirm() {
     if (!def) return
@@ -42,163 +79,189 @@ export const PlotGroupUnlockMenu = () => {
     playerState.activeMenu = 'none'
   }
 
-  const levelNote = minLevel > 0
-    ? `Requires Level ${minLevel}. You are Level ${playerState.level}.`
-    : 'No level requirement.'
-
   return (
     <UiEntity
       uiTransform={{
         positionType: 'absolute',
-        position: { bottom: '8%', left: '20%' },
-        width: '60%',
-        height: DIALOG_H,
-        flexDirection: 'row',
-        pointerFilter: 'block',
+        position: { bottom: '6%', left: 0 },
+        width: '100%',
+        height: H,
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerFilter: 'none',
       }}
-      uiBackground={{ color: C.panelBg }}
     >
-      {/* ── Left: soil visual ── */}
       <UiEntity
-        uiTransform={{
-          width: 160,
-          height: 160,
-          flexShrink: 0,
-          alignSelf: 'center',
-          margin: { left: 24, right: 16 },
-        }}
-        uiBackground={{
-          texture: { src: SOIL_ICON, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-        }}
-      />
-
-      {/* ── Right: content ── */}
-      <UiEntity
-        uiTransform={{
-          flex: 1,
-          flexDirection: 'column',
-          padding: { top: 24, bottom: BTN_H + BTN_BOTTOM + 8, left: 8, right: 70 },
-        }}
+        uiTransform={{ width: W, height: H, pointerFilter: 'block' }}
+        uiBackground={{ texture: { src: BG_SRC, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       >
-        <Label
-          value="Plot Expansion"
-          fontSize={30}
-          color={C.header}
-          textAlign="middle-left"
-          uiTransform={{ width: '100%', height: 46, margin: { bottom: 10 } }}
-        />
+
+        {/* Soil icon — occupies the NPC portrait slot */}
         <UiEntity
-          uiTransform={{ width: '100%', height: 2, margin: { bottom: 14 } }}
-          uiBackground={{ color: C.divider }}
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: PORT_TOP, left: PORT_LEFT },
+            width: PORT_SIZE,
+            height: PORT_SIZE,
+          }}
+          uiBackground={{ texture: { src: SOIL_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
+
+        {/* Title — outlined like the NPC name */}
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: NAME_TOP, left: NAME_LEFT },
+            width: TEXT_W,
+            height: NAME_H,
+          }}
+        >
+          <OutlineLabel
+            value="Plot Expansion"
+            fontSize={d(24)}
+            color={{ r: 1, g: 0.88, b: 0.5, a: 1 }}
+            outlineColor={{ r: 0.15, g: 0.07, b: 0.02, a: 1 }}
+            width={TEXT_W}
+            height={NAME_H}
+          />
+        </UiEntity>
+
+        {/* Description */}
         <Label
-          value={`Unlock 3 new soil plots to grow more crops. ${levelNote}`}
-          fontSize={22}
-          color={C.textMain}
+          value={`Unlock 3 new soil plots to grow more crops.\nMore land, more harvest!`}
+          fontSize={d(mobile ? 15 : 18)}
+          color={TEXT_BROWN}
           textAlign="top-left"
-          uiTransform={{ flex: 1 }}
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: TEXT_TOP, left: NAME_LEFT },
+            width: TEXT_W,
+            height: d(56),
+          }}
         />
 
         {/* Cost row */}
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', height: 38 }}>
-          <Label value="Cost: " fontSize={28} color={C.textMute} />
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: COST_TOP, left: NAME_LEFT },
+            flexDirection: 'row',
+            alignItems: 'center',
+            height: d(28),
+          }}
+        >
+          <Label value="Cost: " fontSize={d(15)} color={TEXT_BROWN_MUTE} />
           <UiEntity
-            uiTransform={{ width: 30, height: 30, margin: { left: 4, right: 6 }, flexShrink: 0 }}
-            uiBackground={{ texture: { src: COINS_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            uiTransform={{ width: d(18), height: d(18), margin: { left: 4, right: 4 }, flexShrink: 0 }}
+            uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
           />
           <Label
             value={`${cost}`}
-            fontSize={28}
-            color={canAfford ? C.gold : { r: 1, g: 0.38, b: 0.38, a: 1 }}
+            fontSize={d(16)}
+            color={canAfford ? TEXT_BROWN : { r: 0.7, g: 0.15, b: 0.05, a: 1 }}
           />
           <Label
-            value={`  (You: ${playerState.coins})`}
-            fontSize={22}
-            color={C.textMute}
-            uiTransform={{ margin: { left: 8 } }}
+            value={`  (you have: ${playerState.coins})`}
+            fontSize={d(13)}
+            color={TEXT_BROWN_MUTE}
           />
+          {minLevel > 0 && (
+            <UiEntity
+              uiTransform={{
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: { left: d(8), right: d(8), top: d(2), bottom: d(2) },
+                margin: { left: d(12) },
+                borderRadius: 6,
+              }}
+              uiBackground={{ color: levelBadgeColor }}
+            >
+              <Label
+                value={meetsLevel ? `Lv ${minLevel} ✓` : `Lv ${minLevel} required`}
+                fontSize={d(12)}
+                color={BTN_TEXT}
+                textAlign="middle-center"
+              />
+            </UiEntity>
+          )}
         </UiEntity>
-      </UiEntity>
 
-      {/* ── X button ── */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { right: 0, top: 0 },
-          width: 52,
-          height: 52,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        uiBackground={{ color: { r: 0.22, g: 0.08, b: 0.03, a: 1 } }}
-        onMouseDown={() => { playSound('buttonclick'); playerState.activeMenu = 'none' }}
-      >
-        <Label value="✕" fontSize={24} color={C.orange} textAlign="middle-center" />
-      </UiEntity>
-
-      {/* ── BUY button ── */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: {
-            right: BTN_RIGHT + BTN_W_CANCEL + 12,
-            bottom: BTN_BOTTOM + Math.round((BTN_H - buyH) / 2),
-          },
-          width: buyW,
-          height: buyH,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-        uiBackground={{ color: canBuy ? BUY_BTN_BG : BUY_BTN_BG_DISABLED }}
-        onMouseDown={() => {
-          if (!canBuy || isZooming('plotgroup_confirm')) return
-          playSound('buttonclick')
-          triggerCardZoom('plotgroup_confirm')
-          setTimeout(doConfirm, ZOOM_DURATION)
-        }}
-      >
-        <Label
-          value="BUY"
-          fontSize={BTN_FONT}
-          color={canBuy ? { r: 1, g: 1, b: 1, a: 1 } : C.textMute}
-          textAlign="middle-center"
-        />
+        {/* X close button */}
         <UiEntity
-          uiTransform={{ width: 22, height: 22, margin: { left: 10, right: 6 }, flexShrink: 0 }}
-          uiBackground={{ texture: { src: COINS_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-        <Label
-          value={`${cost}`}
-          fontSize={BTN_FONT}
-          color={canBuy ? C.gold : C.textMute}
-          textAlign="middle-center"
-        />
-      </UiEntity>
-
-      {/* ── Not now button ── */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: {
-            right: BTN_RIGHT - getShakeOffset('plotgroup_cancel'),
-            bottom: BTN_BOTTOM,
-          },
-        }}
-      >
-        <Button
-          value="Not now"
-          variant="secondary"
-          fontSize={BTN_FONT}
-          uiTransform={{ width: BTN_W_CANCEL, height: BTN_H }}
-          onMouseDown={() => {
-            if (isShaking('plotgroup_cancel')) return
-            playSound('buttonclick')
-            triggerCardShake('plotgroup_cancel')
-            setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
+          uiTransform={{
+            positionType: 'absolute',
+            position: { right: d(14), top: d(12) },
+            width: d(30),
+            height: d(30),
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 4,
           }}
-        />
+          uiBackground={{ color: { r: 0.45, g: 0.26, b: 0.06, a: 0.85 } }}
+          onMouseDown={() => { playSound('buttonclick'); playerState.activeMenu = 'none' }}
+        >
+          <Label value="✕" fontSize={d(14)} color={BTN_TEXT} textAlign="middle-center" />
+        </UiEntity>
+
+        {/* Button row — BUY + Not now */}
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { left: BTN_LEFT, bottom: BTN_BOTTOM },
+            flexDirection: 'row',
+          }}
+        >
+          <UiEntity
+            uiTransform={{
+              width: Math.round(BTN_W * buyScale),
+              height: Math.round(BTN_H * buyScale),
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+              margin: { right: d(10) },
+            }}
+            uiBackground={{ color: canBuy ? BTN_BG_PRIMARY : BTN_BG_DISABLED }}
+            onMouseDown={() => {
+              if (!canBuy || isZooming('plotgroup_confirm')) return
+              playSound('buttonclick')
+              triggerCardZoom('plotgroup_confirm')
+              setTimeout(doConfirm, ZOOM_DURATION)
+            }}
+          >
+            <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+              <Label
+                value={`Buy  ${cost}`}
+                fontSize={BTN_FONT}
+                color={canBuy ? BTN_TEXT : BTN_TEXT_MUTED}
+                textAlign="middle-center"
+              />
+              <UiEntity
+                uiTransform={{ width: d(14), height: d(14), margin: { left: d(5) }, flexShrink: 0 }}
+                uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+              />
+            </UiEntity>
+          </UiEntity>
+
+          <UiEntity
+            uiTransform={{
+              width: BTN_W,
+              height: BTN_H,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 8,
+            }}
+            uiBackground={{ color: BTN_BG_SECONDARY }}
+            onMouseDown={() => {
+              if (isShaking('plotgroup_cancel')) return
+              playSound('buttonclick')
+              triggerCardShake('plotgroup_cancel')
+              setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
+            }}
+          >
+            <Label value="Not now" fontSize={BTN_FONT} color={BTN_TEXT} textAlign="middle-center" />
+          </UiEntity>
+        </UiEntity>
+
       </UiEntity>
     </UiEntity>
   )
