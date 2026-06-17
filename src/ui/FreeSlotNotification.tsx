@@ -1,4 +1,5 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
 import { requestClaimSlot } from './FarmSelectPanel'
 import { playSound } from '../systems/sfxSystem'
@@ -13,8 +14,11 @@ const GOLD        = { r: 1,    g: 0.88, b: 0.5,  a: 1 }
 const RED         = { r: 0.75, g: 0.18, b: 0.08, a: 1 }
 
 export const FreeSlotNotification = () => {
-  const notif = playerState.freeSlotNotification
+  const notif  = playerState.freeSlotNotification
   if (!notif) return null
+
+  const mobile = isMobile()
+  const d      = (v: number) => Math.round(v * (mobile ? 1.5 : 1))
 
   const now       = Date.now()
   const elapsedS  = (now - notif.shownAt) / 1000
@@ -42,8 +46,8 @@ export const FreeSlotNotification = () => {
     >
       <UiEntity
         uiTransform={{
-          width: 480,
-          height: 220,
+          width: d(480),
+          height: d(220),
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
@@ -54,10 +58,10 @@ export const FreeSlotNotification = () => {
         {/* Title — always visible */}
         <Label
           value="FREE SLOT AVAILABLE!"
-          fontSize={26}
+          fontSize={d(26)}
           color={GOLD}
           textAlign="middle-center"
-          uiTransform={{ positionType: 'absolute', position: { top: 18 } }}
+          uiTransform={{ positionType: 'absolute', position: { top: d(18) } }}
         />
 
         {/* Body area */}
@@ -65,7 +69,7 @@ export const FreeSlotNotification = () => {
           <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
             <Label
               value="Someone else got it!"
-              fontSize={18}
+              fontSize={d(18)}
               color={RED}
               textAlign="middle-center"
             />
@@ -74,19 +78,19 @@ export const FreeSlotNotification = () => {
           <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
             <Label
               value="A farm slot just opened up!"
-              fontSize={18}
+              fontSize={d(18)}
               color={TEXT_BROWN}
               textAlign="middle-center"
-              uiTransform={{ margin: { bottom: 16 } }}
+              uiTransform={{ margin: { bottom: d(16) } }}
             />
 
             {/* Claim button + timer */}
             <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
               <UiEntity
                 uiTransform={{
-                  width: 180, height: 52,
+                  width: d(180), height: d(52),
                   alignItems: 'center', justifyContent: 'center',
-                  borderRadius: 10, margin: { right: 16 },
+                  borderRadius: d(10), margin: { right: d(16) },
                 }}
                 uiBackground={{ color: BTN_BG }}
                 onMouseDown={() => {
@@ -94,12 +98,12 @@ export const FreeSlotNotification = () => {
                   requestClaimSlot(notif.slotId)
                 }}
               >
-                <Label value="CLAIM SLOT" fontSize={20} color={BTN_TEXT} textAlign="middle-center" />
+                <Label value="CLAIM SLOT" fontSize={d(20)} color={BTN_TEXT} textAlign="middle-center" />
               </UiEntity>
 
               <Label
                 value={`${remaining}s`}
-                fontSize={22}
+                fontSize={d(22)}
                 color={remaining <= 5 ? RED : TEXT_BROWN}
                 textAlign="middle-center"
               />
