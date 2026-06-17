@@ -10,10 +10,26 @@ import { FARM_SPAWN_POSITIONS, PLAZA_SPAWN_POSITION } from '../systems/interacti
 import { teleportToSlot } from '../services/saveService'
 
 const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
-const SHOVEL_ICON_UP = 'assets/images/ui_loading/shovel_icon_up.png'
-const SHOVEL_ICON_RIGHT = 'assets/images/ui_loading/shovel_icon_right.png'
-const SHOVEL_ICON_DOWN = 'assets/images/ui_loading/shovel_icon_down.png'
-const SHOVEL_ICON_LEFT = 'assets/images/ui_loading/shovel_icon_left.png'
+const SHOVEL_ICON_UP = 'assets/images/ui_loading/arrow.png'
+type MarkerIcon = { src: string; uvs: number[] }
+
+// Rotate the 4 UV corners of a unit quad around center (0.5,0.5).
+// DCL vertex order: TL(0,1) TR(1,1) BR(1,0) BL(0,0) — V=1 is visual top.
+// Positive angleDeg = clockwise visual rotation of the sprite.
+function rotateUVs(angleDeg: number): number[] {
+  const a = (angleDeg * Math.PI) / 180
+  const c = Math.cos(a)
+  const s = Math.sin(a)
+  function rot(u: number, v: number): [number, number] {
+    const du = u - 0.5, dv = v - 0.5
+    return [du * c - dv * s + 0.5, du * s + dv * c + 0.5]
+  }
+  const [u0, v0] = rot(0, 1)  // TL
+  const [u1, v1] = rot(1, 1)  // TR
+  const [u2, v2] = rot(1, 0)  // BR
+  const [u3, v3] = rot(0, 0)  // BL
+  return [u0, v0, u1, v1, u2, v2, u3, v3]
+}
 const MAP_EXTENDED_ATLAS = 'assets/images/ui_loading/map_extended.png'
 const GLOW_ATLAS = 'assets/images/ui_loading/glow.png'
 const MINIMAP_ATLAS_SIZE = 512
@@ -23,10 +39,11 @@ const MAP_TILE_W = 176
 const MAP_TILE_H = 126
 const MAP_ROAD = 16
 // 3×3 grid encoding 8 farm slots + central plaza (-1). Matches server MAX_FARM_SLOTS = 8.
+// Slot 0 is physically at bottom-left; numbering goes counterclockwise around the plaza.
 const MAP_LAYOUT = [
-  [0, 7, 6],
-  [1, -1, 5],
   [2, 3, 4],
+  [1, -1, 5],
+  [0, 7, 6],
 ] as const
 const MINIMAP_BG_RECT = { x: 7, y: 6, w: 360, h: 493 } as const
 const MINIMAP_WINDOW_RECT = { x: 26, y: 80, w: 322, h: 346 } as const
@@ -51,7 +68,7 @@ const MINI_TILE_H = Math.floor((MINIMAP_GRID_H - MINI_ROAD * 2) / 3)
 const MAP_WORLD_PADDING = 40
 const BIG_MARKER_SIZE = 20
 const MINI_MARKER_SIZE = 14
-const MARKER_SCALE = 4
+const MARKER_SCALE = 3.4
 const MAP_PANEL_TOP = 248
 const MAP_EXT_BG_RECT = { x: 8, y: 5, w: 908, h: 771 } as const
 const MAP_EXT_WINDOW_RECT = { x: 33, y: 76, w: 853, h: 627 } as const
@@ -273,7 +290,7 @@ function getPlayerMarkerPosition(width: number, height: number): MarkerPosition 
 
   return {
     left: normalizedX * width,
-    top: normalizedZ * height,
+    top: (1 - normalizedZ) * height,  // DCL Z+ = north = top of map, so invert
   }
 }
 
@@ -283,9 +300,20 @@ function normalizeDegrees(angle: number): number {
   return value
 }
 
-function getPlayerMarkerSrc(): string {
+// Smooth angular interpolation — arrow pivots continuously, no discrete snapping.
+// shovel_icon_up.png points UP = mapAngle 270° (North). Sprite angle offset = +90°
+// converts our mapAngle system so rotateUVs(0) shows the sprite pointing up.
+const SHOVEL_DEG_PER_MS = 360 / 250  // full spin in 250 ms max
+let smoothAngle = -1
+let smoothAngleTs = 0
+
+function shortestAngularDelta(from: number, to: number): number {
+  return ((to - from + 540) % 360) - 180
+}
+
+function getPlayerMarkerIcon(): MarkerIcon {
   const playerTransform = Transform.getOrNull(engine.PlayerEntity)
-  if (!playerTransform) return SHOVEL_ICON_UP
+  if (!playerTransform) return { src: SHOVEL_ICON_UP, uvs: rotateUVs(0) }
 
   const q = playerTransform.rotation
   const yaw = Math.atan2(
@@ -293,12 +321,23 @@ function getPlayerMarkerSrc(): string {
     1 - 2 * (q.y * q.y + q.x * q.x),
   ) * (180 / Math.PI)
 
-  const mapAngle = normalizeDegrees(90 - yaw)
+  const targetAngle = normalizeDegrees(yaw - 90)
+  const now = Date.now()
 
-  if (mapAngle >= 45 && mapAngle < 135) return SHOVEL_ICON_DOWN
-  if (mapAngle >= 135 && mapAngle < 225) return SHOVEL_ICON_LEFT
-  if (mapAngle >= 225 && mapAngle < 315) return SHOVEL_ICON_UP
-  return SHOVEL_ICON_RIGHT
+  if (smoothAngle === -1) {
+    smoothAngle = targetAngle
+  } else {
+    const elapsed = now - smoothAngleTs
+    const maxDelta = SHOVEL_DEG_PER_MS * elapsed
+    const delta = shortestAngularDelta(smoothAngle, targetAngle)
+    smoothAngle = normalizeDegrees(
+      smoothAngle + (Math.abs(delta) <= maxDelta ? delta : Math.sign(delta) * maxDelta)
+    )
+  }
+  smoothAngleTs = now
+
+  // mapAngle 270° = North = sprite UP = 0° visual rotation, so offset by +90°
+  return { src: SHOVEL_ICON_UP, uvs: rotateUVs((smoothAngle + 180) % 360) }
 }
 
 export function requestClaimSlot(slotId: number): void {
@@ -767,7 +806,7 @@ const MapPlayerMarker = ({
   inset: number
 }) => {
   if (!marker) return null
-  const markerSrc = getPlayerMarkerSrc()
+  const icon = getPlayerMarkerIcon()
   const renderSize = size * MARKER_SCALE
 
   return (
@@ -782,8 +821,9 @@ const MapPlayerMarker = ({
         height: renderSize,
       }}
       uiBackground={{
-        texture: { src: markerSrc, wrapMode: 'clamp' },
+        texture: { src: icon.src, wrapMode: 'clamp' },
         textureMode: 'stretch',
+        uvs: icon.uvs,
       }}
     >
       <Label
