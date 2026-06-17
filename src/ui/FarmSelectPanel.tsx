@@ -10,7 +10,7 @@ import { FARM_SPAWN_POSITIONS, PLAZA_SPAWN_POSITION } from '../systems/interacti
 import { teleportToSlot } from '../services/saveService'
 
 const MINIMAP_ATLAS = 'assets/images/ui_loading/minimap.png'
-const SHOVEL_ICON_UP = 'assets/images/ui_loading/arrow.png'
+const ARROW_ICON = 'assets/images/ui_loading/arrow.png'
 type MarkerIcon = { src: string; uvs: number[] }
 
 // Rotate the 4 UV corners of a unit quad around center (0.5,0.5).
@@ -313,7 +313,7 @@ function shortestAngularDelta(from: number, to: number): number {
 
 function getPlayerMarkerIcon(): MarkerIcon {
   const playerTransform = Transform.getOrNull(engine.PlayerEntity)
-  if (!playerTransform) return { src: SHOVEL_ICON_UP, uvs: rotateUVs(0) }
+  if (!playerTransform) return { src: ARROW_ICON, uvs: rotateUVs(0) }
 
   const q = playerTransform.rotation
   const yaw = Math.atan2(
@@ -337,7 +337,7 @@ function getPlayerMarkerIcon(): MarkerIcon {
   smoothAngleTs = now
 
   // mapAngle 270° = North = sprite UP = 0° visual rotation, so offset by +90°
-  return { src: SHOVEL_ICON_UP, uvs: rotateUVs((smoothAngle + 180) % 360) }
+  return { src: ARROW_ICON, uvs: rotateUVs((smoothAngle + 180) % 360) }
 }
 
 export function requestClaimSlot(slotId: number): void {
