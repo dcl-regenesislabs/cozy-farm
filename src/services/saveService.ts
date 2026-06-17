@@ -798,6 +798,11 @@ export function initSaveService(onLoaded?: () => void): void {
     hideFarmSlot(data.slotId)
     clearRemoteFarmSlot(data.slotId)
     console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
+
+    // Notify waiting players that a slot just opened
+    if (playerState.mySlotId < 0 && !playerState.farmGameplayUiReady) {
+      playerState.freeSlotNotification = { slotId: data.slotId, shownAt: Date.now(), taken: false }
+    }
   })
 
   // Another player's farm became visible — reveal their slot and render crops
@@ -863,6 +868,7 @@ export function initSaveService(onLoaded?: () => void): void {
       playerState.farmSlots = data.slots
       playerState.farmGameplayUiReady = false
       playerState.plazaMapMinimized = false
+      playerState.freeSlotNotification = null
       if (playerState.activeMenu === 'farmSelect') playerState.activeMenu = 'none'
     } else {
       playerState.farmAssignmentOverlayActive = false
@@ -871,6 +877,17 @@ export function initSaveService(onLoaded?: () => void): void {
       playerState.farmAssignmentOverlayDurationMs = 0
       playerState.farmGameplayUiReady = false
       playSlotAssignmentOverlay = false
+      // Show "someone got it" feedback then auto-dismiss.
+      // Capture reference so a fresher notification arriving during the 2s window is not wiped.
+      if (playerState.freeSlotNotification && data.reason === 'slot_taken') {
+        const takenNotif = { ...playerState.freeSlotNotification, taken: true }
+        playerState.freeSlotNotification = takenNotif
+        setTimeout(() => {
+          if (playerState.freeSlotNotification === takenNotif) {
+            playerState.freeSlotNotification = null
+          }
+        }, 2000)
+      }
     }
     slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
   })
