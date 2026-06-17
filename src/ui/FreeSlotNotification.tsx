@@ -51,16 +51,26 @@ export const FreeSlotNotification = () => {
         }}
         uiBackground={{ texture: { src: BG_SRC, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       >
-        {/* Title */}
+        {/* Title — always visible */}
         <Label
-          value={taken ? 'Someone else got it!' : 'FREE SLOT AVAILABLE!'}
+          value="FREE SLOT AVAILABLE!"
           fontSize={26}
-          color={taken ? RED : GOLD}
+          color={GOLD}
           textAlign="middle-center"
           uiTransform={{ positionType: 'absolute', position: { top: 18 } }}
         />
 
-        {!taken && (
+        {/* Body area */}
+        {taken ? (
+          <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
+            <Label
+              value="Someone else got it!"
+              fontSize={18}
+              color={RED}
+              textAlign="middle-center"
+            />
+          </UiEntity>
+        ) : (
           <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
             <Label
               value="A farm slot just opened up!"
