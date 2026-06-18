@@ -48,6 +48,7 @@ const SLOT_ASSIGNMENT_OVERLAY_INTRO_MS = 2_000
 const SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS = 4_200
 const SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS = SLOT_ASSIGNMENT_OVERLAY_INTRO_MS + SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS
 const INITIAL_LOAD_RETRY_DELAY_S = 2
+const OVERLAY_HARD_TIMEOUT_MS = 15_000  // force-unfreeze if server never responds
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
 
@@ -614,7 +615,7 @@ export function teleportToSlot(slotId: number): void {
 export function initSaveService(onLoaded?: () => void): void {
   playerState.farmAssignmentOverlayActive = true
   playerState.farmAssignmentOverlaySlotId = -1
-  playerState.farmAssignmentOverlayStartedAt = 0
+  playerState.farmAssignmentOverlayStartedAt = Date.now()
   playerState.farmAssignmentOverlayDurationMs = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS
   // Track server connection state — onReady fires true on connect, false on disconnect
   room.onReady((isReady) => {
@@ -655,6 +656,20 @@ export function initSaveService(onLoaded?: () => void): void {
         teleportToSlot(pendingTeleportSlotId)
         pendingTeleportSlotId = null
       }
+      return
+    }
+
+    // Hard timeout: if the overlay is still active and no teleport is pending,
+    // the server never completed the handshake — unfreeze to plaza so the
+    // player is not stuck indefinitely.
+    if (
+      playerState.farmAssignmentOverlayActive &&
+      Date.now() - playerState.farmAssignmentOverlayStartedAt > OVERLAY_HARD_TIMEOUT_MS
+    ) {
+      console.error('[SaveService] Overlay hard timeout — forcing plaza teleport and retrying load')
+      teleportToSlot(-1)
+      requestPlayerLoad()
+      return
     }
 
     // Recovery: slot was assigned but payload never arrived — re-request from server
@@ -803,7 +818,7 @@ export function initSaveService(onLoaded?: () => void): void {
     clearRemoteFarmSlot(data.slotId)
     console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
 
-    // Notify players waiting in the plaza that a slot is available
+    // Notify waiting players that a slot just opened
     if (playerState.mySlotId < 0 && !playerState.farmGameplayUiReady) {
       playerState.freeSlotNotification = { slotId: data.slotId, shownAt: Date.now(), taken: false }
     }
@@ -881,7 +896,8 @@ export function initSaveService(onLoaded?: () => void): void {
       playerState.farmAssignmentOverlayDurationMs = 0
       playerState.farmGameplayUiReady = false
       playSlotAssignmentOverlay = false
-      // Race condition: someone else claimed first — show "taken" briefly then dismiss
+      // Show "someone got it" feedback then auto-dismiss.
+      // Capture reference so a fresher notification arriving during the 2s window is not wiped.
       if (playerState.freeSlotNotification && data.reason === 'slot_taken') {
         const takenNotif = { ...playerState.freeSlotNotification, taken: true }
         playerState.freeSlotNotification = takenNotif
@@ -889,7 +905,7 @@ export function initSaveService(onLoaded?: () => void): void {
           if (playerState.freeSlotNotification === takenNotif) {
             playerState.freeSlotNotification = null
           }
-        }, 2500)
+        }, 2000)
       }
     }
     slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
