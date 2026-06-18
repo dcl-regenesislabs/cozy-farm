@@ -455,6 +455,10 @@ export function requestPayWorkerWages(): void {
   void room.send('payWorkerWages', {})
 }
 
+export function requestClaimFarmSlot(slotId: number): void {
+  void room.send('claimFarmSlot', { slotId })
+}
+
 function applyDebugWorkerState(data: {
   coins: number
   cropsUnlocked: boolean
