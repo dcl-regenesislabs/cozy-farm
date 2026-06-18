@@ -199,7 +199,7 @@ const TabBar = ({
   homeHasReady: boolean
   expansionHasReady: boolean
 }) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: ss(12) }, flexShrink: 0 }}>
+  <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
     {(['home', 'expansion', 'compost'] as const).map((t) => {
       const active = tab === t
       const label  = t === 'home' ? 'My Farm' : t === 'expansion' ? 'Expansion' : 'Compost Bin'
@@ -207,7 +207,7 @@ const TabBar = ({
       return (
         <UiEntity key={t} uiTransform={{ margin: { right: TAB_GAP } }}>
           <UiEntity
-            uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+            uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
             uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
             onMouseDown={() => { playSound('buttonclick'); farmTab.value = t }}
           >
@@ -434,14 +434,14 @@ const CompostTab = () => {
         {/* Action buttons */}
         <UiEntity uiTransform={{ flexDirection: 'column', margin: { left: ss(12) } }}>
           <UiEntity
-            uiTransform={{ width: ss(200), height: ss(52), alignItems: 'center', justifyContent: 'center', borderRadius: 8, margin: { bottom: ss(10) } }}
+            uiTransform={{ width: ss(200), height: ss(52), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { bottom: ss(10) } }}
             uiBackground={{ color: canAdd ? BTN_BG_ON : BTN_BG_OFF }}
             onMouseDown={canAdd ? () => { if (isZooming('fp_compost_add')) return; triggerCardZoom('fp_compost_add'); setTimeout(addCompostWaste, 290) } : undefined}
           >
             <Label value="Add Waste" fontSize={ss(19)} color={canAdd ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
           </UiEntity>
           <UiEntity
-            uiTransform={{ width: Math.round(ss(200) * getZoomScale('fp_compost_collect')), height: Math.round(ss(52) * getZoomScale('fp_compost_collect')), alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+            uiTransform={{ width: Math.round(ss(200) * getZoomScale('fp_compost_collect')), height: Math.round(ss(52) * getZoomScale('fp_compost_collect')), alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
             uiBackground={{ color: canCollect ? { r: 0.55, g: 0.38, b: 0.05, a: 1 } : BTN_BG_OFF }}
             onMouseDown={canCollect ? () => { if (isZooming('fp_compost_collect')) return; triggerCardZoom('fp_compost_collect'); setTimeout(collectCompostReady, 290) } : undefined}
           >
@@ -507,7 +507,7 @@ export const FarmPanel = () => {
       {/* Plot grid */}
       {isPlotTab && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', flex: 1 }}>
-          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', flex: 1 }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center', flex: 1 }}>
             {pageSlice.map((e, i) => (
               <PlotTile key={page * PLOTS_PER_PAGE + i} entity={e} idx={offset + page * PLOTS_PER_PAGE + i} now={now} />
             ))}
@@ -517,7 +517,7 @@ export const FarmPanel = () => {
           {lastPage > 0 && (
             <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: ss(12) }, flexShrink: 0 }}>
               <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 8, margin: { right: ss(20) } }}
+                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(20) } }}
                 uiBackground={{ color: page > 0 ? BTN_BG_ON : BTN_BG_OFF }}
                 onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
               >
@@ -531,7 +531,7 @@ export const FarmPanel = () => {
                 uiTransform={{ width: ss(80) }}
               />
               <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 8, margin: { left: ss(20) } }}
+                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(20) } }}
                 uiBackground={{ color: page < lastPage ? BTN_BG_ON : BTN_BG_OFF }}
                 onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
               >

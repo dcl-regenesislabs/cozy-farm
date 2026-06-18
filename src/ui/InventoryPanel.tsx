@@ -165,7 +165,7 @@ const InventoryPanelFrame = ({
 
 // ─── TabBar ───────────────────────────────────────────────────────────────────
 const TabBar = ({ tab, hasOther }: { tab: 'seeds' | 'harvested' | 'other'; hasOther: boolean }) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: ss(12) }, flexShrink: 0 }}>
+  <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
     {(['seeds', 'harvested', 'other'] as const).map((t) => {
       if (t === 'other' && !hasOther) return null
       const active = tab === t
@@ -173,7 +173,7 @@ const TabBar = ({ tab, hasOther }: { tab: 'seeds' | 'harvested' | 'other'; hasOt
       return (
         <UiEntity
           key={t}
-          uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 8, margin: { right: TAB_GAP } }}
+          uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: TAB_GAP } }}
           uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
           onMouseDown={() => { playSound('buttonclick'); invTab.value = t }}
         >
@@ -212,7 +212,7 @@ export const InventoryPanel = () => {
         seedRows.length === 0
           ? <EmptyState message="No seeds in stock" />
           : (
-            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start' }}>
+            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
               {seedRows.map((c) => (
                 <InvCard key={`s${c}`} borderColor={{ r: 0.32, g: 0.78, b: 0.32, a: 0.95 }}>
                   <UiEntity
@@ -233,7 +233,7 @@ export const InventoryPanel = () => {
         harvestRows.length === 0
           ? <EmptyState message="Nothing harvested yet" />
           : (
-            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start' }}>
+            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
               {harvestRows.map((c) => (
                 <InvCard key={`h${c}`} borderColor={{ r: 0.85, g: 0.55, b: 0.15, a: 0.95 }}>
                   <UiEntity
@@ -251,7 +251,7 @@ export const InventoryPanel = () => {
 
       {/* Other items tab */}
       {tab === 'other' && (
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start' }}>
+        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
 
           {playerState.organicWaste > 0 && (
             <InvCard borderColor={{ r: 0.70, g: 0.50, b: 0.15, a: 0.95 }}>

@@ -153,7 +153,7 @@ export const PlantMenu = () => {
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
           <Label value="Choose a seed to plant:" fontSize={ss(21)} color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
             uiTransform={{ margin: { bottom: ss(14) } }} />
-          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start' }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
             {available.map((ct) => (
               <SeedCard key={ct} cropType={ct} count={playerState.seeds.get(ct)!} />
             ))}
