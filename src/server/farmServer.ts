@@ -115,6 +115,13 @@ function getDisplayName(address: string): string {
 
 async function loadAndSend(address: string, requestId: string): Promise<void> {
   const normalized = address.toLowerCase()
+
+  // Assign slot BEFORE any await so concurrent loadAndSend calls can never
+  // both see the same slot as free. assignSlot is synchronous; nothing can
+  // interleave between it and the broadcast below.
+  const slotId = assignSlot(normalized)
+  void room.send('farmSlotsLoaded', { requester: normalized, slots: getActiveSlotsPayload() })
+
   const farm = await store.load(normalized)
 
   // Update display name on every connect so it stays current
@@ -129,23 +136,19 @@ async function loadAndSend(address: string, requestId: string): Promise<void> {
   // Register in directory on every connect so returning players appear immediately
   void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized))
 
-  // Assign in-memory session slot
-  const slotId = assignSlot(normalized)
-  const slots  = getActiveSlotsPayload()
-  void room.send('farmSlotsLoaded', { requester: normalized, slots })
-
-  for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
-    const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
-    if (!visualPayload) continue
-    void room.send('farmSlotVisualUpdated', visualPayload, { to: [normalized] })
-  }
-
   if (slotId !== null) {
     console.log(`[FarmServer] Slot ${slotId} assigned to ${normalized}`)
     const visualPayload = buildFarmSlotVisualPayload(slotId, normalized)
     if (visualPayload) void room.send('farmSlotVisualUpdated', visualPayload)
   } else {
     console.log(`[FarmServer] No free slots for ${normalized} — spawning in plaza`)
+  }
+
+  for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
+    if (activeWallet === normalized) continue
+    const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
+    if (!visualPayload) continue
+    void room.send('farmSlotVisualUpdated', visualPayload, { to: [normalized] })
   }
 }
 
@@ -186,6 +189,11 @@ async function cleanupDisconnectedPlayers(): Promise<void> {
 
 async function ensurePlayerSessionLoaded(address: string): Promise<number | null> {
   const normalized = address.toLowerCase()
+
+  // Assign slot BEFORE any await — same race-condition fix as loadAndSend.
+  const slotId = assignSlot(normalized)
+  void room.send('farmSlotsLoaded', { requester: normalized, slots: getActiveSlotsPayload() })
+
   if (!loadedAddresses.has(normalized)) {
     const farm = await store.load(normalized)
     farm.wallet = normalized
@@ -193,10 +201,8 @@ async function ensurePlayerSessionLoaded(address: string): Promise<number | null
     void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized), farm.beautyScore)
   }
 
-  const slotId = assignSlot(normalized)
-  void room.send('farmSlotsLoaded', { requester: normalized, slots: getActiveSlotsPayload() })
-
   for (const [activeSlotId, activeWallet] of activeSlots.entries()) {
+    if (activeWallet === normalized) continue
     const visualPayload = buildFarmSlotVisualPayload(activeSlotId, activeWallet)
     if (!visualPayload) continue
     void room.send('farmSlotVisualUpdated', visualPayload, { to: [normalized] })
@@ -575,10 +581,11 @@ export async function onPlayerDisconnect(address: string): Promise<void> {
   loadedAddresses.delete(normalized)
   console.log(`[FarmServer] Saved and evicted ${normalized} on disconnect`)
 
-  // Release farm slot and notify all clients to hide this farm
+  // Release farm slot and broadcast updated map to all clients
   const slotId = releaseSlot(normalized)
   if (slotId !== null) {
     console.log(`[FarmServer] Slot ${slotId} released — broadcasting farmSlotReleased`)
     void room.send('farmSlotReleased', { slotId })
+    void room.send('farmSlotsLoaded', { requester: normalized, slots: getActiveSlotsPayload() })
   }
 }
