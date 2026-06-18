@@ -26,6 +26,7 @@ import { VisitHud }         from './ui/VisitHud'
 import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 import { FarmAssignmentOverlay } from './ui/FarmAssignmentOverlay'
+import { FreeSlotNotification } from './ui/FreeSlotNotification'
 import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
 export function setupUi() {
@@ -51,7 +52,7 @@ const MainUi = () => {
     >
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
-      {showOwnFarmUi && playerState.activeMenu !== 'farmSelect' && playerState.activeMenu !== 'npcDialog' && playerState.activeMenu !== 'shop' && <BottomNav />}
+      {showOwnFarmUi && !['farmSelect','npcDialog','shop','inventory','farm','quests'].includes(playerState.activeMenu) && <BottomNav />}
 
       {showOwnFarmUi && playerState.activeMenu === 'plant'     && <PlantMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
@@ -79,6 +80,7 @@ const MainUi = () => {
       {showOwnFarmUi && playerState.activeMenu === 'quests'    && <QuestPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'farm'      && <FarmPanel />}
       <FarmAssignmentOverlay />
+      {waitingForSlot && <FreeSlotNotification />}
     </UiEntity>
   )
 }

@@ -454,6 +454,10 @@ export function requestPayWorkerWages(): void {
   void room.send('payWorkerWages', {})
 }
 
+export function requestClaimFarmSlot(slotId: number): void {
+  void room.send('claimFarmSlot', { slotId })
+}
+
 function applyDebugWorkerState(data: {
   coins: number
   cropsUnlocked: boolean
@@ -798,6 +802,11 @@ export function initSaveService(onLoaded?: () => void): void {
     hideFarmSlot(data.slotId)
     clearRemoteFarmSlot(data.slotId)
     console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
+
+    // Notify players waiting in the plaza that a slot is available
+    if (playerState.mySlotId < 0 && !playerState.farmGameplayUiReady) {
+      playerState.freeSlotNotification = { slotId: data.slotId, shownAt: Date.now(), taken: false }
+    }
   })
 
   // Another player's farm became visible — reveal their slot and render crops
@@ -863,6 +872,7 @@ export function initSaveService(onLoaded?: () => void): void {
       playerState.farmSlots = data.slots
       playerState.farmGameplayUiReady = false
       playerState.plazaMapMinimized = false
+      playerState.freeSlotNotification = null
       if (playerState.activeMenu === 'farmSelect') playerState.activeMenu = 'none'
     } else {
       playerState.farmAssignmentOverlayActive = false
@@ -871,6 +881,16 @@ export function initSaveService(onLoaded?: () => void): void {
       playerState.farmAssignmentOverlayDurationMs = 0
       playerState.farmGameplayUiReady = false
       playSlotAssignmentOverlay = false
+      // Race condition: someone else claimed first — show "taken" briefly then dismiss
+      if (playerState.freeSlotNotification && data.reason === 'slot_taken') {
+        const takenNotif = { ...playerState.freeSlotNotification, taken: true }
+        playerState.freeSlotNotification = takenNotif
+        setTimeout(() => {
+          if (playerState.freeSlotNotification === takenNotif) {
+            playerState.freeSlotNotification = null
+          }
+        }, 2500)
+      }
     }
     slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
   })

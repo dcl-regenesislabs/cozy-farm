@@ -11,7 +11,7 @@ import { WORKER_DEBUG_ENABLED } from '../shared/worker'
 // Slots are assigned when players connect and released when they disconnect.
 // Max 8 slots.
 // ---------------------------------------------------------------------------
-const MAX_FARM_SLOTS = 8
+const MAX_FARM_SLOTS = 2
 const activeSlots  = new Map<number, string>()   // slot → wallet
 const playerSlots  = new Map<string, number>()    // wallet → slot
 

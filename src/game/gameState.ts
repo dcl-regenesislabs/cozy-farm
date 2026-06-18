@@ -111,4 +111,6 @@ export const playerState = {
   menuInputLockDisabled: false,
   // Runtime-only: waiting-in-plaza UI state when no farm slot is available
   plazaMapMinimized: false,
+  // Runtime-only: shown when a slot frees up and the player is in the plaza
+  freeSlotNotification: null as { slotId: number; shownAt: number; taken: boolean } | null,
 }
