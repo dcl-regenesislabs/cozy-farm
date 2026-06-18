@@ -19,7 +19,9 @@ const BUTTONS: NavBtn[] = [
 
 type AnimKey = 'inventory' | 'farm' | 'quests' | 'stats'
 
-export const BottomNav = () => (
+export const BottomNav = () => {
+  if (playerState.activeMenu === 'stats') return <UiEntity />
+  return (
   <UiEntity
     uiTransform={{
       positionType: 'absolute',
@@ -78,4 +80,5 @@ export const BottomNav = () => (
       )
     })}
   </UiEntity>
-)
+  )
+}
