@@ -30,12 +30,12 @@ import { playSound } from '../systems/sfxSystem'
 const NPC_HEAD: Record<string, string> = {}
 for (const npc of NPC_ROSTER) NPC_HEAD[npc.id] = npc.headImage
 
-// ─── Atlas frame ─────────────────────────────────────────────────────────────
-const QUEST_ATLAS   = 'assets/images/ui_loading/quest_atlas.png'
-const ATLAS_SIZE    = 1024
-const BG_RECT       = { x: 57, y: 15, w: 909, h: 678 } as const
-const UI_SCALE      = 0.8
-const ss            = (v: number) => Math.round(v * UI_SCALE)
+// ─── Atlas ────────────────────────────────────────────────────────────────────
+const QUEST_ATLAS      = 'assets/images/ui_loading/quest_atlas.png'
+const ATLAS_SIZE       = 1024
+const BG_RECT          = { x: 57, y: 15, w: 909, h: 678 } as const
+const UI_SCALE         = 0.8
+const ss               = (v: number) => Math.round(v * UI_SCALE)
 
 const PANEL_W          = ss(1189)
 const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
@@ -45,25 +45,59 @@ const CONTENT_RIGHT    = ss(72)
 const CONTENT_TOP      = ss(100)
 const CONTENT_BOTTOM   = ss(68)
 const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
+const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
 const CLOSE_SIZE       = ss(74)
 const CLOSE_RIGHT      = ss(28)
 const CLOSE_TOP        = ss(16)
 
+// Mobile pagination bar (big buttons like farm)
+const MOB_PAGINAV_H    = ss(80)
+const DSK_PAGINAV_H    = ss(56)
+
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const CARD_FILL      = { r: 0.95, g: 0.88, b: 0.70, a: 0.55 }
+const MOB_CARD_FILL  = { r: 0.18, g: 0.11, b: 0.04, a: 0.92 }
 const CARD_TEXT      = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
 const CARD_TEXT_MUTE = { r: 0.45, g: 0.28, b: 0.10, a: 1 }
 const TRACK_COLOR    = { r: 0.55, g: 0.38, b: 0.15, a: 0.6 }
 const COIN_GOLD      = { r: 0.92, g: 0.72, b: 0.10, a: 1 }
-const REWARD_MUTE    = { r: 0.50, g: 0.32, b: 0.10, a: 1 }
-const FRAME_THICKNESS = 4
-
+const WHITE          = { r: 1, g: 1, b: 1, a: 1 }
+const WHITE_MUTE     = { r: 1, g: 1, b: 1, a: 0.65 }
+const WHITE_DIM      = { r: 1, g: 1, b: 1, a: 0.35 }
 const CARD_BORDER    = { r: 0.92, g: 0.72, b: 0.10, a: 0.95 }
 const COL_DONE       = { r: 0.30, g: 0.78, b: 0.30, a: 0.95 }
+const BTN_ON         = { r: 0.45, g: 0.26, b: 0.06, a: 1 }
+const BTN_OFF        = { r: 0.30, g: 0.22, b: 0.10, a: 1 }
+const BTN_TEXT       = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
 
 type RGBA = { r: number; g: number; b: number; a: number }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Debug: force all 11 items visible — DELETE BEFORE SHIP ──────────────────
+const QUEST_DEBUG = true
+
+// ─── Pagination + expand state ────────────────────────────────────────────────
+const questPage      = { value: 0 }
+const expandedQuests = new Set<string>()
+const ITEMS_PER_PAGE = 4
+
+// ─── Item types ───────────────────────────────────────────────────────────────
+type MilestoneItem = {
+  kind:       'milestone'
+  key:        string
+  title:      string
+  avatarSrc:  string
+  milestones: { label: string }[]
+  getStatus:  (m: any) => string
+}
+type QuestItem = {
+  kind: 'quest'
+  key:  string
+  def:  typeof QUEST_DEFINITIONS[number]
+  qp:   { current: number; status: string }
+}
+type AnyItem = MilestoneItem | QuestItem
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
   const S = ATLAS_SIZE
   const l = rect.x / S, r = (rect.x + rect.w) / S
@@ -71,96 +105,52 @@ function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
   return [l, b, l, t, r, t, r, b]
 }
 
-// ─── QuestCard wrapper ────────────────────────────────────────────────────────
-const QuestCard = ({
-  borderColor,
-  children,
-}: {
-  key?: string
-  borderColor: RGBA
-  children?: ReactEcs.JSX.ReactNode
-}) => {
-  const mobile = isMobile()
+// ─── Single checklist item ────────────────────────────────────────────────────
+const ChecklistRow = ({ label, status, fontSize }: { key?: string; label: string; status: string; fontSize: number }) => {
+  const icon  = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
+  const color = status === 'done' ? COL_DONE : status === 'current' ? COIN_GOLD : WHITE_MUTE
   return (
-    <UiEntity
-      uiTransform={{
-        flexDirection: 'row',
-        width: '100%',
-        margin: { bottom: ss(16) },
-        borderWidth: 3,
-        borderColor,
-        borderRadius: 12,
-        overflow: 'hidden',
-      }}
-      uiBackground={{ color: CARD_FILL }}
-    >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: '100%', height: '100%' }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: CONTENT_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: CONTENT_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height: '100%' }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height: '100%' }} uiBackground={{ color: borderColor }} />
-        </UiEntity>
-      )}
-      {children}
+    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(10) } }}>
+      <Label value={icon}  fontSize={fontSize} color={color} uiTransform={{ width: ss(28), flexShrink: 0 }} />
+      <Label value={label} fontSize={fontSize} color={color} />
     </UiEntity>
   )
 }
 
-// ─── Milestone checklist ──────────────────────────────────────────────────────
+// ─── Checklist — single column (desktop) or two columns (mobile) ──────────────
 const Checklist = ({
   milestones,
   getStatus,
 }: {
   milestones: { label: string }[]
-  getStatus: (m: any) => 'done' | 'current' | string
-}) => (
-  <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-    {milestones.map((m) => {
-      const status = getStatus(m)
-      const icon  = status === 'done' ? '✓' : status === 'current' ? '▶' : '○'
-      const color = status === 'done' ? COL_DONE : status === 'current' ? COIN_GOLD : CARD_TEXT_MUTE
-      return (
-        <UiEntity
-          key={m.label}
-          uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(9) } }}
-        >
-          <Label value={icon}    fontSize={ss(21)} color={color} uiTransform={{ width: ss(26) }} />
-          <Label value={m.label} fontSize={ss(21)} color={color} />
-        </UiEntity>
-      )
-    })}
-  </UiEntity>
-)
-
-// ─── Tutorial-style cards (Mayor + milestone list) ────────────────────────────
-const MilestoneCard = ({
-  title,
-  accent,
-  milestones,
-  getStatus,
-}: {
-  key?: string
-  title: string
-  accent: RGBA
-  milestones: { label: string }[]
   getStatus: (m: any) => string
 }) => {
-  const done = milestones.filter((m) => getStatus(m) === 'done').length
-  return (
-    <QuestCard borderColor={accent}>
-      <UiEntity
-        uiTransform={{ width: ss(80), height: ss(80), margin: { top: ss(18), bottom: ss(18), left: ss(18) }, flexShrink: 0 }}
-        uiBackground={{ texture: { src: MAYOR_DEF.headImage, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-      />
-      <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', padding: { top: ss(16), bottom: ss(16), left: ss(18), right: ss(16) } }}>
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(12) } }}>
-          <Label value={title}                            fontSize={ss(24)} color={CARD_TEXT} />
-          <Label value={`  ${done}/${milestones.length}`} fontSize={ss(20)} color={CARD_TEXT_MUTE} />
-        </UiEntity>
-        <Checklist milestones={milestones} getStatus={getStatus} />
+  const mob = isMobile()
+  const fs  = mob ? ss(26) : ss(20)
+
+  if (!mob) {
+    return (
+      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+        {milestones.map((m) => <ChecklistRow key={m.label} label={m.label} status={getStatus(m)} fontSize={fs} />)}
       </UiEntity>
-    </QuestCard>
+    )
+  }
+
+  // Mobile: two columns
+  const half  = Math.ceil(milestones.length / 2)
+  const left  = milestones.slice(0, half)
+  const right = milestones.slice(half)
+  const colW  = Math.floor((CONTENT_W - ss(44)) / 2)  // ~400px each
+
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'row', width: '100%' }}>
+      <UiEntity uiTransform={{ flexDirection: 'column', width: colW, margin: { right: ss(16) } }}>
+        {left.map((m) => <ChecklistRow key={m.label} label={m.label} status={getStatus(m)} fontSize={fs} />)}
+      </UiEntity>
+      <UiEntity uiTransform={{ flexDirection: 'column', width: colW }}>
+        {right.map((m) => <ChecklistRow key={m.label} label={m.label} status={getStatus(m)} fontSize={fs} />)}
+      </UiEntity>
+    </UiEntity>
   )
 }
 
@@ -170,12 +160,206 @@ const ProgressBar = ({ pct, fill }: { pct: number; fill: RGBA }) => (
     uiTransform={{ width: '100%', height: ss(12), borderRadius: ss(6), margin: { bottom: ss(6) }, overflow: 'hidden' }}
     uiBackground={{ color: TRACK_COLOR }}
   >
-    <UiEntity
-      uiTransform={{ width: `${pct}%`, height: '100%', borderRadius: ss(6) }}
-      uiBackground={{ color: fill }}
-    />
+    <UiEntity uiTransform={{ width: `${pct}%`, height: '100%', borderRadius: ss(6) }} uiBackground={{ color: fill }} />
   </UiEntity>
 )
+
+// ─── Expanded quest details ───────────────────────────────────────────────────
+const QuestExpanded = ({
+  def, qp,
+}: {
+  def: typeof QUEST_DEFINITIONS[number]
+  qp: { current: number; status: string }
+}) => {
+  const mob      = isMobile()
+  const pct      = Math.min(100, Math.floor((qp.current / def.target) * 100))
+  const isActive = qp.status === 'active'
+  const isDone   = qp.status === 'completed'
+
+  let questIcon = BOX_CROPS_ICON
+  if (def.type === 'harvest_crop' && def.cropType !== null) questIcon = CROP_HARVEST_IMAGES[def.cropType]
+  else if (def.type === 'water_total')  questIcon = WATERINGCAN_ICON
+  else if (def.type === 'plant_total')  questIcon = SOIL_ICON
+  else if (def.type === 'sell_total')   questIcon = SHOPINGCART_ICON
+
+  const textFs = mob ? ss(26) : ss(19)
+
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'row', padding: { left: ss(14), right: ss(14), bottom: ss(16) } }}>
+      <UiEntity
+        uiTransform={{ width: ss(52), height: ss(52), flexShrink: 0, margin: { right: ss(14) } }}
+        uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <UiEntity uiTransform={{ flexDirection: 'column', width: CONTENT_W - ss(52) - ss(14) - ss(28) }}>
+        {isActive && (
+          <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
+            <ProgressBar pct={pct} fill={CARD_BORDER} />
+            <Label value={`${qp.current} / ${def.target}`} fontSize={textFs} color={mob ? WHITE_MUTE : CARD_TEXT_MUTE} />
+          </UiEntity>
+        )}
+        {qp.status === 'claimable' && (
+          <Label value="Ready to Claim!" fontSize={mob ? ss(28) : ss(22)} color={COIN_GOLD} />
+        )}
+        {!isDone && (
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: ss(10) } }}>
+            <UiEntity
+              uiTransform={{ width: ss(24), height: ss(24), margin: { right: ss(6) }, flexShrink: 0 }}
+              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            />
+            <Label value={`${def.rewardCoins}`}    fontSize={mob ? ss(26) : ss(21)} color={COIN_GOLD} />
+            <Label value={`  +${def.rewardXp} XP`} fontSize={mob ? ss(26) : ss(19)} color={mob ? WHITE_MUTE : CARD_TEXT_MUTE} />
+          </UiEntity>
+        )}
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+// ─── Item row (header always visible, content expands on tap) ─────────────────
+const ItemRow = ({ item }: { key?: string; item: AnyItem }) => {
+  const mob      = isMobile()
+  const expanded = expandedQuests.has(item.key)
+
+  let avatarSrc   = ''
+  let title       = ''
+  let subtitle    = ''
+  let subtitleCol = mob ? WHITE_MUTE : CARD_TEXT_MUTE
+
+  if (item.kind === 'milestone') {
+    avatarSrc = item.avatarSrc
+    title     = item.title
+    const done = item.milestones.filter(m => item.getStatus(m) === 'done').length
+    subtitle   = `${done} / ${item.milestones.length} done`
+  } else {
+    const { def, qp } = item
+    avatarSrc = NPC_HEAD[def.npcId ?? def.id] ?? ''
+    title     = def.title
+    if (qp.status === 'claimable') {
+      subtitle    = 'Ready to claim!'
+      subtitleCol = COIN_GOLD
+    } else if (qp.status === 'completed') {
+      subtitle    = 'Completed ✓'
+      subtitleCol = COL_DONE
+    } else {
+      subtitle = `${qp.current} / ${def.target}`
+    }
+  }
+
+  const toggle = () => {
+    playSound('buttonclick')
+    if (expandedQuests.has(item.key)) expandedQuests.delete(item.key)
+    else expandedQuests.add(item.key)
+  }
+
+  // Middle width = card width - padding - avatar - chevron
+  const midW = CONTENT_W - ss(14) - ss(10) - ss(52) - ss(14) - ss(44)
+
+  return (
+    <UiEntity
+      uiTransform={{
+        flexDirection: 'column',
+        width: '100%',
+        margin: { bottom: ss(12) },
+        borderWidth: mob ? 0 : 3,
+        borderColor: CARD_BORDER,
+        borderRadius: mob ? 0 : 12,
+        overflow: 'hidden',
+      }}
+      uiBackground={{ color: mob ? MOB_CARD_FILL : CARD_FILL }}
+    >
+      {/* Collapsed header row */}
+      <UiEntity
+        uiTransform={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          width: '100%',
+          height: ss(76),
+          padding: { left: ss(14), right: ss(10) },
+        }}
+        onMouseDown={toggle}
+      >
+        <UiEntity
+          uiTransform={{ width: ss(52), height: ss(52), flexShrink: 0, margin: { right: ss(14) } }}
+          uiBackground={{ texture: { src: avatarSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+        <UiEntity uiTransform={{ flexDirection: 'column', width: midW }}>
+          <Label value={title}    fontSize={mob ? ss(26) : ss(21)} color={mob ? WHITE : CARD_TEXT} />
+          <Label value={subtitle} fontSize={mob ? ss(26) : ss(19)} color={subtitleCol} uiTransform={{ margin: { top: ss(4) } }} />
+        </UiEntity>
+        <Label
+          value={expanded ? '▲' : '▼'}
+          fontSize={ss(22)}
+          color={mob ? WHITE_DIM : CARD_TEXT_MUTE}
+          uiTransform={{ width: ss(44), flexShrink: 0 }}
+          textAlign="middle-center"
+        />
+      </UiEntity>
+
+      {/* Expanded milestone content */}
+      {expanded && item.kind === 'milestone' && (
+        <UiEntity uiTransform={{ flexDirection: 'column', padding: { left: ss(14), right: ss(14), bottom: ss(16) } }}>
+          <Checklist milestones={item.milestones} getStatus={item.getStatus} />
+        </UiEntity>
+      )}
+
+      {/* Expanded quest content */}
+      {expanded && item.kind === 'quest' && (
+        <QuestExpanded def={item.def} qp={item.qp} />
+      )}
+    </UiEntity>
+  )
+}
+
+// ─── Pagination nav ───────────────────────────────────────────────────────────
+const QuestPageNav = ({ page, lastPage }: { page: number; lastPage: number }) => {
+  const mob     = isMobile()
+  const canPrev = page > 0
+  const canNext = page < lastPage
+
+  if (mob) {
+    const btnW = ss(200), btnH = ss(64)
+    return (
+      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: MOB_PAGINAV_H, flexShrink: 0 }}>
+        <UiEntity
+          uiTransform={{ width: btnW, height: btnH, alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { right: ss(24) } }}
+          uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
+          onMouseDown={canPrev ? () => { playSound('buttonclick'); questPage.value-- } : undefined}
+        >
+          <Label value="< Prev" fontSize={ss(26)} color={canPrev ? WHITE : WHITE_DIM} textAlign="middle-center" />
+        </UiEntity>
+        <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(26)} color={{ r: 1, g: 1, b: 1, a: 0.8 }} textAlign="middle-center" uiTransform={{ width: ss(100) }} />
+        <UiEntity
+          uiTransform={{ width: btnW, height: btnH, alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { left: ss(24) } }}
+          uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
+          onMouseDown={canNext ? () => { playSound('buttonclick'); questPage.value++ } : undefined}
+        >
+          <Label value="Next >" fontSize={ss(26)} color={canNext ? WHITE : WHITE_DIM} textAlign="middle-center" />
+        </UiEntity>
+      </UiEntity>
+    )
+  }
+
+  const disabledCol = CARD_TEXT_MUTE
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: DSK_PAGINAV_H, flexShrink: 0 }}>
+      <UiEntity
+        uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(20) } }}
+        uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
+        onMouseDown={canPrev ? () => { playSound('buttonclick'); questPage.value-- } : undefined}
+      >
+        <Label value="< Prev" fontSize={ss(22)} color={canPrev ? BTN_TEXT : disabledCol} textAlign="middle-center" />
+      </UiEntity>
+      <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(22)} color={CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ width: ss(90), height: ss(44) }} />
+      <UiEntity
+        uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(20) } }}
+        uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
+        onMouseDown={canNext ? () => { playSound('buttonclick'); questPage.value++ } : undefined}
+      >
+        <Label value="Next >" fontSize={ss(22)} color={canNext ? BTN_TEXT : disabledCol} textAlign="middle-center" />
+      </UiEntity>
+    </UiEntity>
+  )
+}
 
 // ─── Panel frame ─────────────────────────────────────────────────────────────
 const QuestPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => (
@@ -192,7 +376,7 @@ const QuestPanelFrame = ({ onClose, children }: { onClose: () => void; children?
           positionType: 'absolute',
           position: { left: CONTENT_LEFT, top: CONTENT_TOP },
           width: CONTENT_W,
-          height: PANEL_H - CONTENT_TOP - CONTENT_BOTTOM,
+          height: CONTENT_H,
           flexDirection: 'column',
           overflow: 'hidden',
         }}
@@ -209,105 +393,62 @@ const QuestPanelFrame = ({ onClose, children }: { onClose: () => void; children?
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export const QuestPanel = () => {
-  const visible = QUEST_DEFINITIONS.filter((d) => {
-    const qp = questProgressMap.get(d.id)
-    return qp && qp.status !== 'available' && qp.status !== 'completed'
-  })
+  const mob       = isMobile()
+  const paginH    = mob ? MOB_PAGINAV_H : DSK_PAGINAV_H
+  const listH     = CONTENT_H - paginH
 
-  const hasAnything =
-    tutorialState.active ||
-    progressionEventState.active ||
-    animalTutorialState.chickenActive ||
-    animalTutorialState.pigActive ||
-    visible.length > 0
+  // Build unified item list
+  const items: AnyItem[] = []
+
+  if (QUEST_DEBUG || tutorialState.active) {
+    items.push({ kind: 'milestone', key: 'tutorial', title: 'Tutorial', avatarSrc: MAYOR_DEF.headImage, milestones: TUTORIAL_MILESTONES, getStatus: getTutorialMilestoneStatus })
+  }
+  if (QUEST_DEBUG || progressionEventState.active) {
+    items.push({ kind: 'milestone', key: 'fert', title: 'Fertilizer Tutorial', avatarSrc: MAYOR_DEF.headImage, milestones: PROGRESSION_MILESTONES, getStatus: getProgressionMilestoneStatus })
+  }
+  if (QUEST_DEBUG || animalTutorialState.chickenActive) {
+    items.push({ kind: 'milestone', key: 'chicken', title: 'Chicken Tutorial', avatarSrc: MAYOR_DEF.headImage, milestones: CHICKEN_MILESTONES, getStatus: getChickenMilestoneStatus })
+  }
+  if (QUEST_DEBUG || animalTutorialState.pigActive) {
+    items.push({ kind: 'milestone', key: 'pig', title: 'Pig Tutorial', avatarSrc: MAYOR_DEF.headImage, milestones: PIG_MILESTONES, getStatus: getPigMilestoneStatus })
+  }
+
+  if (QUEST_DEBUG) {
+    for (const def of QUEST_DEFINITIONS) {
+      items.push({ kind: 'quest', key: def.id, def, qp: { current: Math.floor(def.target / 2), status: 'active' } })
+    }
+  } else {
+    for (const def of QUEST_DEFINITIONS) {
+      const qp = questProgressMap.get(def.id)
+      if (qp && qp.status !== 'available' && qp.status !== 'completed') {
+        items.push({ kind: 'quest', key: def.id, def, qp })
+      }
+    }
+  }
+
+  const page     = questPage.value
+  const lastPage = Math.max(0, Math.ceil(items.length / ITEMS_PER_PAGE) - 1)
+  if (page > lastPage) questPage.value = lastPage
+  const pageSlice = items.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE)
 
   return (
     <QuestPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
 
-      {!hasAnything && (
-        <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-          <Label value="No active quests" fontSize={ss(27)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
-          <Label value="Talk to villagers to receive quests!" fontSize={ss(20)} color={CARD_TEXT_MUTE} textAlign="middle-center"
-            uiTransform={{ margin: { top: ss(12) } }} />
-        </UiEntity>
-      )}
+      {/* Quest list — scrollable within the page in case expanded items overflow */}
+      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', height: listH, overflow: 'scroll' }}>
+        {items.length === 0 && (
+          <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', alignItems: 'center', margin: { top: ss(80) } }}>
+            <Label value="No active quests" fontSize={ss(27)} color={mob ? WHITE_MUTE : CARD_TEXT_MUTE} textAlign="middle-center" />
+            <Label value="Talk to villagers to receive quests!" fontSize={ss(20)} color={mob ? WHITE_MUTE : CARD_TEXT_MUTE} textAlign="middle-center"
+              uiTransform={{ margin: { top: ss(12) } }} />
+          </UiEntity>
+        )}
+        {pageSlice.map((item) => <ItemRow key={item.key} item={item} />)}
+      </UiEntity>
 
-      {tutorialState.active && (
-        <MilestoneCard key="tutorial" title="Tutorial" accent={CARD_BORDER}
-          milestones={TUTORIAL_MILESTONES} getStatus={getTutorialMilestoneStatus} />
-      )}
+      {/* Pagination — always shown at bottom */}
+      <QuestPageNav page={page} lastPage={lastPage} />
 
-      {progressionEventState.active && (
-        <MilestoneCard key="fert" title="Fertilizer Tutorial" accent={CARD_BORDER}
-          milestones={PROGRESSION_MILESTONES} getStatus={getProgressionMilestoneStatus} />
-      )}
-
-      {animalTutorialState.chickenActive && (
-        <MilestoneCard key="chicken" title="Chicken Tutorial" accent={CARD_BORDER}
-          milestones={CHICKEN_MILESTONES} getStatus={getChickenMilestoneStatus} />
-      )}
-
-      {animalTutorialState.pigActive && (
-        <MilestoneCard key="pig" title="Pig Tutorial" accent={CARD_BORDER}
-          milestones={PIG_MILESTONES} getStatus={getPigMilestoneStatus} />
-      )}
-
-      {visible.map((def) => {
-        const qp       = questProgressMap.get(def.id)!
-        const pct      = Math.min(100, Math.floor((qp.current / def.target) * 100))
-        const isDone   = qp.status === 'completed'
-        const isActive = qp.status === 'active'
-        const border   = CARD_BORDER
-
-        let questIcon = BOX_CROPS_ICON
-        if (def.type === 'harvest_crop' && def.cropType !== null) questIcon = CROP_HARVEST_IMAGES[def.cropType]
-        else if (def.type === 'water_total') questIcon = WATERINGCAN_ICON
-        else if (def.type === 'plant_total') questIcon = SOIL_ICON
-        else if (def.type === 'sell_total') questIcon = SHOPINGCART_ICON
-
-        return (
-          <QuestCard key={def.id} borderColor={border}>
-            {/* NPC portrait */}
-            <UiEntity
-              uiTransform={{ width: ss(86), height: ss(86), margin: { top: ss(18), bottom: ss(18), left: ss(18) }, flexShrink: 0 }}
-              uiBackground={{ texture: { src: NPC_HEAD[def.id] ?? '', wrapMode: 'clamp' }, textureMode: 'stretch' }}
-            />
-
-            {/* Content */}
-            <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', padding: { top: ss(16), bottom: ss(16), left: ss(18), right: ss(14) } }}>
-              <Label value={def.npcName} fontSize={ss(19)} color={REWARD_MUTE} uiTransform={{ margin: { bottom: ss(5) } }} />
-              <Label value={def.title}   fontSize={ss(25)} color={CARD_TEXT}   uiTransform={{ margin: { bottom: ss(12) } }} />
-
-              {isActive && (
-                <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-                  <ProgressBar pct={pct} fill={CARD_BORDER} />
-                  <Label value={`${qp.current} / ${def.target}`} fontSize={ss(19)} color={CARD_TEXT_MUTE} />
-                </UiEntity>
-              )}
-              {!isActive && (
-                <Label value={isDone ? 'Completed ✓' : 'Ready to Claim!'} fontSize={ss(22)}
-                  color={isDone ? COL_DONE : COIN_GOLD} />
-              )}
-              {!isDone && (
-                <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: ss(12) } }}>
-                  <UiEntity
-                    uiTransform={{ width: ss(24), height: ss(24), margin: { right: ss(7) }, flexShrink: 0 }}
-                    uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-                  />
-                  <Label value={`${def.rewardCoins}`}     fontSize={ss(22)} color={COIN_GOLD} />
-                  <Label value={`  +${def.rewardXp} XP`}  fontSize={ss(20)} color={CARD_TEXT_MUTE} />
-                </UiEntity>
-              )}
-            </UiEntity>
-
-            {/* Quest icon */}
-            <UiEntity
-              uiTransform={{ width: ss(78), height: ss(78), margin: { top: ss(18), bottom: ss(18), right: ss(18) }, flexShrink: 0 }}
-              uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-            />
-          </QuestCard>
-        )
-      })}
     </QuestPanelFrame>
   )
 }

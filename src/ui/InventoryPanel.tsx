@@ -84,14 +84,6 @@ const InvCard = ({
       }}
       uiBackground={{ color: CARD_FILL }}
     >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: CARD_W, height: CARD_H }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
-        </UiEntity>
-      )}
       {children}
     </UiEntity>
   )
@@ -164,40 +156,60 @@ const InventoryPanelFrame = ({
 )
 
 // ─── TabBar ───────────────────────────────────────────────────────────────────
-const TabBar = ({ tab, hasOther }: { tab: 'seeds' | 'harvested' | 'other'; hasOther: boolean }) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
-    {(['seeds', 'harvested', 'other'] as const).map((t) => {
-      if (t === 'other' && !hasOther) return null
-      const active = tab === t
-      const label  = t === 'seeds' ? 'Seeds' : t === 'harvested' ? 'Harvested' : 'Other Items'
-      return (
-        <UiEntity
-          key={t}
-          uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: TAB_GAP } }}
-          uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
-          onMouseDown={() => { playSound('buttonclick'); invTab.value = t }}
-        >
-          <Label value={label} fontSize={ss(20)} color={active ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : { r: 0.97, g: 0.90, b: 0.68, a: 0.65 }} textAlign="middle-center" />
-        </UiEntity>
-      )
-    })}
-  </UiEntity>
-)
+const TabBar = ({ tab, hasOther }: { tab: 'seeds' | 'harvested' | 'other'; hasOther: boolean }) => {
+  const mob = isMobile()
+  const tH  = mob ? ss(60)  : TAB_H
+  const tW  = mob ? ss(240) : TAB_W
+  const tG  = mob ? ss(12)  : TAB_GAP
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
+      {(['seeds', 'harvested', 'other'] as const).map((t) => {
+        if (t === 'other' && !hasOther) return null
+        const active = tab === t
+        const label  = t === 'seeds' ? 'Seeds' : t === 'harvested' ? 'Harvested' : 'Other Items'
+        return (
+          <UiEntity
+            key={t}
+            uiTransform={{ width: tW, height: tH, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: tG } }}
+            uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
+            onMouseDown={() => { playSound('buttonclick'); invTab.value = t }}
+          >
+            <Label
+              value={label}
+              fontSize={mob ? ss(26) : ss(20)}
+              color={active
+                ? (mob ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.97, g: 0.90, b: 0.68, a: 1 })
+                : (mob ? { r: 1, g: 1, b: 1, a: 0.65 } : { r: 0.97, g: 0.90, b: 0.68, a: 0.65 })}
+              textAlign="middle-center"
+            />
+          </UiEntity>
+        )
+      })}
+    </UiEntity>
+  )
+}
 
 // ─── Empty state ─────────────────────────────────────────────────────────────
-const EmptyState = ({ message }: { message: string }) => (
-  <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-    <Label value={message} fontSize={ss(22)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
-  </UiEntity>
-)
+const EmptyState = ({ message }: { message: string }) => {
+  const mob = isMobile()
+  return (
+    <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Label value={message} fontSize={mob ? ss(26) : ss(22)} color={mob ? { r: 1, g: 1, b: 1, a: 0.7 } : CARD_TEXT_MUTE} textAlign="middle-center" />
+    </UiEntity>
+  )
+}
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export const InventoryPanel = () => {
+  const mob         = isMobile()
   const seedRows    = ALL_CROP_TYPES.filter((c) => (playerState.seeds.get(c)     ?? 0) > 0)
   const harvestRows = ALL_CROP_TYPES.filter((c) => (playerState.harvested.get(c) ?? 0) > 0)
   const fertRows    = ALL_FERTILIZER_TYPES.filter((f) => (playerState.fertilizers.get(f) ?? 0) > 0)
   const hasOther    = playerState.organicWaste > 0 || fertRows.length > 0
   const tab         = invTab.value
+  const labelColor  = mob ? { r: 1, g: 1, b: 1, a: 1 }    : CARD_TEXT
+  const labelFs     = mob ? ss(26) : ss(20)
+  const countFs     = mob ? ss(26) : ss(21)
 
   // Auto-switch if "other" tab selected but nothing there
   if (tab === 'other' && !hasOther) invTab.value = 'seeds'
@@ -219,8 +231,8 @@ export const InventoryPanel = () => {
                     uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
                     uiBackground={{ texture: { src: CROP_SEED_IMAGES[c], wrapMode: 'clamp' }, textureMode: 'stretch' }}
                   />
-                  <Label value={CROP_NAMES[c]} fontSize={ss(20)} color={CARD_TEXT} textAlign="middle-center" />
-                  <Label value={`x${playerState.seeds.get(c)}`} fontSize={ss(21)} color={C.green} textAlign="middle-center"
+                  <Label value={CROP_NAMES[c]} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
+                  <Label value={`x${playerState.seeds.get(c)}`} fontSize={countFs} color={C.green} textAlign="middle-center"
                     uiTransform={{ margin: { top: ss(4) } }} />
                 </InvCard>
               ))}
@@ -240,8 +252,8 @@ export const InventoryPanel = () => {
                     uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
                     uiBackground={{ texture: { src: CROP_HARVEST_IMAGES[c], wrapMode: 'clamp' }, textureMode: 'stretch' }}
                   />
-                  <Label value={CROP_NAMES[c]} fontSize={ss(20)} color={CARD_TEXT} textAlign="middle-center" />
-                  <Label value={`x${playerState.harvested.get(c)}`} fontSize={ss(21)} color={C.orange} textAlign="middle-center"
+                  <Label value={CROP_NAMES[c]} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
+                  <Label value={`x${playerState.harvested.get(c)}`} fontSize={countFs} color={C.orange} textAlign="middle-center"
                     uiTransform={{ margin: { top: ss(4) } }} />
                 </InvCard>
               ))}
@@ -259,8 +271,8 @@ export const InventoryPanel = () => {
                 uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
                 uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
               />
-              <Label value="Organic Waste" fontSize={ss(18)} color={CARD_TEXT} textAlign="middle-center" />
-              <Label value={`x${playerState.organicWaste}`} fontSize={ss(21)} color={{ r: 0.75, g: 0.52, b: 0.18, a: 1 }} textAlign="middle-center"
+              <Label value="Organic Waste" fontSize={labelFs} color={labelColor} textAlign="middle-center" />
+              <Label value={`x${playerState.organicWaste}`} fontSize={countFs} color={{ r: 0.75, g: 0.52, b: 0.18, a: 1 }} textAlign="middle-center"
                 uiTransform={{ margin: { top: ss(4) } }} />
             </InvCard>
           )}
@@ -273,8 +285,8 @@ export const InventoryPanel = () => {
                   uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
                   uiBackground={{ texture: { src: def.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                 />
-                <Label value={def.name} fontSize={ss(18)} color={CARD_TEXT} textAlign="middle-center" />
-                <Label value={`x${playerState.fertilizers.get(f)}`} fontSize={ss(21)} color={C.green} textAlign="middle-center"
+                <Label value={def.name} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
+                <Label value={`x${playerState.fertilizers.get(f)}`} fontSize={countFs} color={C.green} textAlign="middle-center"
                   uiTransform={{ margin: { top: ss(4) } }} />
               </InvCard>
             )

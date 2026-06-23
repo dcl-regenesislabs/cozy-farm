@@ -482,15 +482,25 @@ export const TopHud = () => {
               }}
             >
               <UiEntity uiTransform={{ width: s(214), height: s(34), justifyContent: 'center' }}>
-                <OutlinedLabel
-                  value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
-                  fontSize={s(20)}
-                  width={s(214)}
-                  height={s(30)}
-                  color={HUD_WHITE}
-                  outlineColor={HUD_BROWN_DARK}
-                  textAlign="middle-left"
-                />
+                {isMobile() ? (
+                  <Label
+                    value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
+                    fontSize={s(20)}
+                    color={HUD_WHITE}
+                    textAlign="middle-left"
+                    uiTransform={{ width: s(214), height: s(30) }}
+                  />
+                ) : (
+                  <OutlinedLabel
+                    value={isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`}
+                    fontSize={s(20)}
+                    width={s(214)}
+                    height={s(30)}
+                    color={HUD_WHITE}
+                    outlineColor={HUD_BROWN_DARK}
+                    textAlign="middle-left"
+                  />
+                )}
               </UiEntity>
 
               {SHOW_SERVER_INDICATOR && isConnected && (
