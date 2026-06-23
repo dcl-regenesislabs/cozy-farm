@@ -659,15 +659,14 @@ export function initSaveService(onLoaded?: () => void): void {
       return
     }
 
-    // Hard timeout: if the overlay is still active and no teleport is pending,
-    // the server never completed the handshake — unfreeze to plaza so the
-    // player is not stuck indefinitely.
+    // Hard timeout: server never responded — keep the overlay up and retry.
+    // Player already spawns in plaza by default, so no teleport needed.
     if (
       playerState.farmAssignmentOverlayActive &&
       Date.now() - playerState.farmAssignmentOverlayStartedAt > OVERLAY_HARD_TIMEOUT_MS
     ) {
-      console.error('[SaveService] Overlay hard timeout — forcing plaza teleport and retrying load')
-      teleportToSlot(-1)
+      console.error('[SaveService] Overlay hard timeout — retrying load')
+      playerState.farmAssignmentOverlayStartedAt = Date.now()
       requestPlayerLoad()
       return
     }
@@ -842,7 +841,11 @@ export function initSaveService(onLoaded?: () => void): void {
     const mine = normalizedWallet ? data.slots.find((s) => normalizeAddress(s.wallet) === normalizedWallet) : undefined
     const nextMySlotId = mine ? mine.slotId : playerState.mySlotId
 
-    if (!mine && !playerState.viewingFarm) {
+    // Only dismiss the overlay once the farm is fully initialized. Before that,
+    // any farmSlotsLoaded (from another player's connect/disconnect) could arrive
+    // with the current player absent from the slot list — a false-negative that
+    // would prematurely close the loading screen and expose the default spawn position.
+    if (!mine && !playerState.viewingFarm && localFarmInitialized) {
       playerState.farmAssignmentOverlayActive = false
       playerState.farmGameplayUiReady = false
     }
