@@ -72,8 +72,7 @@ const BTN_TEXT       = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
 
 type RGBA = { r: number; g: number; b: number; a: number }
 
-// ─── Debug: force all 11 items visible — DELETE BEFORE SHIP ──────────────────
-const QUEST_DEBUG = true
+const QUEST_DEBUG = false
 
 // ─── Pagination + expand state ────────────────────────────────────────────────
 const questPage      = { value: 0 }
