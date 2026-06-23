@@ -52,8 +52,8 @@ const CLOSE_TOP  = 0
 // ─── Warm card palette ────────────────────────────────────────────────────────
 const CARD_BORDER      = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
 const CARD_FILL        = { r: 0.95, g: 0.88, b: 0.70, a: 0.55 }
-// Mobile: fully opaque so the dark atlas doesn't bleed through and muddy contrast
-const CARD_FILL_MOBILE = { r: 0.95, g: 0.88, b: 0.70, a: 1.0 }
+// Mobile: dark background so the bright stat colours stand out
+const CARD_FILL_MOBILE = { r: 0.15, g: 0.09, b: 0.03, a: 0.93 }
 const CARD_TEXT_MUTE   = { r: 0.45, g: 0.28, b: 0.10, a: 1 }
 // On a light card the off-white C.textMain is invisible — use this dark version instead
 const CARD_TEXT_DARK   = { r: 0.20, g: 0.11, b: 0.03, a: 1 }
@@ -241,8 +241,11 @@ const TabBar = ({ hasUnclaimedReward }: { hasUnclaimedReward: boolean }) => {
 const PageNav = ({
   page, lastPage, onPrev, onNext,
 }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => {
+  const mob     = isMobile()
   const canPrev = page > 0
   const canNext = page < lastPage
+  const disabledColor = mob ? { r: 1, g: 1, b: 1, a: 0.35 } : CARD_TEXT_MUTE
+  const pageColor     = mob ? { r: 1, g: 1, b: 1, a: 0.80 } : CARD_TEXT_MUTE
   return (
     <UiEntity
       uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: 50, flexShrink: 0 }}
@@ -252,15 +255,15 @@ const PageNav = ({
         uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
         onMouseDown={canPrev ? () => { playSound('buttonclick'); onPrev() } : undefined}
       >
-        <Label value="< Prev" fontSize={20} color={canPrev ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
+        <Label value="< Prev" fontSize={20} color={canPrev ? BTN_TEXT : disabledColor} textAlign="middle-center" />
       </UiEntity>
-      <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={20} color={CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ width: 80, height: 40 }} />
+      <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={20} color={pageColor} textAlign="middle-center" uiTransform={{ width: 80, height: 40 }} />
       <UiEntity
         uiTransform={{ width: 110, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: 20 } }}
         uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
         onMouseDown={canNext ? () => { playSound('buttonclick'); onNext() } : undefined}
       >
-        <Label value="Next >" fontSize={20} color={canNext ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
+        <Label value="Next >" fontSize={20} color={canNext ? BTN_TEXT : disabledColor} textAlign="middle-center" />
       </UiEntity>
     </UiEntity>
   )
@@ -338,16 +341,8 @@ const StatsTab = () => {
               }}
               uiBackground={{ color: mobile ? CARD_FILL_MOBILE : CARD_FILL }}
             >
-              {mobile && (
-                <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: cW, height: cH }}>
-                  <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },                       width: cW,               height: FRAME_THICKNESS }} uiBackground={{ color: CARD_BORDER }} />
-                  <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 },                    width: cW,               height: FRAME_THICKNESS }} uiBackground={{ color: CARD_BORDER }} />
-                  <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },                       width: FRAME_THICKNESS,  height: cH }}              uiBackground={{ color: CARD_BORDER }} />
-                  <UiEntity uiTransform={{ positionType: 'absolute', position: { left: cW - FRAME_THICKNESS, top: 0 },    width: FRAME_THICKNESS,  height: cH }}              uiBackground={{ color: CARD_BORDER }} />
-                </UiEntity>
-              )}
               <Label value={`${val}`} fontSize={30} color={s.color} />
-              <Label value={s.label} fontSize={17} color={mobile ? CARD_TEXT_DARK : CARD_TEXT_MUTE} uiTransform={{ margin: { top: 4 } }} />
+              <Label value={s.label} fontSize={17} color={mobile ? { r: 1, g: 1, b: 1, a: 0.80 } : CARD_TEXT_MUTE} uiTransform={{ margin: { top: 4 } }} />
             </UiEntity>
           )
         })}
@@ -378,9 +373,8 @@ const RewardCard = ({ reward: r }: RewardCardProps) => {
            : mobile    ? CARD_FILL_MOBILE
            :             CARD_FILL
 
-  // On a light (unclaimed) card, C.textMain (off-white) is invisible — use dark text instead
   const isLightCard = !claimed && !claimable
-  const descColor   = mobile && isLightCard ? CARD_TEXT_DARK : (unlocked ? C.textMain : CARD_TEXT_MUTE)
+  const descColor   = mobile ? C.textMain : (isLightCard ? CARD_TEXT_DARK : (unlocked ? C.textMain : CARD_TEXT_MUTE))
 
   const borderColor = claimable ? { r: 0.82, g: 0.69, b: 0.20, a: 0.95 } : CARD_BORDER
 
@@ -410,23 +404,14 @@ const RewardCard = ({ reward: r }: RewardCardProps) => {
         setTimeout(() => claimReward(r.level), 290)
       } : undefined}
     >
-      {/* Mobile border strips — DCL doesn't render borderWidth reliably on mobile */}
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: w, height: h }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },                   width: w,                height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 },                width: w,                height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },                   width: FRAME_THICKNESS,  height: h }}               uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: w - FRAME_THICKNESS, top: 0 }, width: FRAME_THICKNESS,  height: h }}               uiBackground={{ color: borderColor }} />
-        </UiEntity>
-      )}
-      <Label value={`Lv ${r.level}`} fontSize={18} color={claimable ? C.gold : claimed ? C.green : CARD_TEXT_MUTE} />
+      <Label value={`Lv ${r.level}`} fontSize={18} color={claimable ? C.gold : claimed ? C.green : (mobile ? C.textMain : CARD_TEXT_MUTE)} />
       <Label value={r.label} fontSize={15} color={descColor} textAlign="middle-center" uiTransform={{ margin: { top: 3 } }} />
       {isUnlocker && (
-        <Label value={`Unlocks ${cropDef!.name}`} fontSize={13} color={claimed ? C.green : claimable ? C.gold : CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: 2 } }} />
+        <Label value={`Unlocks ${cropDef!.name}`} fontSize={13} color={claimed ? C.green : claimable ? C.gold : (mobile ? C.textMain : CARD_TEXT_MUTE)} textAlign="middle-center" uiTransform={{ margin: { top: 2 } }} />
       )}
       {claimed   && <Label value="Claimed" fontSize={14} color={C.green} uiTransform={{ margin: { top: 3 } }} />}
       {claimable && <Label value="Tap!" fontSize={14} color={C.gold}  uiTransform={{ margin: { top: 3 } }} />}
-      {!unlocked && <Label value={`Lv ${r.level}`} fontSize={13} color={CARD_TEXT_MUTE} uiTransform={{ margin: { top: 3 } }} />}
+      {!unlocked && <Label value={`Lv ${r.level}`} fontSize={13} color={mobile ? C.textMain : CARD_TEXT_MUTE} uiTransform={{ margin: { top: 3 } }} />}
     </UiEntity>
   )
 }

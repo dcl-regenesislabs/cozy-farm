@@ -190,8 +190,7 @@ export function setSoilTimerText(soilEntity: Entity, text: string) {
       text,
       fontSize: 3,
       textColor: { r: 1, g: 1, b: 1, a: 1 },
-      outlineWidth: 0.15,
-      outlineColor: { r: 0, g: 0, b: 0 },
+      outlineWidth: 0,
     })
     timerTextEntities.set(soilEntity, child)
   } else {

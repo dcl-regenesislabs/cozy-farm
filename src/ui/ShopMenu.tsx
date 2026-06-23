@@ -123,26 +123,6 @@ const ShopCardFrame = ({
       uiTransform={getShopCardTransform(baseHeight, scale, locked)}
       uiBackground={mobile ? { color: locked ? SHOP_CARD_FILL_LOCKED : SHOP_CARD_FILL } : undefined}
     >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height }}>
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width, height: SHOP_MOBILE_FRAME_THICKNESS }}
-            uiBackground={{ color: frameColor }}
-          />
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width, height: SHOP_MOBILE_FRAME_THICKNESS }}
-            uiBackground={{ color: frameColor }}
-          />
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: SHOP_MOBILE_FRAME_THICKNESS, height }}
-            uiBackground={{ color: frameColor }}
-          />
-          <UiEntity
-            uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 }, width: SHOP_MOBILE_FRAME_THICKNESS, height }}
-            uiBackground={{ color: frameColor }}
-          />
-        </UiEntity>
-      )}
       {children}
     </UiEntity>
   )

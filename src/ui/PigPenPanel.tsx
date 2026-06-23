@@ -107,14 +107,6 @@ const PigCard = ({
       }}
       uiBackground={{ color: CARD_FILL }}
     >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: CARD_W, height: CARD_H }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height: CARD_H }} uiBackground={{ color: borderColor }} />
-        </UiEntity>
-      )}
       {children}
     </UiEntity>
   )

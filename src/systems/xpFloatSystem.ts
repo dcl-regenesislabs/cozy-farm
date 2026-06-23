@@ -50,11 +50,9 @@ export function spawnXpFloat(amount: number): void {
   Billboard.create(entity, { billboardMode: BillboardMode.BM_Y })
 
   TextShape.create(entity, {
-    text:         `+${amount} XP`,
-    fontSize:     4,
-    textColor:    Color4.create(0.25, 1, 0.35, 1),
-    outlineWidth: 0.18,
-    outlineColor: Color4.create(0, 0.2, 0, 1),
+    text:      `+${amount} XP`,
+    fontSize:  4,
+    textColor: Color4.create(0.25, 1, 0.35, 1),
   })
 
   // Float upward 2.5 units over 2 seconds

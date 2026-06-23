@@ -81,20 +81,12 @@ const SeedCard = ({ cropType, count }: { key?: string | number; cropType: CropTy
         setTimeout(() => plantSeed(entity, cropType), 290)
       }}
     >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: W, height: H }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: W, height: FRAME_THICKNESS }} uiBackground={{ color: SEED_BORDER }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: W, height: FRAME_THICKNESS }} uiBackground={{ color: SEED_BORDER }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height: H }} uiBackground={{ color: SEED_BORDER }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height: H }} uiBackground={{ color: SEED_BORDER }} />
-        </UiEntity>
-      )}
       <UiEntity
         uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: CROP_SEED_IMAGES[cropType], wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={CROP_NAMES[cropType]} fontSize={ss(20)} color={CARD_TEXT} textAlign="middle-center" />
-      <Label value={`x${count}`} fontSize={ss(21)} color={SEED_COUNT} textAlign="middle-center"
+      <Label value={CROP_NAMES[cropType]} fontSize={mobile ? ss(26) : ss(20)} color={CARD_TEXT} textAlign="middle-center" />
+      <Label value={`x${count}`} fontSize={mobile ? ss(26) : ss(21)} color={SEED_COUNT} textAlign="middle-center"
         uiTransform={{ margin: { top: ss(4) } }} />
     </UiEntity>
   )
@@ -132,6 +124,7 @@ const PlantPanelFrame = ({ onClose, children }: { onClose: () => void; children?
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 export const PlantMenu = () => {
+  const mob       = isMobile()
   const available = ALL_CROP_TYPES.filter(
     (ct) => (playerState.seeds.get(ct) ?? 0) > 0 && playerState.unlockedCrops.has(ct),
   )
@@ -145,13 +138,13 @@ export const PlantMenu = () => {
     <PlantPanelFrame onClose={onClose}>
       {available.length === 0 ? (
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
-          <Label value="No seeds in inventory!" fontSize={ss(27)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
-          <Label value="Visit the Seed Shop to buy some." fontSize={ss(20)} color={CARD_TEXT_MUTE} textAlign="middle-center"
+          <Label value="No seeds in inventory!" fontSize={mob ? ss(31) : ss(27)} color={mob ? { r: 1, g: 1, b: 1, a: 1 } : CARD_TEXT_MUTE} textAlign="middle-center" />
+          <Label value="Visit the Seed Shop to buy some." fontSize={mob ? ss(26) : ss(20)} color={mob ? { r: 1, g: 1, b: 1, a: 1 } : CARD_TEXT_MUTE} textAlign="middle-center"
             uiTransform={{ margin: { top: ss(12) } }} />
         </UiEntity>
       ) : (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-          <Label value="Choose a seed to plant:" fontSize={ss(21)} color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
+          <Label value="Choose a seed to plant:" fontSize={mob ? ss(28) : ss(21)} color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
             uiTransform={{ margin: { bottom: ss(14) } }} />
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
             {available.map((ct) => (
