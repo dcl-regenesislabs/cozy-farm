@@ -26,6 +26,7 @@ const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
 const CLOSE_SIZE       = ss(100)
 const CLOSE_RIGHT      = ss(10)
 const CLOSE_TOP        = ss(10)
+const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
 
 // ─── Card colours ─────────────────────────────────────────────────────────────
 const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -149,6 +150,7 @@ const InventoryPanelFrame = ({
           width: CLOSE_SIZE,
           height: CLOSE_SIZE,
         }}
+        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
         onMouseDown={() => { playSound('buttonclick'); onClose() }}
       />
     </UiEntity>

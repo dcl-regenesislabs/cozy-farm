@@ -31,6 +31,7 @@ const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
 const CLOSE_SIZE       = ss(74)
 const CLOSE_RIGHT      = ss(28)
 const CLOSE_TOP        = ss(16)
+const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
 
 // ─── Card colours ─────────────────────────────────────────────────────────────
 const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -171,10 +172,11 @@ const PigPanelFrame = ({
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: CLOSE_SIZE,
-          height: CLOSE_SIZE,
+          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
+          width: isMobile() ? ss(90) : CLOSE_SIZE,
+          height: isMobile() ? ss(90) : CLOSE_SIZE,
         }}
+        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
         onMouseDown={() => { playSound('buttonclick'); onClose() }}
       />
     </UiEntity>

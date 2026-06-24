@@ -48,6 +48,7 @@ const GRID_ML  = Math.floor((CONTENT_W - GRID_W) / 2)           // 78 — centre
 const CLOSE_SIZE = ss(74)   // 59
 const CLOSE_LEFT = 813 - 59  // = 754 — shifted left by one hitbox width to centre on atlas X
 const CLOSE_TOP  = 0
+const CLOSE_BTN_IMG = 'assets/images/ui_loading/closebutton.png'
 
 // ─── Warm card palette ────────────────────────────────────────────────────────
 const CARD_BORDER      = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -193,6 +194,7 @@ const ProfilePanelFrame = ({
             width: clS,
             height: clS,
           }}
+          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
           onMouseDown={() => { playSound('buttonclick'); onClose() }}
         />
       </UiEntity>

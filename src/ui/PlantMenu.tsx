@@ -25,6 +25,7 @@ const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
 const CLOSE_SIZE       = ss(74)
 const CLOSE_RIGHT      = ss(28)
 const CLOSE_TOP        = ss(16)
+const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
 
 // ─── Card dimensions ─────────────────────────────────────────────────────────
 const CARD_W      = ss(180)
@@ -115,7 +116,13 @@ const PlantPanelFrame = ({ onClose, children }: { onClose: () => void; children?
         {children}
       </UiEntity>
       <UiEntity
-        uiTransform={{ positionType: 'absolute', position: { right: CLOSE_RIGHT, top: CLOSE_TOP }, width: CLOSE_SIZE, height: CLOSE_SIZE }}
+        uiTransform={{
+          positionType: 'absolute',
+          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
+          width: isMobile() ? ss(90) : CLOSE_SIZE,
+          height: isMobile() ? ss(90) : CLOSE_SIZE,
+        }}
+        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
         onMouseDown={() => { playSound('buttonclick'); onClose() }}
       />
     </UiEntity>
