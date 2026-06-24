@@ -224,8 +224,8 @@ export const SellMenu = () => {
       {!hasAnything ? (
         <UiEntity uiTransform={{ width: CONTENT_W, height: SCROLL_H, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', borderRadius: 8 }}
           uiBackground={{ color: SCROLL_BG }}>
-          <Label value="Nothing to sell." fontSize={ss(26)} color={CARD_MUTE} textAlign="middle-center" />
-          <Label value="Harvest crops or collect eggs first!" fontSize={ss(18)} color={CARD_MUTE} textAlign="middle-center"
+          <Label value="Nothing to sell." fontSize={ss(34)} color={{ r:1, g:1, b:1, a:1 }} textAlign="middle-center" />
+          <Label value="Harvest crops or collect eggs first!" fontSize={ss(22)} color={{ r:1, g:1, b:1, a:0.75 }} textAlign="middle-center"
             uiTransform={{ margin: { top: ss(10) } }} />
         </UiEntity>
       ) : (
