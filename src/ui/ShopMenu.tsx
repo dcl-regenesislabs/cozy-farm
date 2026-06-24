@@ -43,6 +43,7 @@ const SHOP_CONTENT_H = SHOP_PANEL_H - SHOP_CONTENT_TOP - SHOP_CONTENT_BOTTOM
 const SHOP_CLOSE_HOTSPOT_SIZE = ss(74)
 const SHOP_CLOSE_RIGHT = ss(28)
 const SHOP_CLOSE_TOP = ss(16)
+const CLOSE_BTN_IMG = 'assets/images/ui_loading/closebutton.png'
 const SHOP_PANEL_TOP_MARGIN = ss(120)
 const SHOP_CARD_BORDER = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
 const SHOP_CARD_BORDER_LOCKED = { r: 0.46, g: 0.39, b: 0.26, a: 0.9 }
@@ -299,10 +300,11 @@ const ShopPanelFrame = ({
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { right: SHOP_CLOSE_RIGHT, top: SHOP_CLOSE_TOP },
-            width: SHOP_CLOSE_HOTSPOT_SIZE,
-            height: SHOP_CLOSE_HOTSPOT_SIZE,
+            position: isMobile() ? { right: ss(20), top: ss(8) } : { right: SHOP_CLOSE_RIGHT, top: SHOP_CLOSE_TOP },
+            width: isMobile() ? ss(90) : SHOP_CLOSE_HOTSPOT_SIZE,
+            height: isMobile() ? ss(90) : SHOP_CLOSE_HOTSPOT_SIZE,
           }}
+          uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
           onMouseDown={() => {
             playSound('buttonclick')
             onClose()

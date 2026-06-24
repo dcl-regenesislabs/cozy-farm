@@ -49,6 +49,7 @@ const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
 const CLOSE_SIZE       = ss(74)
 const CLOSE_RIGHT      = ss(28)
 const CLOSE_TOP        = ss(16)
+const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
 
 // Mobile pagination bar (big buttons like farm)
 const MOB_PAGINAV_H    = ss(80)
@@ -383,7 +384,13 @@ const QuestPanelFrame = ({ onClose, children }: { onClose: () => void; children?
         {children}
       </UiEntity>
       <UiEntity
-        uiTransform={{ positionType: 'absolute', position: { right: CLOSE_RIGHT, top: CLOSE_TOP }, width: CLOSE_SIZE, height: CLOSE_SIZE }}
+        uiTransform={{
+          positionType: 'absolute',
+          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
+          width: isMobile() ? ss(90) : CLOSE_SIZE,
+          height: isMobile() ? ss(90) : CLOSE_SIZE,
+        }}
+        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
         onMouseDown={() => { playSound('buttonclick'); onClose() }}
       />
     </UiEntity>
