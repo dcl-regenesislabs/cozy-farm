@@ -324,7 +324,6 @@ function applyPayload(payload: FarmStatePayload): void {
   // ── Start animal runtime system (catch-up runs inside) ───────────────────
   initAnimalSystem()
 
-  farmLoaded = true
   playerState.serverConnected = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
 }
@@ -539,6 +538,7 @@ export function initSaveService(onLoaded?: () => void): void {
       initBeautySpotSystem()
       initAnimalBuildings()
       applyPayload(data.payload)
+      farmLoaded = true
       playerState.farmReady = true
       onLoaded?.()
     } catch (err) {
