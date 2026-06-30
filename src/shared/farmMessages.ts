@@ -180,32 +180,6 @@ const FarmStateLoadedSchema = Schemas.Map({
 // ---------------------------------------------------------------------------
 // Farm slot — one entry per physical farm location in the world
 // ---------------------------------------------------------------------------
-const FarmSlotSchema = Schemas.Map({
-  slotId:      Schemas.Int,
-  wallet:      Schemas.String,   // empty string = unclaimed
-  displayName: Schemas.String,
-  claimedAt:   Schemas.Number,
-})
-
-// ---------------------------------------------------------------------------
-// Farm slot visual state — broadcast to all clients so each sees other farms
-// ---------------------------------------------------------------------------
-const FarmSlotVisualSchema = Schemas.Map({
-  slotId:     Schemas.Int,
-  wallet:     Schemas.String,
-  plotStates: Schemas.Array(PlotSaveSchema),
-  beautySlots: Schemas.Array(Schemas.Int),
-  chickenCoopOwned: Schemas.Boolean,
-  chickens: Schemas.Array(ChickenDataSchema),
-  chickenFoodInBowl: Schemas.Int,
-  chickenCoopDirtyAt: Schemas.Number,
-  pigPenOwned: Schemas.Boolean,
-  pigs: Schemas.Array(PigDataSchema),
-  pigFoodInBowl: Schemas.Int,
-  pigPenDirtyAt: Schemas.Number,
-  compostBinUnlocked: Schemas.Boolean,
-})
-
 // ---------------------------------------------------------------------------
 // Player registry entry — used in the Farmers Directory
 // ---------------------------------------------------------------------------
@@ -385,32 +359,6 @@ const FarmMessages = {
     workerLastWageProcessedAt: Schemas.Int64,
   }),
 
-  /** Server → All clients: a farm slot became visible / updated its crops */
-  farmSlotVisualUpdated: FarmSlotVisualSchema,
-
-  /** Server → All clients: a player disconnected — hide their farm slot */
-  farmSlotReleased: Schemas.Map({ slotId: Schemas.Int }),
-
-  /** Client → Server: request current state of all farm slots */
-  loadFarmSlots: Schemas.Map({}),
-
-  /** Server → Client: full slot list */
-  farmSlotsLoaded: Schemas.Map({
-    requester: Schemas.String,
-    slots:     Schemas.Array(FarmSlotSchema),
-  }),
-
-  /** Client → Server: claim an empty slot */
-  claimFarmSlot: Schemas.Map({ slotId: Schemas.Int }),
-
-  /** Server → Client: result of a claim attempt */
-  farmSlotClaimed: Schemas.Map({
-    requester: Schemas.String,
-    success:   Schemas.Boolean,
-    reason:    Schemas.String,
-    slotId:    Schemas.Int,
-    slots:     Schemas.Array(FarmSlotSchema),
-  }),
 }
 
 export const room = registerMessages(FarmMessages)
@@ -563,25 +511,3 @@ export type FarmStatePayload = {
   mailbox: MailboxReward[]
 }
 
-export type FarmSlotVisual = {
-  slotId:     number
-  wallet:     string
-  plotStates: PlotSaveState[]
-  beautySlots: number[]
-  chickenCoopOwned: boolean
-  chickens: ChickenDataPayload[]
-  chickenFoodInBowl: number
-  chickenCoopDirtyAt: number
-  pigPenOwned: boolean
-  pigs: PigDataPayload[]
-  pigFoodInBowl: number
-  pigPenDirtyAt: number
-  compostBinUnlocked: boolean
-}
-
-export type FarmSlot = {
-  slotId:      number
-  wallet:      string   // empty string = unclaimed
-  displayName: string
-  claimedAt:   number
-}

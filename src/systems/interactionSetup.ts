@@ -45,7 +45,6 @@ const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Tras
 
 export const farmSlotSoils: Entity[][] = getFarmSlotSoils()
 export const FARM_SPAWN_POSITIONS = getFarmSpawnPositions()
-export const PLAZA_SPAWN_POSITION = { x: 8, y: 1, z: 45 }
 
 const visitSessionWateredPlots = new Set<number>()
 

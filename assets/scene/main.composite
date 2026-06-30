@@ -195,27 +195,6 @@
             "parent": 659
           }
         },
-        "517": {
-          "json": {
-            "position": {
-              "x": 127.5,
-              "y": 0.09999999403953552,
-              "z": 127.5
-            },
-            "scale": {
-              "x": 3,
-              "y": 3,
-              "z": 3
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 0
-          }
-        },
         "518": {
           "json": {
             "position": {
@@ -5025,27 +5004,6 @@
             "parent": 659
           }
         },
-        "749": {
-          "json": {
-            "position": {
-              "x": 98,
-              "y": 0,
-              "z": 132.5
-            },
-            "scale": {
-              "x": 2.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 0
-          }
-        },
         "750": {
           "json": {
             "position": {
@@ -5296,321 +5254,6 @@
               "w": 1
             },
             "parent": 754
-          }
-        },
-        "780": {
-          "json": {
-            "position": {
-              "x": 4,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "781": {
-          "json": {
-            "position": {
-              "x": 12,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "782": {
-          "json": {
-            "position": {
-              "x": 8,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "783": {
-          "json": {
-            "position": {
-              "x": 16,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "786": {
-          "json": {
-            "position": {
-              "x": 20,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "787": {
-          "json": {
-            "position": {
-              "x": 24,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "788": {
-          "json": {
-            "position": {
-              "x": 27.979999542236328,
-              "y": 0,
-              "z": 7.897615432739258e-7
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 749
-          }
-        },
-        "789": {
-          "json": {
-            "position": {
-              "x": 4,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "790": {
-          "json": {
-            "position": {
-              "x": 12,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "791": {
-          "json": {
-            "position": {
-              "x": 8,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "792": {
-          "json": {
-            "position": {
-              "x": 16,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "793": {
-          "json": {
-            "position": {
-              "x": 20,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "794": {
-          "json": {
-            "position": {
-              "x": 24,
-              "y": 0,
-              "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "795": {
-          "json": {
-            "position": {
-              "x": 27.979997634887695,
-              "y": 0,
-              "z": -0.0000018194064068666194
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 796
-          }
-        },
-        "796": {
-          "json": {
-            "position": {
-              "x": 132.5,
-              "y": 0,
-              "z": 158
-            },
-            "scale": {
-              "x": 2.5,
-              "y": 1,
-              "z": 2.5
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0.7071067690849304,
-              "z": 0,
-              "w": 0.7071067690849304
-            },
-            "parent": 0
           }
         },
         "1252": {
@@ -11073,174 +10716,6 @@
             "parent": 1939
           }
         },
-        "2188": {
-          "json": {
-            "position": {
-              "x": 136,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2189": {
-          "json": {
-            "position": {
-              "x": 152,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2190": {
-          "json": {
-            "position": {
-              "x": 168,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2191": {
-          "json": {
-            "position": {
-              "x": 184,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2192": {
-          "json": {
-            "position": {
-              "x": 200,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2193": {
-          "json": {
-            "position": {
-              "x": 216,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2194": {
-          "json": {
-            "position": {
-              "x": 232,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
-        "2195": {
-          "json": {
-            "position": {
-              "x": 248,
-              "y": 0,
-              "z": 8
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
-            },
-            "rotation": {
-              "x": 0,
-              "y": 0,
-              "z": 0,
-              "w": 1
-            },
-            "parent": 1939
-          }
-        },
         "2196": {
           "json": {
             "position": {
@@ -11340,13 +10815,6 @@
         "515": {
           "json": {
             "src": "assets/scene/Models/Bed/Bed.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "517": {
-          "json": {
-            "src": "assets/asset-packs/the_lonely_fountain/Fountain_03/Fountain_03.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -12723,13 +12191,6 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
-        "749": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
         "750": {
           "json": {
             "src": "assets/scene/Models/PigPenBuilding/PigPenBuilding.glb",
@@ -12803,111 +12264,6 @@
         "763": {
           "json": {
             "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "780": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "781": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "782": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "783": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "786": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "787": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "788": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "789": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "790": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "791": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "792": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "793": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "794": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "795": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "796": {
-          "json": {
-            "src": "assets/asset-packs/cobblestone_tile/FloorSquare_01/FloorSquare_01.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -14669,62 +14025,6 @@
             "invisibleMeshesCollisionMask": 2
           }
         },
-        "2188": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2189": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2190": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2191": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2192": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2193": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2194": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
-        "2195": {
-          "json": {
-            "src": "assets/asset-packs/bermuda_grass/FloorBaseGrass_01/FloorBaseGrass_01.glb",
-            "visibleMeshesCollisionMask": 1,
-            "invisibleMeshesCollisionMask": 2
-          }
-        },
         "2196": {
           "json": {
             "src": "assets/asset-packs/floor_-_black_small/BlackFloor_Small.glb",
@@ -14872,11 +14172,6 @@
         "516": {
           "json": {
             "value": "ChickenCoop"
-          }
-        },
-        "517": {
-          "json": {
-            "value": "The Lonely Fountain_2"
           }
         },
         "518": {
@@ -16024,11 +15319,6 @@
             "value": "PigPen"
           }
         },
-        "749": {
-          "json": {
-            "value": "Cobblestone Tile"
-          }
-        },
         "750": {
           "json": {
             "value": "PigPenBuilding.glb"
@@ -16087,81 +15377,6 @@
         "763": {
           "json": {
             "value": "PigSpawn_4"
-          }
-        },
-        "780": {
-          "json": {
-            "value": "Cobblestone Tile_2"
-          }
-        },
-        "781": {
-          "json": {
-            "value": "Cobblestone Tile_3"
-          }
-        },
-        "782": {
-          "json": {
-            "value": "Cobblestone Tile_4"
-          }
-        },
-        "783": {
-          "json": {
-            "value": "Cobblestone Tile_5"
-          }
-        },
-        "786": {
-          "json": {
-            "value": "Cobblestone Tile_8"
-          }
-        },
-        "787": {
-          "json": {
-            "value": "Cobblestone Tile_9"
-          }
-        },
-        "788": {
-          "json": {
-            "value": "Cobblestone Tile_10"
-          }
-        },
-        "789": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "790": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "791": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "792": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "793": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "794": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "795": {
-          "json": {
-            "value": "Cobblestone Tile_11"
-          }
-        },
-        "796": {
-          "json": {
-            "value": "Cobblestone Tile_11"
           }
         },
         "1252": {
@@ -17464,46 +16679,6 @@
             "value": "Tile 248"
           }
         },
-        "2188": {
-          "json": {
-            "value": "Tile 249"
-          }
-        },
-        "2189": {
-          "json": {
-            "value": "Tile 250"
-          }
-        },
-        "2190": {
-          "json": {
-            "value": "Tile 251"
-          }
-        },
-        "2191": {
-          "json": {
-            "value": "Tile 252"
-          }
-        },
-        "2192": {
-          "json": {
-            "value": "Tile 253"
-          }
-        },
-        "2193": {
-          "json": {
-            "value": "Tile 254"
-          }
-        },
-        "2194": {
-          "json": {
-            "value": "Tile 255"
-          }
-        },
-        "2195": {
-          "json": {
-            "value": "Tile 256"
-          }
-        },
         "2196": {
           "json": {
             "value": "Road01"
@@ -17631,26 +16806,6 @@
       }
     },
     {
-      "name": "inspector::Selection",
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "gizmo": {
-            "type": "integer",
-            "serializationType": "int32"
-          }
-        },
-        "serializationType": "map"
-      },
-      "data": {
-        "0": {
-          "json": {
-            "gizmo": 0
-          }
-        }
-      }
-    },
-    {
       "name": "inspector::Nodes",
       "jsonSchema": {
         "type": "object",
@@ -17709,10 +16864,7 @@
                   1261,
                   1260,
                   1259,
-                  1264,
-                  749,
-                  796,
-                  517
+                  1264
                 ]
               },
               {
@@ -18051,6 +17203,7 @@
               },
               {
                 "entity": 1939,
+                "open": true,
                 "children": [
                   1940,
                   1941,
@@ -18299,15 +17452,7 @@
                   2184,
                   2185,
                   2186,
-                  2187,
-                  2188,
-                  2189,
-                  2190,
-                  2191,
-                  2192,
-                  2193,
-                  2194,
-                  2195
+                  2187
                 ]
               },
               {
@@ -19300,38 +18445,6 @@
               },
               {
                 "entity": 2187,
-                "children": []
-              },
-              {
-                "entity": 2188,
-                "children": []
-              },
-              {
-                "entity": 2189,
-                "children": []
-              },
-              {
-                "entity": 2190,
-                "children": []
-              },
-              {
-                "entity": 2191,
-                "children": []
-              },
-              {
-                "entity": 2192,
-                "children": []
-              },
-              {
-                "entity": 2193,
-                "children": []
-              },
-              {
-                "entity": 2194,
-                "children": []
-              },
-              {
-                "entity": 2195,
                 "children": []
               },
               {
@@ -20330,90 +19443,6 @@
               {
                 "entity": 1266,
                 "children": []
-              },
-              {
-                "entity": 749,
-                "children": [
-                  781,
-                  782,
-                  780,
-                  783,
-                  786,
-                  787,
-                  788
-                ]
-              },
-              {
-                "entity": 780,
-                "children": []
-              },
-              {
-                "entity": 781,
-                "children": []
-              },
-              {
-                "entity": 782,
-                "children": []
-              },
-              {
-                "entity": 783,
-                "children": []
-              },
-              {
-                "entity": 786,
-                "children": []
-              },
-              {
-                "entity": 787,
-                "children": []
-              },
-              {
-                "entity": 788,
-                "children": []
-              },
-              {
-                "entity": 796,
-                "children": [
-                  795,
-                  794,
-                  793,
-                  792,
-                  791,
-                  790,
-                  789
-                ]
-              },
-              {
-                "entity": 795,
-                "children": []
-              },
-              {
-                "entity": 794,
-                "children": []
-              },
-              {
-                "entity": 793,
-                "children": []
-              },
-              {
-                "entity": 792,
-                "children": []
-              },
-              {
-                "entity": 791,
-                "children": []
-              },
-              {
-                "entity": 790,
-                "children": []
-              },
-              {
-                "entity": 789,
-                "children": []
-              },
-              {
-                "entity": 517,
-                "children": []
               }
             ]
           }
@@ -20454,9 +19483,6 @@
           "json": {}
         },
         "516": {
-          "json": {}
-        },
-        "517": {
           "json": {}
         },
         "518": {
@@ -21139,9 +20165,6 @@
         "748": {
           "json": {}
         },
-        "749": {
-          "json": {}
-        },
         "750": {
           "json": {}
         },
@@ -21176,51 +20199,6 @@
           "json": {}
         },
         "763": {
-          "json": {}
-        },
-        "780": {
-          "json": {}
-        },
-        "781": {
-          "json": {}
-        },
-        "782": {
-          "json": {}
-        },
-        "783": {
-          "json": {}
-        },
-        "786": {
-          "json": {}
-        },
-        "787": {
-          "json": {}
-        },
-        "788": {
-          "json": {}
-        },
-        "789": {
-          "json": {}
-        },
-        "790": {
-          "json": {}
-        },
-        "791": {
-          "json": {}
-        },
-        "792": {
-          "json": {}
-        },
-        "793": {
-          "json": {}
-        },
-        "794": {
-          "json": {}
-        },
-        "795": {
-          "json": {}
-        },
-        "796": {
           "json": {}
         },
         "799": {
@@ -21280,8 +20258,560 @@
         "1266": {
           "json": {}
         },
+        "1939": {
+          "json": {}
+        },
+        "1940": {
+          "json": {}
+        },
+        "1948": {
+          "json": {}
+        },
+        "1953": {
+          "json": {}
+        },
+        "2103": {
+          "json": {}
+        },
+        "2104": {
+          "json": {}
+        },
+        "2105": {
+          "json": {}
+        },
+        "2106": {
+          "json": {}
+        },
+        "2107": {
+          "json": {}
+        },
+        "2108": {
+          "json": {}
+        },
+        "2109": {
+          "json": {}
+        },
+        "2110": {
+          "json": {}
+        },
+        "2111": {
+          "json": {}
+        },
+        "2112": {
+          "json": {}
+        },
+        "2113": {
+          "json": {}
+        },
+        "2114": {
+          "json": {}
+        },
+        "2115": {
+          "json": {}
+        },
+        "2121": {
+          "json": {}
+        },
+        "2122": {
+          "json": {}
+        },
+        "2123": {
+          "json": {}
+        },
+        "2124": {
+          "json": {}
+        },
+        "2125": {
+          "json": {}
+        },
+        "2126": {
+          "json": {}
+        },
+        "2127": {
+          "json": {}
+        },
+        "2128": {
+          "json": {}
+        },
+        "2129": {
+          "json": {}
+        },
+        "2130": {
+          "json": {}
+        },
+        "2131": {
+          "json": {}
+        },
+        "2133": {
+          "json": {}
+        },
+        "2135": {
+          "json": {}
+        },
+        "2137": {
+          "json": {}
+        },
+        "2138": {
+          "json": {}
+        },
+        "2139": {
+          "json": {}
+        },
+        "2140": {
+          "json": {}
+        },
+        "2141": {
+          "json": {}
+        },
+        "2142": {
+          "json": {}
+        },
+        "2143": {
+          "json": {}
+        },
+        "2144": {
+          "json": {}
+        },
+        "2145": {
+          "json": {}
+        },
+        "2146": {
+          "json": {}
+        },
+        "2147": {
+          "json": {}
+        },
+        "2148": {
+          "json": {}
+        },
+        "2149": {
+          "json": {}
+        },
+        "2150": {
+          "json": {}
+        },
+        "2151": {
+          "json": {}
+        },
+        "2152": {
+          "json": {}
+        },
+        "2153": {
+          "json": {}
+        },
+        "2154": {
+          "json": {}
+        },
+        "2155": {
+          "json": {}
+        },
+        "2156": {
+          "json": {}
+        },
+        "2157": {
+          "json": {}
+        },
+        "2158": {
+          "json": {}
+        },
+        "2159": {
+          "json": {}
+        },
+        "2160": {
+          "json": {}
+        },
+        "2161": {
+          "json": {}
+        },
+        "2162": {
+          "json": {}
+        },
+        "2163": {
+          "json": {}
+        },
+        "2164": {
+          "json": {}
+        },
+        "2166": {
+          "json": {}
+        },
+        "2168": {
+          "json": {}
+        },
+        "2169": {
+          "json": {}
+        },
+        "2170": {
+          "json": {}
+        },
+        "2171": {
+          "json": {}
+        },
+        "2172": {
+          "json": {}
+        },
+        "2173": {
+          "json": {}
+        },
+        "2174": {
+          "json": {}
+        },
+        "2175": {
+          "json": {}
+        },
+        "2176": {
+          "json": {}
+        },
+        "2177": {
+          "json": {}
+        },
+        "2178": {
+          "json": {}
+        },
+        "2179": {
+          "json": {}
+        },
+        "2180": {
+          "json": {}
+        },
+        "2181": {
+          "json": {}
+        },
+        "2182": {
+          "json": {}
+        },
+        "2183": {
+          "json": {}
+        },
+        "2184": {
+          "json": {}
+        },
+        "2185": {
+          "json": {}
+        },
+        "2186": {
+          "json": {}
+        },
+        "2187": {
+          "json": {}
+        },
         "2196": {
           "json": {}
+        }
+      }
+    },
+    {
+      "name": "inspector::Hide",
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean",
+            "serializationType": "boolean"
+          }
+        },
+        "serializationType": "map"
+      },
+      "data": {
+        "2103": {
+          "json": {
+            "value": true
+          }
+        },
+        "2104": {
+          "json": {
+            "value": true
+          }
+        },
+        "2105": {
+          "json": {
+            "value": true
+          }
+        },
+        "2106": {
+          "json": {
+            "value": true
+          }
+        },
+        "2107": {
+          "json": {
+            "value": true
+          }
+        },
+        "2108": {
+          "json": {
+            "value": true
+          }
+        },
+        "2109": {
+          "json": {
+            "value": true
+          }
+        },
+        "2110": {
+          "json": {
+            "value": true
+          }
+        },
+        "2111": {
+          "json": {
+            "value": true
+          }
+        },
+        "2112": {
+          "json": {
+            "value": true
+          }
+        },
+        "2113": {
+          "json": {
+            "value": true
+          }
+        },
+        "2114": {
+          "json": {
+            "value": true
+          }
+        },
+        "2115": {
+          "json": {
+            "value": true
+          }
+        },
+        "2121": {
+          "json": {
+            "value": true
+          }
+        },
+        "2122": {
+          "json": {
+            "value": true
+          }
+        },
+        "2123": {
+          "json": {
+            "value": true
+          }
+        },
+        "2124": {
+          "json": {
+            "value": true
+          }
+        },
+        "2125": {
+          "json": {
+            "value": true
+          }
+        },
+        "2126": {
+          "json": {
+            "value": true
+          }
+        },
+        "2127": {
+          "json": {
+            "value": true
+          }
+        },
+        "2128": {
+          "json": {
+            "value": true
+          }
+        },
+        "2129": {
+          "json": {
+            "value": true
+          }
+        },
+        "2130": {
+          "json": {
+            "value": true
+          }
+        },
+        "2131": {
+          "json": {
+            "value": true
+          }
+        },
+        "2137": {
+          "json": {
+            "value": true
+          }
+        },
+        "2138": {
+          "json": {
+            "value": true
+          }
+        },
+        "2139": {
+          "json": {
+            "value": true
+          }
+        },
+        "2140": {
+          "json": {
+            "value": true
+          }
+        },
+        "2141": {
+          "json": {
+            "value": true
+          }
+        },
+        "2142": {
+          "json": {
+            "value": true
+          }
+        },
+        "2143": {
+          "json": {
+            "value": true
+          }
+        },
+        "2144": {
+          "json": {
+            "value": true
+          }
+        },
+        "2145": {
+          "json": {
+            "value": true
+          }
+        },
+        "2146": {
+          "json": {
+            "value": true
+          }
+        },
+        "2147": {
+          "json": {
+            "value": true
+          }
+        },
+        "2153": {
+          "json": {
+            "value": true
+          }
+        },
+        "2154": {
+          "json": {
+            "value": true
+          }
+        },
+        "2155": {
+          "json": {
+            "value": true
+          }
+        },
+        "2156": {
+          "json": {
+            "value": true
+          }
+        },
+        "2157": {
+          "json": {
+            "value": true
+          }
+        },
+        "2158": {
+          "json": {
+            "value": true
+          }
+        },
+        "2159": {
+          "json": {
+            "value": true
+          }
+        },
+        "2160": {
+          "json": {
+            "value": true
+          }
+        },
+        "2161": {
+          "json": {
+            "value": true
+          }
+        },
+        "2162": {
+          "json": {
+            "value": true
+          }
+        },
+        "2163": {
+          "json": {
+            "value": true
+          }
+        },
+        "2169": {
+          "json": {
+            "value": true
+          }
+        },
+        "2170": {
+          "json": {
+            "value": true
+          }
+        },
+        "2171": {
+          "json": {
+            "value": true
+          }
+        },
+        "2172": {
+          "json": {
+            "value": true
+          }
+        },
+        "2173": {
+          "json": {
+            "value": true
+          }
+        },
+        "2174": {
+          "json": {
+            "value": true
+          }
+        },
+        "2175": {
+          "json": {
+            "value": true
+          }
+        },
+        "2176": {
+          "json": {
+            "value": true
+          }
+        },
+        "2177": {
+          "json": {
+            "value": true
+          }
+        },
+        "2178": {
+          "json": {
+            "value": true
+          }
+        },
+        "2179": {
+          "json": {
+            "value": true
+          }
+        },
+        "2185": {
+          "json": {
+            "value": true
+          }
+        },
+        "2186": {
+          "json": {
+            "value": true
+          }
+        },
+        "2187": {
+          "json": {
+            "value": true
+          }
         }
       }
     },
@@ -22542,46 +22072,6 @@
           "json": {
             "value": true
           }
-        },
-        "2188": {
-          "json": {
-            "value": true
-          }
-        },
-        "2189": {
-          "json": {
-            "value": true
-          }
-        },
-        "2190": {
-          "json": {
-            "value": true
-          }
-        },
-        "2191": {
-          "json": {
-            "value": true
-          }
-        },
-        "2192": {
-          "json": {
-            "value": true
-          }
-        },
-        "2193": {
-          "json": {
-            "value": true
-          }
-        },
-        "2194": {
-          "json": {
-            "value": true
-          }
-        },
-        "2195": {
-          "json": {
-            "value": true
-          }
         }
       }
     },
@@ -23348,30 +22838,6 @@
           "json": {}
         },
         "2187": {
-          "json": {}
-        },
-        "2188": {
-          "json": {}
-        },
-        "2189": {
-          "json": {}
-        },
-        "2190": {
-          "json": {}
-        },
-        "2191": {
-          "json": {}
-        },
-        "2192": {
-          "json": {}
-        },
-        "2193": {
-          "json": {}
-        },
-        "2194": {
-          "json": {}
-        },
-        "2195": {
           "json": {}
         }
       }
@@ -25302,8 +24768,8 @@
                   "x": {
                     "$case": "range",
                     "value": [
-                      126.4000015258789,
-                      127.4000015258789
+                      36.150001525878906,
+                      37.150001525878906
                     ]
                   },
                   "y": {
@@ -25316,8 +24782,8 @@
                   "z": {
                     "$case": "range",
                     "value": [
-                      111.0999984741211,
-                      112.0999984741211
+                      35.849998474121094,
+                      36.849998474121094
                     ]
                   }
                 },
@@ -25328,7 +24794,9 @@
                 }
               }
             ],
-            "skyboxConfig": {},
+            "skyboxConfig": {
+              "fixedTime": 36000
+            },
             "creator": "",
             "disableNearbyVoiceChat": false
           }

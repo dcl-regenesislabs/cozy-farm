@@ -277,26 +277,17 @@
   },
   "spawnPoints": [
     {
-      "name": "SpawnPlaza",
+      "name": "SpawnFarm",
       "default": true,
       "position": {
-        "x": [
-          126.4000015258789,
-          127.4000015258789
-        ],
-        "y": [
-          0,
-          0
-        ],
-        "z": [
-          111.0999984741211,
-          112.0999984741211
-        ]
+        "x": [39, 41],
+        "y": [1, 1],
+        "z": [39, 41]
       },
       "cameraTarget": {
-        "x": 8,
+        "x": 48,
         "y": 1,
-        "z": 45
+        "z": 40
       }
     }
   ],
@@ -310,10 +301,12 @@
     "nearbyVoiceChat": "enabled"
   },
   "creator": "",
-  "skyboxConfig": {},
+  "skyboxConfig": {
+    "fixedTime": 36000
+  },
   "source": {
     "origin": "creator-hub",
-    "projectId": "b3e99e7c-f492-4f20-8a2d-53164ce8b11b"
+    "projectId": "36f29209-72c5-4130-b450-8da92b57d821"
   },
   "worldConfiguration": {
     "name": "cozyfarm.dcl.eth"

@@ -25,7 +25,23 @@ import {
 
 import { getFarmEntity, getEntityWorldPosition } from './farmInstances'
 
-import type { FarmSlotVisual } from '../shared/farmMessages'
+import type { PlotSaveState, ChickenDataPayload, PigDataPayload } from '../shared/farmMessages'
+
+type FarmSlotVisual = {
+  slotId: number
+  wallet: string
+  plotStates: PlotSaveState[]
+  beautySlots: number[]
+  chickenCoopOwned: boolean
+  chickens: ChickenDataPayload[]
+  chickenFoodInBowl: number
+  chickenCoopDirtyAt: number
+  pigPenOwned: boolean
+  pigs: PigDataPayload[]
+  pigFoodInBowl: number
+  pigPenDirtyAt: number
+  compostBinUnlocked: boolean
+}
 
 const remoteBeautyModels = new Map<number, Entity[]>()
 const remoteChickenEntities = new Map<number, Entity[]>()
