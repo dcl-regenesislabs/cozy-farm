@@ -279,71 +279,9 @@ export function initFarmInstances(): void {
   farmInstances[0] = slot0
   farmSlotSoilsStore[0] = slot0.soilEntities
 
-  for (let slotId = 1; slotId < MAX_FARM_SLOTS; slotId++) {
-    const anchor = resolveAnchor(slotId)
-    const offset = {
-      x: anchor.x - baseAnchor.x,
-      y: anchor.y - baseAnchor.y,
-      z: anchor.z - baseAnchor.z,
-    }
-
-    const namedEntities = new Map<string, Entity>()
-    const clonedRoot = cloneEntityTree(root, null, namedEntities, childrenOf)
-    const clonedRootTransform = Transform.getMutable(clonedRoot)
-    clonedRootTransform.position = Vector3.create(
-      rootTransform.position.x + offset.x,
-      rootTransform.position.y + offset.y,
-      rootTransform.position.z + offset.z,
-    )
-    clonedRootTransform.rotation = Quaternion.create(
-      rootTransform.rotation.x,
-      rootTransform.rotation.y,
-      rootTransform.rotation.z,
-      rootTransform.rotation.w,
-    )
-    clonedRootTransform.scale = Vector3.Zero()
-
-    const instance: FarmInstance = {
-      slotId,
-      root: clonedRoot,
-      namedEntities,
-      soilEntities: collectSoils(namedEntities),
-      anchor,
-      originalScale: {
-        x: rootTransform.scale.x,
-        y: rootTransform.scale.y,
-        z: rootTransform.scale.z,
-      },
-    }
-
-    farmInstances[slotId] = instance
-    farmSlotSoilsStore[slotId] = instance.soilEntities
-  }
-
   buildSpawnPositions()
   initialized = true
-  console.log(`[FarmInstances] Initialized ${farmInstances.length} farm instances from template '${FARM_PARENT_NAME}'`)
-
-  // If any anchor entities weren't found (Creator Hub loads composites lazily),
-  // retry on subsequent ECS ticks so farm clones land at correct world positions.
-  if (missingAnchorSlots.size > 0) {
-    let attempts = 0
-    engine.addSystem(
-      function anchorRetry(_dt: number) {
-        attempts++
-        retryMissingAnchors()
-        if (missingAnchorSlots.size === 0 || attempts >= 10) {
-          engine.removeSystem(anchorRetry)
-          if (missingAnchorSlots.size > 0) {
-            const names = [...missingAnchorSlots].map((id) => FARM_ANCHOR_NAMES[id]).join(', ')
-            console.error(`[FarmInstances] Could not resolve anchors after retries: ${names}`)
-          }
-        }
-      },
-      0,
-      'farmAnchorRetry',
-    )
-  }
+  console.log(`[FarmInstances] Initialized farm instance from template '${FARM_PARENT_NAME}'`)
 }
 
 export function getFarmInstance(slotId: number): FarmInstance | null {

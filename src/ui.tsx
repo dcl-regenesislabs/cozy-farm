@@ -23,10 +23,7 @@ import { ChickenCoopPanel } from './ui/ChickenCoopPanel'
 import { PigPenPanel }      from './ui/PigPenPanel'
 import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
-import { FarmSelectPanel }  from './ui/FarmSelectPanel'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
-import { FarmAssignmentOverlay } from './ui/FarmAssignmentOverlay'
-import { FreeSlotNotification } from './ui/FreeSlotNotification'
 import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
 export function setupUi() {
@@ -35,12 +32,7 @@ export function setupUi() {
 
 const MainUi = () => {
   const showVisitHud = playerState.viewingFarm !== null
-  const showOwnFarmUi = PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmGameplayUiReady)
-  const waitingForSlot =
-    !PROFILE_HUD_DEBUG &&
-    playerState.viewingFarm === null &&
-    playerState.mySlotId < 0 &&
-    playerState.farmSlots.length > 0
+  const showOwnFarmUi = PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady)
 
   return (
     <UiEntity
@@ -52,7 +44,7 @@ const MainUi = () => {
     >
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
-      {showOwnFarmUi && !['farmSelect','npcDialog','shop','inventory','farm','quests','plant','sell'].includes(playerState.activeMenu) && <BottomNav />}
+      {showOwnFarmUi && !['npcDialog','shop','inventory','farm','quests','plant','sell'].includes(playerState.activeMenu) && <BottomNav />}
 
       {showOwnFarmUi && playerState.activeMenu === 'plant'     && <PlantMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
@@ -73,14 +65,10 @@ const MainUi = () => {
 
       {showOwnFarmUi && playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
-      {!PROFILE_HUD_DEBUG && (waitingForSlot || playerState.activeMenu === 'farmSelect' || showOwnFarmUi) && <FarmSelectPanel />}
-
       {showOwnFarmUi && playerState.activeMenu === 'inventory' && <InventoryPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'stats'     && <StatsPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'quests'    && <QuestPanel />}
       {showOwnFarmUi && playerState.activeMenu === 'farm'      && <FarmPanel />}
-      <FarmAssignmentOverlay />
-      {waitingForSlot && <FreeSlotNotification />}
     </UiEntity>
   )
 }

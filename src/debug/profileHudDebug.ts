@@ -4,7 +4,7 @@ export const PROFILE_HUD_DEBUG = false
 
 export function applyProfileHudDebugState(): void {
   playerState.viewingFarm = null
-  playerState.farmGameplayUiReady = true
+  playerState.farmReady = true
   playerState.serverConnected = true
   playerState.activeMenu = 'none'
 

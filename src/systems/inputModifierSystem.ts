@@ -1,11 +1,26 @@
 import { engine, InputModifier } from '@dcl/sdk/ecs'
+import { playerState } from '../game/gameState'
+
+let menuWasOpen = false
 
 export function setupInputModifierSystem() {
-  // Remove any InputModifier that may have been left from a previous load.
-  // Named so it can self-remove after running once.
-  function clearInputModifier() {
-    InputModifier.deleteFrom(engine.PlayerEntity)
-    engine.removeSystem(clearInputModifier)
-  }
-  engine.addSystem(clearInputModifier)
+  engine.addSystem(() => {
+    const menuOpen =
+      !playerState.menuInputLockDisabled &&
+      playerState.activeMenu !== 'none'
+
+    if (menuOpen === menuWasOpen) return
+    menuWasOpen = menuOpen
+
+    if (menuOpen) {
+      InputModifier.createOrReplace(engine.PlayerEntity, {
+        mode: {
+          $case: 'standard',
+          standard: { disableAll: true },
+        },
+      })
+    } else {
+      InputModifier.deleteFrom(engine.PlayerEntity)
+    }
+  })
 }

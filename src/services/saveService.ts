@@ -1,12 +1,11 @@
 import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
-import { movePlayerTo } from '~system/RestrictedActions'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
 import { CROP_MODELS } from '../data/modelPaths'
 import { playerState } from '../game/gameState'
 import { tutorialState } from '../game/tutorialState'
-import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse, FarmSlotVisual } from '../shared/farmMessages'
+import { room, FarmStatePayload, CropCount, FertilizerCount, PlotSaveState, PlayerRegistryResponse, BeautyLeaderboardResponse } from '../shared/farmMessages'
 import { calculateBeautyScore } from '../game/beautyScore'
 import { getBeautySlots, applyBeautySlots } from '../systems/beautySpotSystem'
 import { setCropModel, setSoilIconDisplay, applyRotVisual, removeCropModel } from '../game/actions'
@@ -19,11 +18,6 @@ import {
   unlockPlotGroupByName,
   hidePlotGroupSign,
   checkLevelGroupUnlocks,
-  FARM_SPAWN_POSITIONS,
-  PLAZA_SPAWN_POSITION,
-  revealFarmSlot,
-  hideFarmSlot,
-  farmSlotSoils,
   setupFarmSlotEntities,
   getSoilEntities,
 } from '../systems/interactionSetup'
@@ -35,7 +29,6 @@ import { initAnimalBuildings, initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
-import { renderRemoteFarmVisual, hideRemoteSlotBuildings, clearRemoteFarmSlot } from '../systems/remoteFarmVisuals'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
 
@@ -43,12 +36,6 @@ import { animalTutorialState } from '../game/animalTutorialState'
 // Auto-save interval
 // ---------------------------------------------------------------------------
 const AUTO_SAVE_INTERVAL_MS = 60_000
-const INITIAL_TELEPORT_DELAY_S = 0.25
-const SLOT_ASSIGNMENT_OVERLAY_INTRO_MS = 2_000
-const SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS = 4_200
-const SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS = SLOT_ASSIGNMENT_OVERLAY_INTRO_MS + SLOT_ASSIGNMENT_OVERLAY_PROGRESS_MS
-const INITIAL_LOAD_RETRY_DELAY_S = 2
-const OVERLAY_HARD_TIMEOUT_MS = 15_000  // force-unfreeze if server never responds
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
 
@@ -337,7 +324,6 @@ function applyPayload(payload: FarmStatePayload): void {
   // ── Start animal runtime system (catch-up runs inside) ───────────────────
   initAnimalSystem()
 
-  farmLoaded = true
   playerState.serverConnected = true
   console.log(`[SaveService] Farm loaded — coins: ${payload.coins}, level: ${payload.level}`)
 }
@@ -455,10 +441,6 @@ export function requestPayWorkerWages(): void {
   void room.send('payWorkerWages', {})
 }
 
-export function requestClaimFarmSlot(slotId: number): void {
-  void room.send('claimFarmSlot', { slotId })
-}
-
 function applyDebugWorkerState(data: {
   coins: number
   cropsUnlocked: boolean
@@ -528,255 +510,42 @@ export const leaderboardCallbacks = {
   onBeautyLeaderboardLoaded: null as ((data: BeautyLeaderboardResponse) => void) | null,
 }
 
-export const slotCallbacks = {
-  onSlotsLoaded:  null as ((slots: import('../shared/farmMessages').FarmSlot[]) => void) | null,
-  onSlotClaimed:  null as ((success: boolean, reason: string, slots: import('../shared/farmMessages').FarmSlot[]) => void) | null,
-}
-
-// ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Teleport player to their farm slot spawn position (or central plaza)
-// ---------------------------------------------------------------------------
-function renderOtherFarmSlot(slotId: number, visual: FarmSlotVisual): void {
-  const savedPlots = visual.plotStates
-  const soils = farmSlotSoils[slotId]
-  if (!soils || soils.length === 0) return
-
-  const entityByIndex = new Map<number, Entity>()
-  soils.forEach((entity, i) => entityByIndex.set(i, entity))
-
-  for (const saved of savedPlots) {
-    const entity = entityByIndex.get(saved.plotIndex)
-    if (!entity) continue
-    if (!PlotState.has(entity)) {
-      PlotState.create(entity, {
-        cropType: -1, growthStage: 0, plantedAt: 0, waterCount: 0,
-        isUnlocked: saved.isUnlocked, plotIndex: saved.plotIndex,
-        isRotten: false, fertilizerType: -1,
-      })
-    }
-    const mutable = PlotState.getMutable(entity)
-    removeCropModel(entity)
-    mutable.isUnlocked   = saved.isUnlocked
-    mutable.cropType     = saved.cropType
-    mutable.growthStage  = saved.growthStage
-    mutable.isReady      = saved.isReady
-    mutable.isRotten     = saved.isRotten
-
-    if (saved.cropType === -1) {
-      removeCropModel(entity)
-      if (saved.isUnlocked && saved.plotIndex >= 1) {
-        GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
-      } else if (!saved.isUnlocked) {
-        GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
-      }
-      continue
-    }
-
-    if (saved.isUnlocked && saved.plotIndex >= 1) {
-      GltfContainer.createOrReplace(entity, { src: SOIL_MODEL })
-    }
-
-    if (saved.isUnlocked) {
-      const def = CROP_DATA.get(saved.cropType as CropType)
-      if (def && saved.growthStage > 0) {
-        setCropModel(entity, CROP_MODELS[saved.cropType as CropType][saved.growthStage - 1])
-      }
-    } else if (!saved.isUnlocked) {
-      GltfContainer.createOrReplace(entity, { src: SOIL_TRANSPARENT_MODEL })
-    }
-  }
-
-  renderRemoteFarmVisual(slotId, visual)
-  console.log(`[MultiFarm] Rendered ${savedPlots.length} plots into slot ${slotId}`)
-}
-
-const SOIL_MODEL = 'assets/scene/Models/Soil01/Soil01.glb'
-const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
-
-export function teleportToSlot(slotId: number): void {
-  const pos = slotId >= 0 && slotId < FARM_SPAWN_POSITIONS.length
-    ? FARM_SPAWN_POSITIONS[slotId]
-    : PLAZA_SPAWN_POSITION
-  playerState.farmAssignmentOverlayActive = false
-  playerState.farmAssignmentOverlaySlotId = -1
-  playerState.farmAssignmentOverlayStartedAt = 0
-  playerState.farmAssignmentOverlayDurationMs = 0
-  playerState.farmGameplayUiReady = slotId >= 0
-  void movePlayerTo({ newRelativePosition: pos, cameraTarget: { x: pos.x + 8, y: pos.y, z: pos.z } })
-  console.log(`[SaveService] Teleporting to slot ${slotId} → (${pos.x}, ${pos.y}, ${pos.z})`)
-}
-
 // ---------------------------------------------------------------------------
 // Entry point — call once from index.ts (client side only)
-// onLoaded is called after the first farm state is applied (use it to start
-// systems that depend on restored state, e.g. initTutorialSystem)
+// onLoaded is called after the first farm state is applied
 // ---------------------------------------------------------------------------
 export function initSaveService(onLoaded?: () => void): void {
-  playerState.farmAssignmentOverlayActive = true
-  playerState.farmAssignmentOverlaySlotId = -1
-  playerState.farmAssignmentOverlayStartedAt = Date.now()
-  playerState.farmAssignmentOverlayDurationMs = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS
-  // Track server connection state — onReady fires true on connect, false on disconnect
   room.onReady((isReady) => {
     playerState.serverConnected = isReady
   })
 
-  // Cache farm payload until slot is known — needed so we apply data to the
-  // correct farm's soil entities (slot 0 = Farm1, slot 1 = Farm2, etc.)
-  let cachedPayload: FarmStatePayload | null = null
-  let initialPayloadApplied = false
-  let localFarmInitialized = false
-  let pendingTeleportSlotId: number | null = null
-  let teleportDelayTimer = 0
-  let loadRetryTimer = -1
-  let initRetryRunning = false
-  let playSlotAssignmentOverlay = false
-  let currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
-
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
-
-  function requestPlayerLoad(): void {
-    currentLoadRequestId = `load-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`
-    void room.send('playerLoadFarm', { requestId: currentLoadRequestId })
-    console.log(`[SaveService] playerLoadFarm sent (${currentLoadRequestId})`)
-  }
-
-  function startFarmAssignmentOverlay(slotId: number): void {
-    playerState.farmAssignmentOverlayActive = true
-    playerState.farmAssignmentOverlaySlotId = slotId
-    playerState.farmAssignmentOverlayStartedAt = Date.now()
-    playerState.farmAssignmentOverlayDurationMs = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS
-  }
-
-  engine.addSystem((dt) => {
-    if (pendingTeleportSlotId !== null) {
-      teleportDelayTimer -= dt
-      if (teleportDelayTimer <= 0) {
-        teleportToSlot(pendingTeleportSlotId)
-        pendingTeleportSlotId = null
-      }
-      return
-    }
-
-    // Hard timeout: server never responded — keep the overlay up and retry.
-    // Player already spawns in plaza by default, so no teleport needed.
-    if (
-      playerState.farmAssignmentOverlayActive &&
-      Date.now() - playerState.farmAssignmentOverlayStartedAt > OVERLAY_HARD_TIMEOUT_MS
-    ) {
-      console.error('[SaveService] Overlay hard timeout — retrying load')
-      playerState.farmAssignmentOverlayStartedAt = Date.now()
-      requestPlayerLoad()
-      return
-    }
-
-    // Recovery: slot was assigned but payload never arrived — re-request from server
-    if (localFarmInitialized || !playerState.wallet || !playerState.farmSlots.length || initialPayloadApplied || loadRetryTimer < 0) return
-    loadRetryTimer -= dt
-    if (loadRetryTimer > 0) return
-    loadRetryTimer = -1
-    console.log('[SaveService] Initial payload missing after slot assignment, re-requesting playerLoadFarm')
-    requestPlayerLoad()
-  }, 0, 'saveServiceSlotRecoverySystem')
-
-  function scheduleSingleTeleport(slotId: number): void {
-    pendingTeleportSlotId = slotId
-    playerState.farmGameplayUiReady = false
-    if (playSlotAssignmentOverlay) {
-      startFarmAssignmentOverlay(slotId)
-      teleportDelayTimer = SLOT_ASSIGNMENT_OVERLAY_TOTAL_MS / 1000
-      playSlotAssignmentOverlay = false
-      return
-    }
-
-    teleportDelayTimer = INITIAL_TELEPORT_DELAY_S
-  }
-
-  function initializeOwnFarmIfPossible(): void {
-    const normalizedWallet = normalizeAddress(playerState.wallet)
-    if (!normalizedWallet) return
-
-    const mine = playerState.farmSlots.find((slot) => normalizeAddress(slot.wallet) === normalizedWallet)
-    if (!mine) return
-
-    if (!cachedPayload || normalizeAddress(cachedPayload.wallet) !== normalizedWallet) {
-      if (!initialPayloadApplied) loadRetryTimer = INITIAL_LOAD_RETRY_DELAY_S
-      return
-    }
-
-    const previousSlotId = playerState.mySlotId
-    const slotChanged = previousSlotId !== mine.slotId
-    const shouldShowInitialAssignmentOverlay =
-      !initialPayloadApplied &&
-      previousSlotId < 0 &&
-      mine.slotId >= 0
-    playerState.mySlotId = mine.slotId
-    if (playerState.mySlotId >= 0) {
-      playerState.plazaMapMinimized = false
-    }
-
-    if (!localFarmInitialized || slotChanged) {
-      localFarmInitialized = true  // optimistic lock — reset in catch so retry can recover
-      try {
-        if (shouldShowInitialAssignmentOverlay) {
-          playSlotAssignmentOverlay = true
-        }
-        setupFarmSlotEntities(playerState.mySlotId >= 0 ? playerState.mySlotId : 0)
-        initBeautySpotSystem()
-        initAnimalBuildings()
-        if (mine.slotId > 0) revealFarmSlot(mine.slotId)
-        applyPayload(cachedPayload)
-        cachedPayload = null
-        initialPayloadApplied = true
-        scheduleSingleTeleport(playerState.mySlotId)
-        loadRetryTimer = -1
-        onLoaded?.()
-      } catch (err) {
-        console.error('[SaveService] Farm init failed (will retry next frame):', err)
-        localFarmInitialized = false  // allow retry system to re-enter
-      }
-    }
-  }
-
-  // Registers a per-frame ECS system that retries initializeOwnFarmIfPossible() until
-  // it succeeds. Used when farmStateLoaded arrives before farmSlotsLoaded — the retry
-  // picks up the slot as soon as the slot update message arrives.
-  function startInitRetry(): void {
-    if (initRetryRunning || localFarmInitialized) return
-    initRetryRunning = true
-    engine.addSystem(function farmInitRetry(_dt: number) {
-      initializeOwnFarmIfPossible()
-      if (localFarmInitialized) {
-        engine.removeSystem(farmInitRetry)
-        initRetryRunning = false
-      }
-    }, 0, 'farmInitRetry')
-  }
 
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (data) => {
-    if (data.requestId !== currentLoadRequestId) return
+    if (farmLoaded) return  // ignore duplicates
 
-    // Use data.requester as primary wallet source — payload.wallet may be empty
-    // for new players whose emptyFarm() hasn't persisted a wallet yet.
-    const wallet = normalizeAddress(data.requester || data.payload?.wallet)
-    if (!wallet) return
+    const requester = normalizeAddress(data.requester || data.payload?.wallet)
+    if (!requester) return
+    // If our wallet is known, ignore messages intended for other players
+    if (playerState.wallet && requester !== playerState.wallet) return
 
-    playerState.wallet = wallet
-    cachedPayload = data.payload
-    console.log(`[SaveService] farmStateLoaded — wallet: ${playerState.wallet}`)
+    if (!playerState.wallet) playerState.wallet = requester
+    console.log(`[SaveService] farmStateLoaded — wallet: ${requester}`)
 
-    initializeOwnFarmIfPossible()
-
-    // If farmSlotsLoaded hasn't arrived yet, retry every frame until it does.
-    if (!localFarmInitialized) {
-      console.log('[SaveService] Farm payload cached — waiting for slot assignment (retry active)')
-      startInitRetry()
+    try {
+      setupFarmSlotEntities(0)
+      initBeautySpotSystem()
+      initAnimalBuildings()
+      applyPayload(data.payload)
+      farmLoaded = true
+      playerState.farmReady = true
+      onLoaded?.()
+    } catch (err) {
+      console.error('[SaveService] Farm init failed:', err)
     }
   })
 
-  // Visit mode — other farm loaded
   room.onMessage('otherFarmLoaded', (data) => {
     visitCallbacks.onOtherFarmLoaded?.(data.requester, data.address, data.payload)
   })
@@ -803,120 +572,7 @@ export function initSaveService(onLoaded?: () => void): void {
     applyDebugWorkerState(data)
   })
 
-  // Slot messages
-  // A player disconnected — hide their farm slot for all clients
-  room.onMessage('farmSlotReleased', (data) => {
-    if (data.slotId === playerState.mySlotId) return  // own slot, ignore
-    const released = playerState.farmSlots.find((slot) => slot.slotId === data.slotId)
-    if (released) {
-      released.wallet = ''
-      released.displayName = ''
-      released.claimedAt = 0
-    }
-    hideFarmSlot(data.slotId)
-    clearRemoteFarmSlot(data.slotId)
-    console.log(`[SaveService] Farm slot ${data.slotId} hidden — player left`)
-
-    // Notify waiting players that a slot just opened
-    if (playerState.mySlotId < 0 && !playerState.farmGameplayUiReady) {
-      playerState.freeSlotNotification = { slotId: data.slotId, shownAt: Date.now(), taken: false }
-    }
-  })
-
-  // Another player's farm became visible — reveal their slot and render crops
-  room.onMessage('farmSlotVisualUpdated', (data) => {
-    console.log(`[SaveService] farmSlotVisualUpdated received — slotId=${data.slotId}, mySlot=${playerState.mySlotId}`)
-    if (data.slotId === playerState.mySlotId) {
-      console.log(`[SaveService] Skipping own farm visual update (slot ${data.slotId})`)
-      return
-    }
-    revealFarmSlot(data.slotId)
-    renderOtherFarmSlot(data.slotId, data)
-  })
-
-  room.onMessage('farmSlotsLoaded', (data) => {
-    playerState.farmSlots = data.slots
-    const normalizedWallet = normalizeAddress(playerState.wallet)
-    const normalizedRequester = normalizeAddress(data.requester)
-    const mine = normalizedWallet ? data.slots.find((s) => normalizeAddress(s.wallet) === normalizedWallet) : undefined
-    const nextMySlotId = mine ? mine.slotId : playerState.mySlotId
-
-    // Only dismiss the overlay once the farm is fully initialized. Before that,
-    // any farmSlotsLoaded (from another player's connect/disconnect) could arrive
-    // with the current player absent from the slot list — a false-negative that
-    // would prematurely close the loading screen and expose the default spawn position.
-    if (!mine && !playerState.viewingFarm && localFarmInitialized) {
-      playerState.farmAssignmentOverlayActive = false
-      playerState.farmGameplayUiReady = false
-    }
-
-    for (const slot of data.slots) {
-      const isMine = slot.slotId === nextMySlotId && !!normalizedWallet && normalizeAddress(slot.wallet) === normalizedWallet
-      if (isMine) {
-        if (slot.slotId > 0) revealFarmSlot(slot.slotId)
-        continue
-      }
-
-      if (slot.wallet) {
-        revealFarmSlot(slot.slotId)
-        hideRemoteSlotBuildings(slot.slotId)
-      } else {
-        hideFarmSlot(slot.slotId)
-      }
-    }
-
-    // Adopt wallet from requester when this update was triggered by our own load
-    // and the wallet hasn't been set yet (farmStateLoaded arrived first normally).
-    const isOurRequest = normalizedRequester !== '' && (
-      normalizedRequester === normalizedWallet ||
-      (!!cachedPayload && normalizedRequester === normalizeAddress(cachedPayload.wallet))
-    )
-    if (!normalizedWallet && normalizedRequester && isOurRequest) {
-      playerState.wallet = normalizedRequester
-      console.log(`[SaveService] wallet adopted from farmSlotsLoaded requester: ${normalizedRequester}`)
-    }
-
-    // Always attempt initialization — the function guards itself against missing wallet/payload/slot.
-    // This handles message ordering where farmSlotsLoaded arrives before or after farmStateLoaded,
-    // and the case where isOurRequest is false but our slot is already in the list.
-    initializeOwnFarmIfPossible()
-    slotCallbacks.onSlotsLoaded?.(data.slots)
-  })
-
-  room.onMessage('farmSlotClaimed', (data) => {
-    if (data.requester !== playerState.wallet) return
-    if (data.success) {
-      playerState.mySlotId  = data.slotId
-      playerState.farmSlots = data.slots
-      playerState.farmGameplayUiReady = false
-      playerState.plazaMapMinimized = false
-      playerState.freeSlotNotification = null
-      if (playerState.activeMenu === 'farmSelect') playerState.activeMenu = 'none'
-    } else {
-      playerState.farmAssignmentOverlayActive = false
-      playerState.farmAssignmentOverlaySlotId = -1
-      playerState.farmAssignmentOverlayStartedAt = 0
-      playerState.farmAssignmentOverlayDurationMs = 0
-      playerState.farmGameplayUiReady = false
-      playSlotAssignmentOverlay = false
-      // Show "someone got it" feedback then auto-dismiss.
-      // Capture reference so a fresher notification arriving during the 2s window is not wiped.
-      if (playerState.freeSlotNotification && data.reason === 'slot_taken') {
-        const takenNotif = { ...playerState.freeSlotNotification, taken: true }
-        playerState.freeSlotNotification = takenNotif
-        setTimeout(() => {
-          if (playerState.freeSlotNotification === takenNotif) {
-            playerState.freeSlotNotification = null
-          }
-        }, 2000)
-      }
-    }
-    slotCallbacks.onSlotClaimed?.(data.success, data.reason, data.slots)
-  })
-
-  // Ask server to load our farm
-  requestPlayerLoad()
-
+  void room.send('playerLoadFarm', { requestId: 'initial-load' })
   scheduleAutoSave()
   console.log('[SaveService] Initialized')
 }
