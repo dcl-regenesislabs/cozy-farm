@@ -44,7 +44,7 @@ const MainUi = () => {
     >
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
-      {showOwnFarmUi && !['npcDialog','shop','inventory','farm','quests'].includes(playerState.activeMenu) && <BottomNav />}
+      {showOwnFarmUi && !['npcDialog','shop','inventory','farm','quests','plant','sell'].includes(playerState.activeMenu) && <BottomNav />}
 
       {showOwnFarmUi && playerState.activeMenu === 'plant'     && <PlantMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'fertilize' && <FertilizeMenu />}

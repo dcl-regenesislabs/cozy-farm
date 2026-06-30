@@ -6,6 +6,7 @@ import { CROP_HARVEST_IMAGES, SOIL_ICON, ORGANIC_WASTE_ICON } from '../data/imag
 import { getSoilEntities } from '../systems/interactionSetup'
 import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
+import { tutorialState } from '../game/tutorialState'
 import { C } from './PanelShell'
 import { getRotTimeMs } from '../game/rotUtils'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -32,6 +33,7 @@ const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
 const CLOSE_SIZE       = ss(74)
 const CLOSE_RIGHT      = ss(28)
 const CLOSE_TOP        = ss(16)
+const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
 
 // ─── Card colours ─────────────────────────────────────────────────────────────
 const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -40,7 +42,7 @@ const CARD_TEXT       = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
 const CARD_TEXT_MUTE  = { r: 0.45, g: 0.28, b: 0.10, a: 1 }
 const FRAME_THICKNESS = 4
 
-// ─── Card & bar dimensions ────────────────────────────────────────────────────
+// ─── Card & bar dimensions — desktop ─────────────────────────────────────────
 const CARD_W      = ss(215)
 const CARD_H      = ss(258)
 const CARD_MARGIN = ss(12)
@@ -50,13 +52,30 @@ const CARD_PAD_H  = ss(10)
 const BAR_H       = 12
 const BAR_RADIUS  = 6
 
+// ─── Card & bar dimensions — mobile ──────────────────────────────────────────
+const MOB_CARD_W      = ss(305)
+const MOB_CARD_H      = ss(400)
+const MOB_CARD_MARGIN = ss(25)
+const MOB_CARD_ICON   = ss(150)
+const MOB_CARD_PAD_V  = ss(26)
+const MOB_CARD_PAD_H  = ss(18)
+const MOB_BAR_H       = 16
+const MOB_BAR_RADIUS  = 8
+
 // ─── Tab bar ──────────────────────────────────────────────────────────────────
 const TAB_H   = ss(44)
 const TAB_W   = ss(175)
 const TAB_GAP = ss(10)
 
-const PLOTS_PER_PAGE  = 8
+const MOB_TAB_H   = ss(60)
+const MOB_TAB_W   = ss(240)
+const MOB_TAB_GAP = ss(12)
+
+const PLOTS_PER_PAGE     = 8
+const MOB_PLOTS_PER_PAGE = 3
 const COMPOST_CYCLE_MS = 300_000
+// Explicit height for the mobile plot area so absolute children can anchor from the bottom
+const MOB_PLOT_AREA_H  = CONTENT_H - MOB_TAB_H - ss(12)
 
 const farmTab  = { value: 'home' as 'home' | 'expansion' | 'compost' }
 const farmPage = { home: 0, expansion: 0 }
@@ -86,38 +105,37 @@ function formatTime(ms: number): string {
 // ─── FarmCard ─────────────────────────────────────────────────────────────────
 const FarmCard = ({
   borderColor = CARD_BORDER,
-  height = CARD_H,
+  fillColor = CARD_FILL,
+  height,
   children,
 }: {
   key?: string | number
   borderColor?: CardColor
+  fillColor?: CardColor
   height?: number
   children?: ReactEcs.JSX.ReactNode
 }) => {
   const mobile = isMobile()
+  const cW = mobile ? MOB_CARD_W      : CARD_W
+  const cH = height ?? (mobile ? MOB_CARD_H : CARD_H)
+  const cM = mobile ? MOB_CARD_MARGIN : CARD_MARGIN
+  const pV = mobile ? MOB_CARD_PAD_V  : CARD_PAD_V
+  const pH = mobile ? MOB_CARD_PAD_H  : CARD_PAD_H
   return (
     <UiEntity
       uiTransform={{
         flexDirection: 'column',
         alignItems: 'center',
-        width: CARD_W,
-        height,
-        margin: { right: CARD_MARGIN, bottom: CARD_MARGIN },
-        padding: { top: CARD_PAD_V, bottom: CARD_PAD_V, left: CARD_PAD_H, right: CARD_PAD_H },
-        borderWidth: 3,
+        width: cW,
+        height: cH,
+        margin: { right: cM, bottom: cM },
+        padding: { top: pV, bottom: pV, left: pH, right: pH },
+        borderWidth: mobile ? 0 : 3,
         borderColor,
-        borderRadius: 12,
+        borderRadius: mobile ? 0 : 12,
       }}
-      uiBackground={{ color: CARD_FILL }}
+      uiBackground={{ color: fillColor }}
     >
-      {mobile && (
-        <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 }, width: CARD_W, height }}>
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, bottom: 0 }, width: CARD_W, height: FRAME_THICKNESS }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { left: 0, top: 0 },    width: FRAME_THICKNESS, height }} uiBackground={{ color: borderColor }} />
-          <UiEntity uiTransform={{ positionType: 'absolute', position: { right: 0, top: 0 },   width: FRAME_THICKNESS, height }} uiBackground={{ color: borderColor }} />
-        </UiEntity>
-      )}
       {children}
     </UiEntity>
   )
@@ -179,10 +197,11 @@ const FarmPanelFrame = ({
       <UiEntity
         uiTransform={{
           positionType: 'absolute',
-          position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: CLOSE_SIZE,
-          height: CLOSE_SIZE,
+          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
+          width: isMobile() ? ss(90) : CLOSE_SIZE,
+          height: isMobile() ? ss(90) : CLOSE_SIZE,
         }}
+        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
         onMouseDown={() => { playSound('buttonclick'); onClose() }}
       />
     </UiEntity>
@@ -198,27 +217,40 @@ const TabBar = ({
   tab: 'home' | 'expansion' | 'compost'
   homeHasReady: boolean
   expansionHasReady: boolean
-}) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
-    {(['home', 'expansion', 'compost'] as const).map((t) => {
-      const active = tab === t
-      const label  = t === 'home' ? 'My Farm' : t === 'expansion' ? 'Expansion' : 'Compost Bin'
-      const hasReady = (t === 'home' && homeHasReady) || (t === 'expansion' && expansionHasReady)
-      return (
-        <UiEntity key={t} uiTransform={{ margin: { right: TAB_GAP } }}>
-          <UiEntity
-            uiTransform={{ width: TAB_W, height: TAB_H, alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
-            uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
-            onMouseDown={() => { playSound('buttonclick'); farmTab.value = t }}
-          >
-            <Label value={label} fontSize={ss(20)} color={active ? { r: 0.97, g: 0.90, b: 0.68, a: 1 } : { r: 0.97, g: 0.90, b: 0.68, a: 0.65 }} textAlign="middle-center" />
+}) => {
+  const mob = isMobile()
+  const tH  = mob ? MOB_TAB_H   : TAB_H
+  const tW  = mob ? MOB_TAB_W   : TAB_W
+  const tG  = mob ? MOB_TAB_GAP : TAB_GAP
+  return (
+    <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
+      {(['home', 'expansion', 'compost'] as const).map((t) => {
+        const active   = tab === t
+        const label    = t === 'home' ? 'My Farm' : t === 'expansion' ? 'Expansion' : 'Compost Bin'
+        const hasReady = (t === 'home' && homeHasReady) || (t === 'expansion' && expansionHasReady)
+        return (
+          <UiEntity key={t} uiTransform={{ margin: { right: tG } }}>
+            <UiEntity
+              uiTransform={{ width: tW, height: tH, alignItems: 'center', justifyContent: 'center', borderRadius: 10 }}
+              uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
+              onMouseDown={() => { playSound('buttonclick'); farmTab.value = t }}
+            >
+              <Label
+                value={label}
+                fontSize={mob ? ss(28) : ss(20)}
+                color={active
+                  ? (mob ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.97, g: 0.90, b: 0.68, a: 1 })
+                  : (mob ? { r: 1, g: 1, b: 1, a: 0.65 } : { r: 0.97, g: 0.90, b: 0.68, a: 0.65 })}
+                textAlign="middle-center"
+              />
+            </UiEntity>
+            {hasReady && <BadgeDot />}
           </UiEntity>
-          {hasReady && <BadgeDot />}
-        </UiEntity>
-      )
-    })}
-  </UiEntity>
-)
+        )
+      })}
+    </UiEntity>
+  )
+}
 
 // ─── PlotTile ─────────────────────────────────────────────────────────────────
 type TileProps = { key?: string | number; entity: ReturnType<typeof getSoilEntities>[number]; idx: number; now: number }
@@ -275,20 +307,26 @@ const PlotTile = ({ entity, idx, now }: TileProps) => {
       midColor    = C.blue
     } else {
       const elapsed = now - plot.plantedAt
-      barPct        = Math.min(100, Math.floor((elapsed / def.growTimeMs) * 100))
-      const ws      = getWateringStatus(plot, now)
+      // Mirror growthSystem.ts: tutorial onion grows in 30s; GrowthBoost cuts time by 25%
+      let effectiveGrowTimeMs = (tutorialState.active && ct === CropType.Onion) ? 30_000 : def.growTimeMs
+      if (plot.fertilizerType === FertilizerType.GrowthBoost) effectiveGrowTimeMs = Math.floor(effectiveGrowTimeMs * 0.75)
+      const remainingMs = effectiveGrowTimeMs - elapsed
+      barPct            = Math.min(100, Math.floor((elapsed / effectiveGrowTimeMs) * 100))
+      const ws          = getWateringStatus(plot, now)
+      // Only show "Water in X" if the window opens before the crop finishes growing
+      const windowRelevant = ws.nextWindowInMs !== null && ws.nextWindowInMs < remainingMs
       if (ws.canWater) {
         midLabel    = 'Water now!'
         barColor    = C.blue
         borderColor = { r: 0.30, g: 0.50, b: 0.90, a: 0.95 }
         midColor    = C.blue
-      } else if (ws.nextWindowInMs !== null) {
-        midLabel    = `Water in ${formatTime(ws.nextWindowInMs)}`
+      } else if (windowRelevant) {
+        midLabel    = `Water in ${formatTime(ws.nextWindowInMs!)}`
         barColor    = C.gold
         borderColor = CARD_BORDER
         midColor    = CARD_TEXT_MUTE
       } else {
-        midLabel    = formatTime(def.growTimeMs - elapsed)
+        midLabel    = formatTime(remainingMs)
         barColor    = C.gold
         borderColor = CARD_BORDER
         midColor    = CARD_TEXT_MUTE
@@ -299,32 +337,37 @@ const PlotTile = ({ entity, idx, now }: TileProps) => {
     }
   }
 
+  const mob  = isMobile()
+  const icon = mob ? MOB_CARD_ICON   : CARD_ICON
+  const barH = mob ? MOB_BAR_H       : BAR_H
+  const barR = mob ? MOB_BAR_RADIUS  : BAR_RADIUS
+
   return (
     <FarmCard borderColor={borderColor}>
       <UiEntity
-        uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
+        uiTransform={{ width: icon, height: icon, margin: { bottom: ss(8) }, flexShrink: 0 }}
         uiBackground={{
           texture: { src: imgSrc !== '' ? imgSrc : SOIL_ICON, wrapMode: 'clamp' },
           textureMode: 'stretch',
         }}
       />
-      <Label value={topLabel} fontSize={ss(21)} color={CARD_TEXT} textAlign="middle-center" />
-      <Label value={midLabel} fontSize={ss(18)} color={midColor} textAlign="middle-center"
-        uiTransform={{ margin: { top: ss(4) } }} />
+      <Label value={topLabel} fontSize={mob ? ss(26) : ss(21)} color={CARD_TEXT} textAlign="middle-center" />
+      <Label value={midLabel} fontSize={mob ? ss(26) : ss(23)} color={midColor} textAlign="middle-center"
+        uiTransform={{ margin: { top: ss(6) } }} />
 
       {plot.isUnlocked && plot.cropType !== -1 && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { top: ss(8) } }}>
           <UiEntity
-            uiTransform={{ width: '100%', height: BAR_H, borderRadius: BAR_RADIUS }}
+            uiTransform={{ width: '100%', height: barH, borderRadius: barR }}
             uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 1 } }}
           >
             <UiEntity
-              uiTransform={{ width: `${barPct}%`, height: '100%', borderRadius: BAR_RADIUS }}
+              uiTransform={{ width: `${barPct}%`, height: '100%', borderRadius: barR }}
               uiBackground={{ color: barColor }}
             />
           </UiEntity>
           {subLabel !== '' && (
-            <Label value={subLabel} fontSize={ss(15)} color={CARD_TEXT_MUTE} textAlign="middle-center"
+            <Label value={subLabel} fontSize={mob ? ss(26) : ss(19)} color={CARD_TEXT_MUTE} textAlign="middle-center"
               uiTransform={{ margin: { top: ss(4) } }} />
           )}
         </UiEntity>
@@ -335,12 +378,12 @@ const PlotTile = ({ entity, idx, now }: TileProps) => {
         const fertDef = FERTILIZER_DATA.get(plot.fertilizerType as FertilizerType)
         if (!fertDef) return null
         return (
-          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: ss(6) } }}>
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: ss(8) } }}>
             <UiEntity
-              uiTransform={{ width: ss(20), height: ss(20), margin: { right: ss(5) }, flexShrink: 0 }}
+              uiTransform={{ width: mob ? ss(26) : ss(20), height: mob ? ss(26) : ss(20), margin: { right: ss(8) }, flexShrink: 0 }}
               uiBackground={{ texture: { src: fertDef.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
             />
-            <Label value={fertDef.name} fontSize={ss(13)} color={{ r: 0.3, g: 0.75, b: 0.2, a: 1 }} textAlign="middle-center" />
+            <Label value={fertDef.name} fontSize={mob ? ss(26) : ss(17)} color={{ r: 0.3, g: 0.75, b: 0.2, a: 1 }} textAlign="middle-center" />
           </UiEntity>
         )
       })()}
@@ -385,18 +428,25 @@ function addCompostWaste() {
 
 const BTN_BG_ON  = { r: 0.45, g: 0.26, b: 0.06, a: 1 }
 const BTN_BG_OFF = { r: 0.30, g: 0.22, b: 0.10, a: 1 }
-const BTN_TEXT   = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
+const BTN_TEXT     = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
+const MOB_BTN_TEXT = { r: 1, g: 1, b: 1, a: 1 }
+
+const COMPOST_FILL = { r: 0.18, g: 0.11, b: 0.04, a: 0.92 }
+const WHITE        = { r: 1, g: 1, b: 1, a: 1 }
+const WHITE_MUTE   = { r: 1, g: 1, b: 1, a: 0.65 }
+const WHITE_DIM    = { r: 1, g: 1, b: 1, a: 0.35 }
 
 const CompostTab = () => {
+  const mobile = isMobile()
+
   if (!playerState.compostBinUnlocked) {
-    return (
+    return mobile ? (
+      <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%', padding: { left: ss(20), right: ss(20) } }}>
+        <Label value="Compost Bin not unlocked — buy it in the Store under the Fertilizers tab." fontSize={ss(26)} color={WHITE} textAlign="middle-center" />
+      </UiEntity>
+    ) : (
       <FarmCard height={ss(140)} borderColor={CARD_BORDER}>
-        <Label
-          value="Compost Bin not unlocked — buy it in the Store under the Fertilizers tab."
-          fontSize={ss(20)}
-          color={CARD_TEXT_MUTE}
-          textAlign="middle-center"
-        />
+        <Label value="Compost Bin not unlocked — buy it in the Store under the Fertilizers tab." fontSize={ss(18)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
       </FarmCard>
     )
   }
@@ -404,21 +454,91 @@ const CompostTab = () => {
   const { wasteInBin, cyclesDone, nextCycleMs } = getCompostPanelState()
   const canAdd     = playerState.organicWaste > 0
   const canCollect = cyclesDone > 0
+  const statusBorder = canCollect ? { r: 0.82, g: 0.69, b: 0.20, a: 0.95 } : CARD_BORDER
 
+  if (mobile) {
+    return (
+      <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', alignItems: 'center' }}>
+
+        {/* Status card — full width, dark background */}
+        <UiEntity
+          uiTransform={{
+            flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            width: '100%', height: ss(200),
+            margin: { bottom: ss(20) },
+            padding: { top: MOB_CARD_PAD_V, bottom: MOB_CARD_PAD_V, left: MOB_CARD_PAD_H, right: MOB_CARD_PAD_H },
+          }}
+          uiBackground={{ color: COMPOST_FILL }}
+        >
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(10) } }}>
+            <UiEntity
+              uiTransform={{ width: ss(40), height: ss(40), margin: { right: ss(10) }, flexShrink: 0 }}
+              uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+            />
+            <Label value={`Hand: ${playerState.organicWaste}  ·  Bin: ${wasteInBin}`} fontSize={ss(26)} color={WHITE} />
+          </UiEntity>
+          {nextCycleMs !== null && (
+            <Label value={`Next fertilizer: ${formatTime(nextCycleMs)}`} fontSize={ss(26)} color={C.green} uiTransform={{ margin: { bottom: ss(6) } }} />
+          )}
+          {wasteInBin === 0 && (
+            <Label value="Add waste to start composting" fontSize={ss(26)} color={WHITE_MUTE} />
+          )}
+          {canCollect && (
+            <Label value={`${cyclesDone} fertilizer${cyclesDone > 1 ? 's' : ''} ready!`} fontSize={ss(26)} color={C.gold} />
+          )}
+        </UiEntity>
+
+        {/* Action buttons */}
+        <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(28) } }}>
+          <UiEntity
+            uiTransform={{ width: ss(220), height: ss(64), alignItems: 'center', justifyContent: 'center', margin: { right: ss(20) } }}
+            uiBackground={{ color: canAdd ? BTN_BG_ON : BTN_BG_OFF }}
+            onMouseDown={canAdd ? () => { if (isZooming('fp_compost_add')) return; triggerCardZoom('fp_compost_add'); setTimeout(addCompostWaste, 290) } : undefined}
+          >
+            <Label value="Add Waste" fontSize={ss(26)} color={canAdd ? MOB_BTN_TEXT : WHITE_DIM} textAlign="middle-center" />
+          </UiEntity>
+          <UiEntity
+            uiTransform={{ width: Math.round(ss(220) * getZoomScale('fp_compost_collect')), height: Math.round(ss(64) * getZoomScale('fp_compost_collect')), alignItems: 'center', justifyContent: 'center' }}
+            uiBackground={{ color: canCollect ? { r: 0.55, g: 0.38, b: 0.05, a: 1 } : BTN_BG_OFF }}
+            onMouseDown={canCollect ? () => { if (isZooming('fp_compost_collect')) return; triggerCardZoom('fp_compost_collect'); setTimeout(collectCompostReady, 290) } : undefined}
+          >
+            <Label value={canCollect ? `Collect (${cyclesDone})` : 'Nothing ready'} fontSize={ss(26)} color={canCollect ? MOB_BTN_TEXT : WHITE_DIM} textAlign="middle-center" />
+          </UiEntity>
+        </UiEntity>
+
+        {/* Fertilizer inventory */}
+        <Label value="Your Fertilizers" fontSize={ss(28)} color={WHITE} uiTransform={{ margin: { bottom: ss(12) } }} />
+        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', justifyContent: 'center' }}>
+          {ALL_FERTILIZER_TYPES.map((ft) => {
+            const def   = FERTILIZER_DATA.get(ft)!
+            const count = playerState.fertilizers.get(ft) ?? 0
+            return (
+              <FarmCard key={ft} height={ss(200)} fillColor={COMPOST_FILL} borderColor={count > 0 ? { r: 0.82, g: 0.69, b: 0.39, a: 0.7 } : { r: 0.40, g: 0.30, b: 0.18, a: 0.4 }}>
+                <UiEntity
+                  uiTransform={{ width: ss(64), height: ss(64), margin: { bottom: ss(8) } }}
+                  uiBackground={{ texture: { src: def.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+                />
+                <Label value={def.name} fontSize={ss(26)} color={WHITE} textAlign="middle-center" />
+                <Label value={`x${count}`} fontSize={ss(26)} color={count > 0 ? C.green : WHITE_MUTE} textAlign="middle-center" />
+              </FarmCard>
+            )
+          })}
+        </UiEntity>
+      </UiEntity>
+    )
+  }
+
+  // Desktop layout
   return (
     <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-
-      {/* Status + action row */}
       <UiEntity uiTransform={{ flexDirection: 'row', width: '100%', margin: { bottom: ss(16) }, alignItems: 'center' }}>
-
-        {/* Status card */}
-        <FarmCard height={ss(160)} borderColor={canCollect ? { r: 0.82, g: 0.69, b: 0.20, a: 0.95 } : CARD_BORDER}>
+        <FarmCard height={ss(160)} borderColor={statusBorder}>
           <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(8) } }}>
             <UiEntity
               uiTransform={{ width: ss(36), height: ss(36), margin: { right: ss(8) }, flexShrink: 0 }}
               uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
             />
-            <Label value={`Hand: ${playerState.organicWaste}  Bin: ${wasteInBin}`} fontSize={ss(18)} color={CARD_TEXT} />
+            <Label value={`Hand: ${playerState.organicWaste}  ·  Bin: ${wasteInBin}`} fontSize={ss(18)} color={CARD_TEXT} />
           </UiEntity>
           {nextCycleMs !== null && (
             <Label value={`Next fert: ${formatTime(nextCycleMs)}`} fontSize={ss(16)} color={C.green} uiTransform={{ margin: { bottom: ss(4) } }} />
@@ -430,8 +550,6 @@ const CompostTab = () => {
             <Label value={`${cyclesDone} fertilizer${cyclesDone > 1 ? 's' : ''} ready!`} fontSize={ss(17)} color={C.gold} />
           )}
         </FarmCard>
-
-        {/* Action buttons */}
         <UiEntity uiTransform={{ flexDirection: 'column', margin: { left: ss(12) } }}>
           <UiEntity
             uiTransform={{ width: ss(200), height: ss(52), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { bottom: ss(10) } }}
@@ -445,17 +563,10 @@ const CompostTab = () => {
             uiBackground={{ color: canCollect ? { r: 0.55, g: 0.38, b: 0.05, a: 1 } : BTN_BG_OFF }}
             onMouseDown={canCollect ? () => { if (isZooming('fp_compost_collect')) return; triggerCardZoom('fp_compost_collect'); setTimeout(collectCompostReady, 290) } : undefined}
           >
-            <Label
-              value={canCollect ? `Collect (${cyclesDone})` : 'Nothing ready'}
-              fontSize={ss(19)}
-              color={canCollect ? BTN_TEXT : CARD_TEXT_MUTE}
-              textAlign="middle-center"
-            />
+            <Label value={canCollect ? `Collect (${cyclesDone})` : 'Nothing ready'} fontSize={ss(19)} color={canCollect ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
           </UiEntity>
         </UiEntity>
       </UiEntity>
-
-      {/* Fertilizer inventory */}
       <Label value="Your Fertilizers" fontSize={ss(22)} color={CARD_TEXT} uiTransform={{ margin: { bottom: ss(10) } }} />
       <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
         {ALL_FERTILIZER_TYPES.map((ft) => {
@@ -479,6 +590,7 @@ const CompostTab = () => {
 
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export const FarmPanel = () => {
+  const mob          = isMobile()
   const soilEntities = getSoilEntities()
   const now          = Date.now()
 
@@ -492,8 +604,9 @@ export const FarmPanel = () => {
   const isPlotTab = tab === 'home' || tab === 'expansion'
   const plots     = tab === 'expansion' ? expansionPlots : homePlots
   const page      = isPlotTab ? farmPage[tab as 'home' | 'expansion'] : 0
-  const lastPage  = Math.max(0, Math.ceil(plots.length / PLOTS_PER_PAGE) - 1)
-  const pageSlice = plots.slice(page * PLOTS_PER_PAGE, (page + 1) * PLOTS_PER_PAGE)
+  const ppp       = mob ? MOB_PLOTS_PER_PAGE : PLOTS_PER_PAGE
+  const lastPage  = Math.max(0, Math.ceil(plots.length / ppp) - 1)
+  const pageSlice = plots.slice(page * ppp, (page + 1) * ppp)
   const offset    = tab === 'expansion' ? 12 : 0
 
   return (
@@ -504,34 +617,76 @@ export const FarmPanel = () => {
       {/* Compost tab */}
       {tab === 'compost' && <CompostTab />}
 
-      {/* Plot grid */}
-      {isPlotTab && (
+      {/* Plot grid — mobile: cards + pagination both pinned from the bottom */}
+      {isPlotTab && mob && (
+        <UiEntity uiTransform={{ width: '100%', height: MOB_PLOT_AREA_H }}>
+          {/* Cards absolutely positioned above pagination */}
+          <UiEntity
+            uiTransform={{
+              positionType: 'absolute',
+              position: { bottom: lastPage > 0 ? ss(160) : ss(120), left: 0 },
+              width: '100%',
+              flexDirection: 'row',
+              justifyContent: 'center',
+            }}
+          >
+            {pageSlice.map((e, i) => (
+              <PlotTile key={page * ppp + i} entity={e} idx={offset + page * ppp + i} now={now} />
+            ))}
+          </UiEntity>
+          {/* Pagination pinned to the very bottom */}
+          {lastPage > 0 && (
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { bottom: ss(20), left: 0 },
+                width: '100%',
+                height: ss(64),
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <UiEntity
+                uiTransform={{ width: ss(200), height: ss(64), alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { right: ss(24) } }}
+                uiBackground={{ color: page > 0 ? BTN_BG_ON : BTN_BG_OFF }}
+                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
+              >
+                <Label value="< Prev" fontSize={ss(26)} color={page > 0 ? MOB_BTN_TEXT : { r: 1, g: 1, b: 1, a: 0.35 }} textAlign="middle-center" />
+              </UiEntity>
+              <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(26)} color={MOB_BTN_TEXT} textAlign="middle-center" uiTransform={{ width: ss(100) }} />
+              <UiEntity
+                uiTransform={{ width: ss(200), height: ss(64), alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { left: ss(24) } }}
+                uiBackground={{ color: page < lastPage ? BTN_BG_ON : BTN_BG_OFF }}
+                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
+              >
+                <Label value="Next >" fontSize={ss(26)} color={page < lastPage ? MOB_BTN_TEXT : { r: 1, g: 1, b: 1, a: 0.35 }} textAlign="middle-center" />
+              </UiEntity>
+            </UiEntity>
+          )}
+        </UiEntity>
+      )}
+
+      {/* Plot grid — desktop: 8 per page, wrapping rows, inline pagination */}
+      {isPlotTab && !mob && (
         <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', flex: 1 }}>
           <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center', flex: 1 }}>
             {pageSlice.map((e, i) => (
-              <PlotTile key={page * PLOTS_PER_PAGE + i} entity={e} idx={offset + page * PLOTS_PER_PAGE + i} now={now} />
+              <PlotTile key={page * ppp + i} entity={e} idx={offset + page * ppp + i} now={now} />
             ))}
           </UiEntity>
-
-          {/* Pagination */}
           {lastPage > 0 && (
-            <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: ss(12) }, flexShrink: 0 }}>
+            <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', flexShrink: 0, margin: { top: ss(10) } }}>
               <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(20) } }}
+                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(14) } }}
                 uiBackground={{ color: page > 0 ? BTN_BG_ON : BTN_BG_OFF }}
                 onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
               >
                 <Label value="< Prev" fontSize={ss(18)} color={page > 0 ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
               </UiEntity>
-              <Label
-                value={`${page + 1} / ${lastPage + 1}`}
-                fontSize={ss(18)}
-                color={CARD_TEXT_MUTE}
-                textAlign="middle-center"
-                uiTransform={{ width: ss(80) }}
-              />
+              <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(18)} color={CARD_TEXT} textAlign="middle-center" uiTransform={{ width: ss(80) }} />
               <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(20) } }}
+                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(14) } }}
                 uiBackground={{ color: page < lastPage ? BTN_BG_ON : BTN_BG_OFF }}
                 onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
               >
