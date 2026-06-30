@@ -528,8 +528,10 @@ export function initSaveService(onLoaded?: () => void): void {
 
     const requester = normalizeAddress(data.requester || data.payload?.wallet)
     if (!requester) return
-    if (requester !== playerState.wallet) return  // broadcast from another player's load
+    // If our wallet is known, ignore messages intended for other players
+    if (playerState.wallet && requester !== playerState.wallet) return
 
+    if (!playerState.wallet) playerState.wallet = requester
     console.log(`[SaveService] farmStateLoaded — wallet: ${requester}`)
 
     try {
