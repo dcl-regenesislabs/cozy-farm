@@ -23,6 +23,7 @@ import { ChickenCoopPanel } from './ui/ChickenCoopPanel'
 import { PigPenPanel }      from './ui/PigPenPanel'
 import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
+import { LoadingOverlay }   from './ui/LoadingOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
@@ -31,8 +32,11 @@ export function setupUi() {
 }
 
 const MainUi = () => {
-  const showVisitHud = playerState.viewingFarm !== null
-  const showOwnFarmUi = PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady)
+  // Nothing else renders while the boot loading overlay is up — avoids a
+  // flash of HUD/menus underneath it before it finishes closing.
+  const uiUnlocked   = !playerState.loadingOverlayActive
+  const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
+  const showOwnFarmUi = uiUnlocked && (PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady))
 
   return (
     <UiEntity
@@ -42,6 +46,7 @@ const MainUi = () => {
         pointerFilter: 'none',
       }}
     >
+      <LoadingOverlay />
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
       {showOwnFarmUi && !['npcDialog','shop','inventory','farm','quests','plant','sell','compost','jukebox'].includes(playerState.activeMenu) && <BottomNav />}
