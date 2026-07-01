@@ -32,8 +32,11 @@ export function setupUi() {
 }
 
 const MainUi = () => {
-  const showVisitHud = playerState.viewingFarm !== null
-  const showOwnFarmUi = PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady)
+  // Nothing else renders while the boot loading overlay is up — avoids a
+  // flash of HUD/menus underneath it before it finishes closing.
+  const uiUnlocked   = !playerState.loadingOverlayActive
+  const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
+  const showOwnFarmUi = uiUnlocked && (PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady))
 
   return (
     <UiEntity
