@@ -99,6 +99,9 @@ export const playerState = {
   activePlotGroupName: '',                  // set before opening 'plotGroupUnlock' menu
   // Runtime-only: enables the gameplay HUD/panels once the farm state is loaded
   farmReady: false,
+  // Runtime-only: boot loading screen (Connecting / Loading farm / Teleporting),
+  // dismissed automatically once farmReady flips true
+  loadingOverlayActive: true,
   // Runtime-only: debug escape hatch to keep movement enabled while menus are open
   menuInputLockDisabled: false,
 }

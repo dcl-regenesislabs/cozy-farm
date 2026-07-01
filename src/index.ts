@@ -66,6 +66,7 @@ export function main() {
   initTutorialArrow()
 
   if (PROFILE_HUD_DEBUG) {
+    playerState.loadingOverlayActive = false
     applyProfileHudDebugState()
     console.log('CozyFarm: PROFILE_HUD_DEBUG enabled - skipping save/server bootstrap')
     return
