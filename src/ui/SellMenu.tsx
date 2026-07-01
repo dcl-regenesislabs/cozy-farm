@@ -95,7 +95,7 @@ const SellPanelFrame = ({ onClose, children }: { onClose: () => void; children?:
             width: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
             height: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
           }}
-          uiBackground={{ texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
           onMouseDown={() => { playSound('buttonclick'); onClose() }}
         />
       </UiEntity>
