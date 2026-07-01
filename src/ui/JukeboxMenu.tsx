@@ -246,7 +246,7 @@ const VolumePicker = ({ volume }: { volume: number }) => {
 const MuteButton = ({ muted }: { muted: boolean }) => (
   <UiEntity
     uiTransform={{
-      width:          Math.round(ss(300) * getZoomScale('jukebox_mute')),
+      width:          Math.round(ss(340) * getZoomScale('jukebox_mute')),
       height:         Math.round(ss(72) * getZoomScale('jukebox_mute')),
       alignItems:     'center',
       justifyContent: 'center',
@@ -267,6 +267,7 @@ const MuteButton = ({ muted }: { muted: boolean }) => (
       fontSize={ss(22)}
       color={muted ? { r: 1, g: 0.9, b: 0.9, a: 1 } : C.textMain}
       textAlign="middle-center"
+      uiTransform={{ width: '100%', height: '100%' }}
     />
   </UiEntity>
 )
