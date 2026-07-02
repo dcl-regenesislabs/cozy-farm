@@ -15,6 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        # Temporary pin: newer Node security releases trigger node-fetch v2
+        # "Premature close" errors that break @dcl/sdk-commands deploys.
+        node-version: 22.22.0
+        cache: npm
     - name: Install npm packages
       run: |
         if [ -f package-lock.json ]; then
