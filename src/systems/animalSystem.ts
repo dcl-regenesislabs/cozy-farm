@@ -18,7 +18,6 @@ import { playSound } from './sfxSystem'
 import { spawnOrganicWasteVfx } from './harvestVfxSystem'
 import {
   CHICKEN_MODEL, PIG_MODEL,
-  ANIMAL_BUILDING_EMPTY,
   CHICKEN_FOOD_EMPTY, CHICKEN_FOOD_FULL,
   ANIMAL_FOOD_EMPTY, ANIMAL_FOOD_FULL,
   ANIMAL_WALK_SPEED, ANIMAL_PAUSE_MIN, ANIMAL_PAUSE_MAX,
@@ -65,8 +64,8 @@ let penDirt:      Entity | null = null
 let penFood:      Entity | null = null
 let penWater:     Entity | null = null
 
-let emptyCoopEntity: Entity | null = null
-let emptyPenEntity:  Entity | null = null
+let coopArea: Entity | null = null
+let penArea:  Entity | null = null
 
 // ---------------------------------------------------------------------------
 // Resolved positions
@@ -112,26 +111,32 @@ function enablePointer(entity: Entity): void {
 }
 
 // ---------------------------------------------------------------------------
-// Re-register hover text for empty building placeholders.
+// Re-register hover text for the always-visible area patches.
 // Called on init and every time updateBuildingVisuals runs so the text
-// reflects the player's current level rather than the level at boot.
+// reflects the player's current level/ownership rather than the state at boot.
 // ---------------------------------------------------------------------------
 
-function refreshEmptyBuildingPointers(): void {
-  if (emptyCoopEntity) {
+function refreshAreaBuyPointers(): void {
+  if (coopArea) {
+    const hoverText = playerState.chickenCoopOwned
+      ? 'Open Chicken Coop'
+      : playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`
     pointerEventsSystem.onPointerDown(
-      { entity: emptyCoopEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`, maxDistance: 8 } },
+      { entity: coopArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
-        if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
+        if (!playerState.chickenCoopOwned && playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) return
         playerState.activeMenu = 'chickenCoop'
       },
     )
   }
-  if (emptyPenEntity) {
+  if (penArea) {
+    const hoverText = playerState.pigPenOwned
+      ? 'Open Pig Pen'
+      : playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`
     pointerEventsSystem.onPointerDown(
-      { entity: emptyPenEntity, opts: { button: InputAction.IA_POINTER, hoverText: playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`, maxDistance: 8 } },
+      { entity: penArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
-        if (playerState.level < PIG_PEN_UNLOCK_LEVEL) return
+        if (!playerState.pigPenOwned && playerState.level < PIG_PEN_UNLOCK_LEVEL) return
         playerState.activeMenu = 'pigPen'
       },
     )
@@ -145,9 +150,8 @@ function refreshEmptyBuildingPointers(): void {
 export function updateBuildingVisuals(): void {
   const now = Date.now()
 
-  // Chicken Coop
+  // Chicken Coop (ChickenCoopArea.glb is always visible — only the building itself toggles)
   if (playerState.chickenCoopOwned) {
-    setVisible(emptyCoopEntity, false)
     setVisible(coopBuilding, true)
     setVisible(coopWater, true)
     setVisible(coopDirt, playerState.chickenCoopDirtyAt > 0)
@@ -157,16 +161,14 @@ export function updateBuildingVisuals(): void {
         playerState.chickenFoodInBowl > 0 ? CHICKEN_FOOD_FULL : CHICKEN_FOOD_EMPTY
     }
   } else {
-    setVisible(emptyCoopEntity, true)
     setVisible(coopBuilding, false)
     setVisible(coopWater, false)
     setVisible(coopDirt, false)
     setVisible(coopFood, false)
   }
 
-  // Pig Pen
+  // Pig Pen (PigPenArea.glb is always visible — only the building itself toggles)
   if (playerState.pigPenOwned) {
-    setVisible(emptyPenEntity, false)
     setVisible(penBuilding, true)
     setVisible(penWater, true)
     setVisible(penDirt, playerState.pigPenDirtyAt > 0)
@@ -176,7 +178,6 @@ export function updateBuildingVisuals(): void {
         playerState.pigFoodInBowl > 0 ? ANIMAL_FOOD_FULL : ANIMAL_FOOD_EMPTY
     }
   } else {
-    setVisible(emptyPenEntity, true)
     setVisible(penBuilding, false)
     setVisible(penWater, false)
     setVisible(penDirt, false)
@@ -193,7 +194,7 @@ export function updateBuildingVisuals(): void {
   }
 
   // Refresh hover text so level-gating reflects the player's current level.
-  refreshEmptyBuildingPointers()
+  refreshAreaBuyPointers()
 }
 
 // ---------------------------------------------------------------------------
@@ -205,20 +206,24 @@ export function initAnimalBuildings(): void {
   coopDirt = null
   coopFood = null
   coopWater = null
+  coopArea = null
   penBuilding = null
   penDirt = null
   penFood = null
   penWater = null
+  penArea = null
 
   // Resolve child entities by name
-  coopBuilding = getCurrentFarmEntity('ChickenCoopBuilding.glb')
+  coopBuilding = getCurrentFarmEntity('ChickenCoop.glb')
   coopDirt     = getCurrentFarmEntity('ChickenCoopDirt.glb')
   coopFood     = getCurrentFarmEntity('ChickenFoodEmpty.glb')
   coopWater    = getCurrentFarmEntity('ChickenWater.glb')
-  penBuilding  = getCurrentFarmEntity('PigPenBuilding.glb')
+  coopArea     = getCurrentFarmEntity('ChickenCoopArea.glb')
+  penBuilding  = getCurrentFarmEntity('PigPen.glb')
   penDirt      = getCurrentFarmEntity('PigPenDirt.glb')
   penFood      = getCurrentFarmEntity('AnimalFoodEmpty.glb')
   penWater     = getCurrentFarmEntity('AnimalWater.glb')
+  penArea      = getCurrentFarmEntity('PigPenArea.glb')
 
   // Get real world positions from the parent scene entities
   const coopParent = getCurrentFarmEntity('ChickenCoop')
@@ -272,35 +277,13 @@ export function initAnimalBuildings(): void {
 
   console.log(`[AnimalSystem] Chicken bounds: ${JSON.stringify(chickenBounds)}`)
   console.log(`[AnimalSystem] Pig bounds: ${JSON.stringify(pigBounds)}`)
-  const coopPosRaw = coopParent ? getEntityWorldPosition(coopParent) : CHICKEN_COOP_CENTRE
-  const penPosRaw  = penParent  ? getEntityWorldPosition(penParent)  : PIG_PEN_CENTRE
-  const coopPos    = Vector3.create(coopPosRaw.x, coopPosRaw.y, coopPosRaw.z)
-  const penPos     = Vector3.create(penPosRaw.x,  penPosRaw.y,  penPosRaw.z)
 
-  // Spawn AnimalBuildingEmpty placeholder for coop spot.
-  // Parented to ChickenCoop so it follows when farm anchors are retried/repositioned.
-  emptyCoopEntity = engine.addEntity()
-  GltfContainer.create(emptyCoopEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyCoopEntity, {
-    parent:   coopParent ?? undefined,
-    position: coopParent ? Vector3.Zero() : coopPos,
-    scale:    Vector3.create(1, 1, 1),
-  })
-  enablePointer(emptyCoopEntity)
+  // Area patches are always visible — just wire up their click/hover behavior.
+  if (coopArea) enablePointer(coopArea)
+  if (penArea)  enablePointer(penArea)
 
-  // Spawn AnimalBuildingEmpty placeholder for pen spot.
-  // Parented to PigPen so it follows when farm anchors are retried/repositioned.
-  emptyPenEntity = engine.addEntity()
-  GltfContainer.create(emptyPenEntity, { src: ANIMAL_BUILDING_EMPTY })
-  Transform.create(emptyPenEntity, {
-    parent:   penParent ?? undefined,
-    position: penParent ? Vector3.Zero() : penPos,
-    scale:    Vector3.create(1, 1, 1),
-  })
-  enablePointer(emptyPenEntity)
-
-  // Register pointer events for both placeholders with current level state.
-  refreshEmptyBuildingPointers()
+  // Register pointer events for both area patches with current level/ownership state.
+  refreshAreaBuyPointers()
 
   // Wire coop building click → open chicken coop panel
   if (coopBuilding) {
@@ -372,8 +355,8 @@ export function initAnimalBuildings(): void {
 // Entity accessors for tutorial arrow system
 // ---------------------------------------------------------------------------
 
-export function getEmptyCoopEntity(): Entity | null { return emptyCoopEntity }
-export function getEmptyPenEntity():  Entity | null { return emptyPenEntity  }
+export function getCoopAreaEntity(): Entity | null { return coopArea }
+export function getPenAreaEntity():  Entity | null { return penArea  }
 export function getCoopFoodEntity():  Entity | null { return coopFood        }
 export function getPenFoodEntity():   Entity | null { return penFood         }
 

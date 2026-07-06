@@ -6,7 +6,7 @@ import { initNpcSystem, departAllActiveNpcs } from './npcSystem'
 import { MAYOR_DEF } from '../data/npcData'
 import { setArrowTarget, initTutorialArrow } from './tutorialArrowSystem'
 import { playSound } from './sfxSystem'
-import { getEmptyCoopEntity, getEmptyPenEntity, getCoopFoodEntity, getPenFoodEntity } from './animalSystem'
+import { getCoopAreaEntity, getPenAreaEntity, getCoopFoodEntity, getPenFoodEntity } from './animalSystem'
 import { saveFarm } from '../services/saveService'
 import { CHICKEN_COOP_UNLOCK_LEVEL, PIG_PEN_UNLOCK_LEVEL } from '../data/animalData'
 import { progressionEventState } from '../game/progressionEventState'
@@ -55,7 +55,7 @@ function setChickenStep(step: ChickenTutorialStep): void {
 function goToChickenBuyCoop(): void {
   setChickenStep('buy_coop')
 
-  const coopEntity = getEmptyCoopEntity()
+  const coopEntity = getCoopAreaEntity()
   setArrowTarget(coopEntity)
 
   showDialog(
@@ -225,7 +225,7 @@ function setPigStep(step: PigTutorialStep): void {
 function goToPigBuyPen(): void {
   setPigStep('buy_pen')
 
-  const penEntity = getEmptyPenEntity()
+  const penEntity = getPenAreaEntity()
   setArrowTarget(penEntity)
 
   showDialog(
