@@ -51,7 +51,7 @@ export const TUTORIAL_MILESTONES: TutorialMilestone[] = [
   { label: 'Harvest 3 more crops',        doneAt: 'open_quests'  },
   { label: 'Open the Quests panel',       doneAt: 'talk_mayor'   },
   { label: 'Talk to Mayor Chen',          doneAt: 'sell_quest'   },
-  { label: 'Sell 5 crops at the truck',   doneAt: 'complete'     },
+  { label: 'Sell 5 crops at the farm stand', doneAt: 'complete'  },
 ]
 
 /** Returns 'done' | 'current' | 'todo' for a milestone relative to the current step. */
