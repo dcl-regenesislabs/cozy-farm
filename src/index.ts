@@ -1,4 +1,4 @@
-import { executeTask, engine } from '@dcl/sdk/ecs'
+import { executeTask, engine, SkyboxTime } from '@dcl/sdk/ecs'
 import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
@@ -52,6 +52,10 @@ export function main() {
   }
 
   // ── Client branch ─────────────────────────────────────────────────────────
+  // Force midday skybox at runtime — scene.json's skyboxConfig.fixedTime sets the
+  // manifest default, but this pins it in-world regardless of realm/portal overrides.
+  SkyboxTime.createOrReplace(engine.RootEntity, { fixedTime: 43200 })
+
   setupUi()
   setupEntities()
   setupGrassGround()

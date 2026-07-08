@@ -59,7 +59,6 @@ export enum EntityNames {
   ChickenSpawn_4 = "ChickenSpawn_4",
   ChickenWater_glb = "ChickenWater.glb",
   Chimney01_glb = "Chimney01.glb",
-  CompostBin_glb = "CompostBin.glb",
   CompostBin01_glb = "CompostBin01.glb",
   Corn_glb = "Corn.glb",
   Corn_glb_2 = "Corn.glb_2",
