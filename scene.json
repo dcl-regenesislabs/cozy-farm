@@ -80,11 +80,11 @@
   },
   "creator": "",
   "skyboxConfig": {
-    "fixedTime": 36000
+    "fixedTime": 43200
   },
   "source": {
     "origin": "creator-hub",
-    "projectId": "d5069751-c2e5-4b1c-8674-6715a25711c8"
+    "projectId": "b3e99e7c-f492-4f20-8a2d-53164ce8b11b"
   },
   "worldConfiguration": {
     "name": "cozyfarm.dcl.eth"
