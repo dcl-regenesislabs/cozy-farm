@@ -4,6 +4,7 @@ import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
 import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible, unlockPlotGroupByName } from './systems/interactionSetup'
+import { setupGrassGround } from './systems/groundSystem'
 import './systems/growthSystem'
 import './systems/dogSystem'
 import './systems/seedVfxSystem'
@@ -53,6 +54,7 @@ export function main() {
   // ── Client branch ─────────────────────────────────────────────────────────
   setupUi()
   setupEntities()
+  setupGrassGround()
   setupSfxSystem()
   setupMusicSystem()
   setupInputModifierSystem()

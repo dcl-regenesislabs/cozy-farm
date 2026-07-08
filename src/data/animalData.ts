@@ -118,7 +118,6 @@ export const ANIMAL_FOOD_EMPTY       = 'assets/scene/Models/AnimalFoodEmpty/Anim
 export const ANIMAL_FOOD_FULL        = 'assets/scene/Models/AnimalFoodFull/AnimalFoodFull.glb'
 export const ANIMAL_WATER            = 'assets/scene/Models/AnimalWater/AnimalWater.glb'
 export const PIG_AREA                = 'assets/scene/Models/PigArea/PigArea.glb'
-export const ANIMAL_BUILDING_EMPTY   = 'assets/scene/Models/AnimalBuildingEmpty/AnimalBuildingEmpty.glb'
 
 // ---------------------------------------------------------------------------
 // Wander constants (used by animalSystem)

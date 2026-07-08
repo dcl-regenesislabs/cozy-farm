@@ -101,9 +101,9 @@ export function initVisitorWaterFeedback(): void {
   }
 }
 
-const COMPUTER_ICON_Y = 3.2
+const COMPUTER_ICON_Y = 2.4
 const COMPUTER_ICON_SIZE = 1.2
-const TRUCK_ICON_Y = 3.5
+const TRUCK_ICON_Y = 5.6
 const TRUCK_ICON_SIZE = 1.4
 
 function spawnVisualIcon(parent: Entity, y: number, size: number, src: string): void {
@@ -163,7 +163,7 @@ function wirePlotGroupSigns(): void {
 }
 
 function wireLocalFarmInteractives(): void {
-  computerEntity = getCurrentFarmEntity('Computer.glb')
+  computerEntity = getCurrentFarmEntity('Store01.glb') ?? getCurrentFarmEntity('Computer.glb')
   if (computerEntity) {
     spawnVisualIcon(computerEntity, COMPUTER_ICON_Y, COMPUTER_ICON_SIZE, SHOPINGCART_ICON)
     enablePointerOnGltf(computerEntity)
@@ -173,7 +173,7 @@ function wireLocalFarmInteractives(): void {
     )
   }
 
-  truckEntity = getCurrentFarmEntity('Truck01.glb')
+  truckEntity = getCurrentFarmEntity('Market01.glb') ?? getCurrentFarmEntity('Truck01.glb')
   if (truckEntity) {
     spawnVisualIcon(truckEntity, TRUCK_ICON_Y, TRUCK_ICON_SIZE, COINS_ICON)
     enablePointerOnGltf(truckEntity)
@@ -209,7 +209,7 @@ function wireLocalFarmInteractives(): void {
     )
   }
 
-  compostBinEntity = getCurrentFarmEntity('CompostBin.glb')
+  compostBinEntity = getCurrentFarmEntity('CompostBin01.glb') ?? getCurrentFarmEntity('CompostBin.glb')
   if (compostBinEntity) {
     const scale = Transform.get(compostBinEntity).scale
     compostBinOriginalScale = { x: scale.x, y: scale.y, z: scale.z }
