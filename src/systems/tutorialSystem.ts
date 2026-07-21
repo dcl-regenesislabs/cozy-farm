@@ -111,6 +111,7 @@ function goToHarvestFirst() {
 function goToHarvestMore() {
   tutorialState.step             = 'harvest_more'
   tutorialState.harvestMoreCount = 0
+  tutorialState.lowFundsHintShown = false
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
     "Amazing! You're a real farmer now, these are the basics of farming!\n\nLet's keep practicing — harvest 3 more onions!",
@@ -216,6 +217,31 @@ function tutorialWatcherSystem(_dt: number) {
       if (plot && plot.isReady) {
         goToHarvestFirst()
       }
+      break
+    }
+
+    case 'harvest_more': {
+      // Fallback: if the player has burned through their starter seeds and coins
+      // (e.g. an extra practice plant, a rotten crop) before finishing the 3
+      // required harvests, they can't buy more seeds and the soil arrow alone
+      // doesn't tell them they can already sell what they've harvested.
+      if (tutorialState.lowFundsHintShown) break
+      let totalSeeds = 0
+      for (const n of playerState.seeds.values()) totalSeeds += n
+      if (totalSeeds > 0 || playerState.coins > 0) break
+      let totalHarvested = 0
+      for (const n of playerState.harvested.values()) totalHarvested += n
+      if (totalHarvested === 0) break
+
+      tutorialState.lowFundsHintShown = true
+      setArrowTarget((tutorialCallbacks.getTruckEntity() as import('@dcl/sdk/ecs').Entity | null))
+      showTutorialDialog(
+        "Out of seeds and coins? No problem — sell what you've already harvested at the truck to get cash for more seeds!",
+        "Got it!",
+        () => {
+          setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
+        },
+      )
       break
     }
 
@@ -500,6 +526,7 @@ export function resetFarm() {
   tutorialState.step            = 'welcome'
   tutorialState.seedsBought     = 0
   tutorialState.harvestMoreCount = 0
+  tutorialState.lowFundsHintShown = false
   tutorialNavState.highlightQuests = false
 
   // Reset quests and plots via callbacks (avoids circular imports)

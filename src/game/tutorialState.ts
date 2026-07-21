@@ -21,6 +21,7 @@ export const tutorialState = {
   step:              'welcome' as TutorialStep,
   seedsBought:       0,    // accumulator for buy_seeds (target: 5)
   harvestMoreCount:  0,    // accumulator for harvest_more (target: 3)
+  lowFundsHintShown: false, // one-shot fallback hint if player runs out of seeds+coins mid harvest_more
 }
 
 // ---------------------------------------------------------------------------
