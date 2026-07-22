@@ -157,7 +157,11 @@ function goToTalkMayor() {
     setArrowTarget(null)   // tutorial done — hide arrow
     // Mayor is already walking away (departure was triggered by closeDialog)
     showTutorialDialog(
-      "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you. Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.\n\nThe town of CozyFarm is proud of you. Good luck!",
+      [
+        "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you.",
+        "Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.",
+        "The town of CozyFarm is proud of you. Good luck!",
+      ],
       "Thanks, Mayor!",
       () => {
         // If Mayor is somehow still idle, make sure he departs
