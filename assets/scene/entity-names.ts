@@ -274,6 +274,7 @@ export enum EntityNames {
   Worn_Out_Medium_Stone_Path_7 = "Worn Out Medium Stone Path_7",
   Worn_Out_Medium_Stone_Path_8 = "Worn Out Medium Stone Path_8",
   Worn_Out_Medium_Stone_Path_9 = "Worn Out Medium Stone Path_9",
+  dcl_horizon_landscape_glb = "dcl_horizon_landscape.glb",
   position_farm_1 = "position_farm_1",
   position_farm_2 = "position_farm_2",
   position_farm_3 = "position_farm_3",
