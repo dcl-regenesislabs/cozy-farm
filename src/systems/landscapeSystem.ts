@@ -5,13 +5,14 @@ const LANDSCAPE_MODEL = 'assets/scene/Models/dcl_horizon_landscape.glb'
 const LANDSCAPE_POSITION = Vector3.create(40, 0, 40)
 const COLLISION_MASK = ColliderLayer.CL_PHYSICS | ColliderLayer.CL_POINTER
 
-// Surrounding terrain for the 27x27 parcel scene — the farm sits in the
-// central 5x5 parcels, this fills the rest of the land out to the edges.
-// The model is a single visible mesh with no separate invisible collider,
-// so collision is enabled directly on the visible mesh.
+// Model's raw footprint is ~416m across (10x10 parcels = 160m) — scaled
+// uniformly so it fits without stretching/deforming.
+const LANDSCAPE_SCALE = 160 / 416.12
+const LANDSCAPE_SCALE_VEC = Vector3.create(LANDSCAPE_SCALE, LANDSCAPE_SCALE, LANDSCAPE_SCALE)
+
 export function setupLandscape(): void {
   const landscape = engine.addEntity()
-  Transform.create(landscape, { position: LANDSCAPE_POSITION })
+  Transform.create(landscape, { position: LANDSCAPE_POSITION, scale: LANDSCAPE_SCALE_VEC })
   GltfContainer.create(landscape, {
     src: LANDSCAPE_MODEL,
     visibleMeshesCollisionMask: COLLISION_MASK,
