@@ -1,4 +1,6 @@
 import ReactEcs, { ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
+import { getExplorerInformation } from '~system/Runtime'
 import { playerState } from './game/gameState'
 import { TopHud }        from './ui/TopHud'
 import { BottomNav }     from './ui/BottomNav'
@@ -27,8 +29,20 @@ import { LoadingOverlay }   from './ui/LoadingOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
+function applyUiRenderer(): void {
+  ReactEcsRenderer.setUiRenderer(MainUi, {
+    virtualWidth: isMobile() ? 1600 : 1920,
+    virtualHeight: isMobile() ? 720 : 1080
+  })
+}
+
 export function setupUi() {
-  ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
+  applyUiRenderer()
+  // isMobile() resolves getExplorerInformation() asynchronously, so the first
+  // call above may still report desktop — reapply once the real platform is known.
+  void getExplorerInformation({})
+    .then(() => applyUiRenderer())
+    .catch(() => {})
 }
 
 const MainUi = () => {
