@@ -28,15 +28,21 @@ const SHOP_ATLAS_SIZE = 1024
 const SHOP_BG_RECT = { x: 17, y: 13, w: 993, h: 682 } as const
 const SHOP_TAB_ACTIVE_RECT = { x: 27, y: 737, w: 265, h: 83 } as const
 const SHOP_TAB_IDLE_RECT = { x: 297, y: 739, w: 265, h: 83 } as const
+const SHOP_TAB_SELECTED_IMG = 'assets/images/revamp/selected.png'
+const SHOP_TAB_IDLE_IMG = 'assets/images/revamp/notselected.png'
 const SHOP_PANEL_W = ss(1290)
 const SHOP_PANEL_H = Math.round((SHOP_PANEL_W * SHOP_BG_RECT.h) / SHOP_BG_RECT.w)
 const SHOP_TAB_SCALE = 0.62 * SHOP_UI_SCALE
 const SHOP_TAB_W = 160
-const SHOP_TAB_H = Math.round(SHOP_TAB_ACTIVE_RECT.h * SHOP_TAB_SCALE)
+// Matches the pill shape of assets/images/revamp/selected.png (151x68) so the new
+// tab art isn't stretched off its native round proportions.
+const SHOP_TAB_ASPECT = 151 / 68
+const SHOP_TAB_H = Math.round(SHOP_TAB_W / SHOP_TAB_ASPECT)
 const SHOP_TAB_GAP = ss(12)
+const SHOP_TAB_TOP = ss(104)
 const SHOP_CONTENT_LEFT = ss(82)
 const SHOP_CONTENT_RIGHT = ss(34)
-const SHOP_CONTENT_TOP = ss(176)
+const SHOP_CONTENT_TOP = SHOP_TAB_TOP + SHOP_TAB_H + 17
 const SHOP_CONTENT_BOTTOM = ss(74)
 const SHOP_CONTENT_W = SHOP_PANEL_W - SHOP_CONTENT_LEFT - SHOP_CONTENT_RIGHT
 const SHOP_CONTENT_H = SHOP_PANEL_H - SHOP_CONTENT_TOP - SHOP_CONTENT_BOTTOM
@@ -72,7 +78,6 @@ const SHOP_BUTTON_FONT = ss(24)
 const SHOP_BUTTON_ICON = ss(34)
 const SHOP_BUTTON_ICON_GAP = ss(8)
 const SHOP_BUTTON_TOP_MARGIN = ss(10)
-const SHOP_TAB_TOP = ss(104)
 
 function getVisibleShopTabs() {
   return SHOP_TABS.filter((tabDef) => tabDef.show())
@@ -191,9 +196,8 @@ const ShopTabChip = ({
         justifyContent: 'center',
       }}
       uiBackground={{
-        texture: { src: SHOP_ATLAS, wrapMode: 'clamp' },
+        texture: { src: selected ? SHOP_TAB_SELECTED_IMG : SHOP_TAB_IDLE_IMG, wrapMode: 'clamp' },
         textureMode: 'stretch',
-        uvs: shopAtlasUvsRotatedRight(selected ? SHOP_TAB_ACTIVE_RECT : SHOP_TAB_IDLE_RECT),
       }}
       onMouseDown={() => {
         playSound('buttonclick')
@@ -201,11 +205,12 @@ const ShopTabChip = ({
       }}
     >
       <Label
-        value={label}
-        fontSize={ss(22)}
-        color={selected ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.84, g: 0.20, b: 0.16, a: 1 }}
+        value={`<b>${label}</b>`}
+        fontSize={ss(isMobile() ? 28 : 24)}
+        color={selected ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.34, g: 0.20, b: 0.10, a: 1 }}
         textAlign="middle-center"
-        uiTransform={{ width: SHOP_TAB_W - 20, height: SHOP_TAB_H }}
+        textWrap="nowrap"
+        uiTransform={{ width: SHOP_TAB_W - 20, height: SHOP_TAB_H, alignItems: 'center', justifyContent: 'center', padding: { bottom: 12 } }}
       />
     </UiEntity>
     {showBadge && (
