@@ -3,7 +3,7 @@
   "runtimeVersion": "7",
   "display": {
     "title": "CozyFarm",
-    "description": "Empty Scene Template",
+    "description": "Build your dream farm! Plant crops, raise animals, and grow your homestead in this cozy multiplayer farming experience.",
     "favicon": "favicon_asset",
     "navmapThumbnail": "assets/scene/Images/CozyFarm.png"
   },
