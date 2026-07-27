@@ -13,27 +13,19 @@ import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer
 import { playSound } from '../systems/sfxSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { BadgeDot } from './BadgeDot'
+import {
+  RevampPanelFrame,
+  REVAMP_CONTENT_LEFT as CONTENT_LEFT,
+  REVAMP_CONTENT_RIGHT as CONTENT_RIGHT,
+  REVAMP_CONTENT_TOP as CONTENT_TOP,
+  REVAMP_CONTENT_BOTTOM as CONTENT_BOTTOM,
+  REVAMP_CONTENT_W as CONTENT_W,
+  REVAMP_CONTENT_H as CONTENT_H,
+} from './RevampPanel'
+import { SHARED_PAGINATION_HEIGHT_DESKTOP, SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
 
-// ─── Atlas frame — swap src to farm_atlas.png when available ──────────────────
-const FARM_ATLAS    = 'assets/images/ui_loading/farm_atlas.png'
-const ATLAS_SIZE    = 1024
-const BG_RECT       = { x: 16, y: 14, w: 999, h: 773 } as const
-const UI_SCALE      = 0.8
-const ss            = (v: number) => Math.round(v * UI_SCALE)
-
-const PANEL_W          = ss(1145)  // tuned so PANEL_H matches inventory (705px)
-const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(120)
-const CONTENT_LEFT     = ss(72)
-const CONTENT_RIGHT    = ss(72)
-const CONTENT_TOP      = ss(106)
-const CONTENT_BOTTOM   = ss(68)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
-const CLOSE_SIZE       = ss(74)
-const CLOSE_RIGHT      = ss(28)
-const CLOSE_TOP        = ss(16)
-const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
 // ─── Card colours ─────────────────────────────────────────────────────────────
 const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -83,13 +75,6 @@ const farmPage = { home: 0, expansion: 0 }
 type CardColor = { r: number; g: number; b: number; a: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
 
 function formatTime(ms: number): string {
   if (ms <= 0) return 'Ready!'
@@ -149,63 +134,9 @@ const FarmPanelFrame = ({
   onClose: () => void
   children?: ReactEcs.JSX.ReactNode
 }) => (
-  <UiEntity
-    uiTransform={{
-      positionType: 'absolute',
-      position: { top: 0, left: 0 },
-      width: '100%',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      pointerFilter: 'none',
-    }}
-  >
-    <UiEntity
-      uiTransform={{
-        positionType: 'absolute',
-        position: { top: 0, left: 0 },
-        width: '100%',
-        height: '100%',
-        pointerFilter: 'block',
-      }}
-    />
-    <UiEntity
-      uiTransform={{
-        width: PANEL_W,
-        height: PANEL_H,
-        margin: { top: PANEL_TOP_MARGIN },
-        pointerFilter: 'block',
-      }}
-      uiBackground={{
-        texture: { src: FARM_ATLAS, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-        uvs: bgUvs(BG_RECT),
-      }}
-    >
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-          width: CONTENT_W,
-          height: CONTENT_H,
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {children}
-      </UiEntity>
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: isMobile() ? ss(90) : CLOSE_SIZE,
-          height: isMobile() ? ss(90) : CLOSE_SIZE,
-        }}
-        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-        onMouseDown={() => { playSound('buttonclick'); onClose() }}
-      />
-    </UiEntity>
-  </UiEntity>
+  <RevampPanelFrame name="farm" onClose={onClose}>
+    {children}
+  </RevampPanelFrame>
 )
 
 // ─── TabBar ───────────────────────────────────────────────────────────────────
@@ -641,27 +572,20 @@ export const FarmPanel = () => {
                 positionType: 'absolute',
                 position: { bottom: ss(20), left: 0 },
                 width: '100%',
-                height: ss(64),
+                height: SHARED_PAGINATION_HEIGHT_MOBILE,
                 flexDirection: 'row',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              <UiEntity
-                uiTransform={{ width: ss(200), height: ss(64), alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { right: ss(24) } }}
-                uiBackground={{ color: page > 0 ? BTN_BG_ON : BTN_BG_OFF }}
-                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
-              >
-                <Label value="< Prev" fontSize={ss(26)} color={page > 0 ? MOB_BTN_TEXT : { r: 1, g: 1, b: 1, a: 0.35 }} textAlign="middle-center" />
-              </UiEntity>
-              <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(26)} color={MOB_BTN_TEXT} textAlign="middle-center" uiTransform={{ width: ss(100) }} />
-              <UiEntity
-                uiTransform={{ width: ss(200), height: ss(64), alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { left: ss(24) } }}
-                uiBackground={{ color: page < lastPage ? BTN_BG_ON : BTN_BG_OFF }}
-                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
-              >
-                <Label value="Next >" fontSize={ss(26)} color={page < lastPage ? MOB_BTN_TEXT : { r: 1, g: 1, b: 1, a: 0.35 }} textAlign="middle-center" />
-              </UiEntity>
+              <SharedPaginationBar
+                id={`farm-${tab}`}
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
+                onNext={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
+                mode="mobile"
+              />
             </UiEntity>
           )}
         </UiEntity>
@@ -676,22 +600,15 @@ export const FarmPanel = () => {
             ))}
           </UiEntity>
           {lastPage > 0 && (
-            <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center', width: '100%', flexShrink: 0, margin: { top: ss(10) } }}>
-              <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(14) } }}
-                uiBackground={{ color: page > 0 ? BTN_BG_ON : BTN_BG_OFF }}
-                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
-              >
-                <Label value="< Prev" fontSize={ss(18)} color={page > 0 ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
-              </UiEntity>
-              <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(18)} color={CARD_TEXT} textAlign="middle-center" uiTransform={{ width: ss(80) }} />
-              <UiEntity
-                uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(14) } }}
-                uiBackground={{ color: page < lastPage ? BTN_BG_ON : BTN_BG_OFF }}
-                onMouseDown={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
-              >
-                <Label value="Next >" fontSize={ss(18)} color={page < lastPage ? BTN_TEXT : CARD_TEXT_MUTE} textAlign="middle-center" />
-              </UiEntity>
+            <UiEntity uiTransform={{ width: '100%', height: SHARED_PAGINATION_HEIGHT_DESKTOP, flexShrink: 0, margin: { top: ss(10) } }}>
+              <SharedPaginationBar
+                id={`farm-${tab}`}
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { if (farmPage[tab as 'home' | 'expansion'] > 0) farmPage[tab as 'home' | 'expansion']-- }}
+                onNext={() => { if (farmPage[tab as 'home' | 'expansion'] < lastPage) farmPage[tab as 'home' | 'expansion']++ }}
+                mode="desktop"
+              />
             </UiEntity>
           )}
         </UiEntity>

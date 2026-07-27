@@ -8,30 +8,21 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { sellEggs, sellPigMeat } from '../systems/animalSystem'
 import { EGG_SELL_PRICE, PIG_MEAT_SELL_PRICE } from '../data/animalData'
+import {
+  RevampPanelFrame,
+  REVAMP_CONTENT_LEFT as CONTENT_LEFT,
+  REVAMP_CONTENT_RIGHT as CONTENT_RIGHT,
+  REVAMP_CONTENT_TOP as CONTENT_TOP,
+  REVAMP_CONTENT_BOTTOM as CONTENT_BOTTOM,
+  REVAMP_CONTENT_W as CONTENT_W,
+  REVAMP_CONTENT_H as CONTENT_H,
+} from './RevampPanel'
 
 // ─── Debug ───────────────────────────────────────────────────────────────────
 const SELL_DEBUG = false
 
-// ─── Atlas frame ─────────────────────────────────────────────────────────────
-const SELL_ATLAS    = 'assets/images/ui_loading/sellcrops_atlas.png'
-const CLOSE_BTN_IMG = 'assets/images/ui_loading/closebutton.png'
-const ATLAS_SIZE    = 1024
-const BG_RECT       = { x: 80, y: 6, w: 859, h: 686 } as const
-const UI_SCALE      = 0.8
-const ss            = (v: number) => Math.round(v * UI_SCALE)
-
-const PANEL_W          = ss(1100)
-const PANEL_H          = Math.round(PANEL_W * BG_RECT.h / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(80)
-const CONTENT_LEFT     = ss(60)
-const CONTENT_RIGHT    = ss(60)
-const CONTENT_TOP      = ss(78)
-const CONTENT_BOTTOM   = ss(52)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CLOSE_SIZE       = ss(74)
-const CLOSE_SIZE_M     = ss(90)
-const CLOSE_RIGHT      = ss(20)
-const CLOSE_TOP        = ss(8)
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
 // ─── Card layout — shop style, 3 per row, centered ───────────────────────────
 const CARD_GAP   = ss(14)
@@ -55,53 +46,14 @@ const SCROLL_BG   = { r: 0.22, g: 0.13, b: 0.04, a: 0.50 }
 const GREEN_EARN  = { r: 0.30, g: 0.90, b: 0.35, a: 1 }
 const HEADER_BG   = { r: 0.16, g: 0.09, b: 0.03, a: 0.60 }
 
-// ─── UV helper ───────────────────────────────────────────────────────────────
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
-
 // ─── Panel frame ─────────────────────────────────────────────────────────────
-const SellPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => {
-  const mob = isMobile()
-  return (
-    <UiEntity
-      uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
-    >
-      <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', pointerFilter: 'block' }} />
-      <UiEntity
-        uiTransform={{ width: PANEL_W, height: PANEL_H, margin: { top: PANEL_TOP_MARGIN }, pointerFilter: 'block' }}
-        uiBackground={{ texture: { src: SELL_ATLAS, wrapMode: 'clamp' }, textureMode: 'stretch', uvs: bgUvs(BG_RECT) }}
-      >
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-            width: CONTENT_W,
-            height: PANEL_H - CONTENT_TOP - CONTENT_BOTTOM,
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          {children}
-        </UiEntity>
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
-            width: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
-            height: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
-          }}
-          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-          onMouseDown={() => { playSound('buttonclick'); onClose() }}
-        />
-      </UiEntity>
+const SellPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => (
+  <RevampPanelFrame name="sellCrops" onClose={onClose}>
+    <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%' }}>
+      {children}
     </UiEntity>
-  )
-}
+  </RevampPanelFrame>
+)
 
 // ─── Sell card — shop-style border, no manual frame lines ────────────────────
 type SellCardData = { key?: string; icon: string; name: string; count: number; unitPrice: number; zoomKey: string; onSell: () => void }

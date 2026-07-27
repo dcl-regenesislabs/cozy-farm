@@ -7,6 +7,7 @@ import { triggerBtnAnim } from './navAnimSystem'
 import { getWorkerDebtDays } from '../shared/worker'
 import { LEVEL_REWARDS } from '../data/levelRewardData'
 import { BadgeDot } from './BadgeDot'
+import { getGameMaxLevel, getMobileDebugCoins, getMobileDebugLevel } from '../game/mobileDebug'
 
 const HUD_ATLAS = 'assets/images/ui_loading/profile_atlas.png'
 const ATLAS_SIZE = 1024
@@ -166,9 +167,12 @@ function AtlasNumber(props: { value: number; digitHeight: number; gap?: number }
 }
 
 export const TopHud = () => {
+  const displayLevel = getMobileDebugLevel(playerState.level)
+  const displayCoins = getMobileDebugCoins(playerState.coins)
+  const maxLevel = getGameMaxLevel()
   const xp = getXpProgress()
-  const xpPct = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
-  const isMaxLvl = playerState.level >= 20
+  const isMaxLvl = displayLevel >= maxLevel
+  const xpPct = isMaxLvl ? 100 : (xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100)
   const isConnected = playerState.serverConnected
   const connectingBlinkOn = Math.floor(Date.now() / 500) % 2 === 0
   const showSocialToast = playerState.socialToastText !== '' && Date.now() < playerState.socialToastExpiresAt
@@ -350,9 +354,9 @@ export const TopHud = () => {
               }}
               uiBackground={{ color: { r: 0.92, g: 0.77, b: 0.22, a: 1 } }}
             >
-              <Label value={`${playerState.level}`} fontSize={s(18)} color={HUD_BROWN} textAlign="middle-center" />
+              <Label value={`${displayLevel}`} fontSize={s(18)} color={HUD_BROWN} textAlign="middle-center" />
             </UiEntity>
-            {LEVEL_REWARDS.some((reward) => playerState.level >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
+            {LEVEL_REWARDS.some((reward) => displayLevel >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
               <BadgeDot top={-3} right={-3} size={s(16)} />
             )}
           </UiEntity>
@@ -388,11 +392,11 @@ export const TopHud = () => {
                 <UiEntity uiTransform={{ width: s(10), height: 1 }} />
                 <AtlasSprite rect={LEVEL_WORD_RECT} width={s(108)} height={s(40)} />
                 <UiEntity uiTransform={{ width: s(10), height: 1 }} />
-                <AtlasNumber value={playerState.level} digitHeight={s(40)} gap={s(2)} />
+                <AtlasNumber value={displayLevel} digitHeight={s(40)} gap={s(2)} />
                 {!isMaxLvl && <UiEntity uiTransform={{ width: s(8), height: 1 }} />}
                 {!isMaxLvl && <AtlasSprite rect={ARROW_RECT} width={s(38)} height={s(30)} />}
                 {!isMaxLvl && <UiEntity uiTransform={{ width: s(8), height: 1 }} />}
-                {!isMaxLvl && <AtlasNumber value={playerState.level + 1} digitHeight={s(40)} gap={s(2)} />}
+                {!isMaxLvl && <AtlasNumber value={displayLevel + 1} digitHeight={s(40)} gap={s(2)} />}
               </UiEntity>
 
               <UiEntity
@@ -405,7 +409,7 @@ export const TopHud = () => {
                 }}
               >
                 <OutlinedLabel
-                  value={`${Math.max(0, Math.floor(playerState.coins))}`}
+                  value={`${Math.max(0, Math.floor(displayCoins))}`}
                   fontSize={s(28)}
                   width={s(100)}
                   height={s(40)}

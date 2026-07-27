@@ -441,34 +441,6 @@ export function requestPayWorkerWages(): void {
   void room.send('payWorkerWages', {})
 }
 
-function applyDebugWorkerState(data: {
-  coins: number
-  cropsUnlocked: boolean
-  farmerHired: boolean
-  farmerSeeds: CropCount[]
-  workerOutstandingWages: number
-  workerUnpaidDays: number
-  workerLastWageProcessedAt: number
-}): void {
-  playerState.coins = data.coins
-  playerState.cropsUnlocked = data.cropsUnlocked
-  playerState.farmerHired = data.farmerHired
-  playerState.farmerSeeds = arrayToMap(data.farmerSeeds)
-  playerState.workerOutstandingWages = data.workerOutstandingWages
-  playerState.workerUnpaidDays = data.workerUnpaidDays
-  playerState.workerLastWageProcessedAt = data.workerLastWageProcessedAt
-
-  if (data.cropsUnlocked) {
-    removeForSaleSign()
-    unlockFarmerPlots()
-    spawnFarmer()
-  }
-}
-
-export function requestDebugWorkerAction(action: string, amount = 0): void {
-  void room.send('debugWorkerAction', { action, amount })
-}
-
 // ---------------------------------------------------------------------------
 // Schedule auto-save every 60s
 // ---------------------------------------------------------------------------
@@ -566,10 +538,6 @@ export function initSaveService(onLoaded?: () => void): void {
   room.onMessage('workerWagePaymentResult', (data) => {
     if (data.requester !== playerState.wallet) return
     applyWorkerServerState(data)
-  })
-  room.onMessage('debugWorkerStateUpdated', (data) => {
-    if (data.requester !== playerState.wallet) return
-    applyDebugWorkerState(data)
   })
 
   void room.send('playerLoadFarm', { requestId: 'initial-load' })

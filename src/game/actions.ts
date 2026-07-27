@@ -521,11 +521,12 @@ export function buyCompostBin(): boolean {
 }
 
 /** Purchase the dog companion for 500 coins. No-op if already owned or insufficient coins. */
-export function buyDog() {
-  if (playerState.dogOwned) return
-  if (playerState.coins < 500) return
+export function buyDog(): boolean {
+  if (playerState.dogOwned) return false
+  if (playerState.coins < 500) return false
   playerState.coins   -= 500
   playerState.dogOwned = true
   spawnDog()
   console.log('CozyFarm Dog: purchased and spawned')
+  return true
 }

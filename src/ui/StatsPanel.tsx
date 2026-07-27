@@ -10,28 +10,43 @@ import { playSound } from '../systems/sfxSystem'
 import { lbState, requestLeaderboard } from './LeaderboardPanel'
 import { BadgeDot } from './BadgeDot'
 import { formatPlayerLabel } from '../utils/playerLabel'
+import { getGameMaxLevel, getMobileDebugLevel } from '../game/mobileDebug'
+import {
+  RevampCloseButton,
+  RevampTitlePlaque,
+  REVAMP_BG_IMG,
+  REVAMP_PANEL_W,
+  REVAMP_PANEL_H,
+  REVAMP_PANEL_TOP_MARGIN,
+  REVAMP_CONTENT_LEFT,
+  REVAMP_CONTENT_RIGHT,
+  REVAMP_CONTENT_TOP,
+  REVAMP_CONTENT_BOTTOM,
+  REVAMP_CONTENT_W,
+  REVAMP_CONTENT_H,
+  REVAMP_CLOSE_SIZE,
+  REVAMP_CLOSE_RIGHT,
+  REVAMP_CLOSE_TOP,
+} from './RevampPanel'
+import {
+  SHARED_PAGINATION_HEIGHT_DESKTOP,
+  SHARED_PAGINATION_HEIGHT_MOBILE,
+  SharedPaginationBar,
+} from './SharedPaginationBar'
 
-// ─── Atlas frame ──────────────────────────────────────────────────────────────
-// The atlas has an X circle baked into the top-right corner of the frame.
-// The close button is a purely transparent hitbox placed over that artwork.
-const PROFILE_ATLAS    = 'assets/images/ui_loading/profile_atlas_extended.png'
-const ATLAS_SIZE       = 1024
-// h=700 cuts cleanly above the two button-state strips that live below the wooden frame in the atlas
-const BG_RECT          = { x: 14, y: 14, w: 996, h: 700 } as const
-const UI_SCALE         = 0.8
-const ss               = (v: number) => Math.round(v * UI_SCALE)
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
-const PANEL_W          = ss(1120)
-const PANEL_H          = Math.round(PANEL_W * BG_RECT.h / BG_RECT.w)
-const PANEL_TOP_MARGIN = 48
+const PANEL_W          = REVAMP_PANEL_W
+const PANEL_H          = REVAMP_PANEL_H
+const PANEL_TOP_MARGIN = REVAMP_PANEL_TOP_MARGIN
 
-// Content insets — must clear the wooden border art and baked-in "Profile" header
-const CONTENT_LEFT   = 78
-const CONTENT_RIGHT  = 78
-const CONTENT_TOP    = 98
-const CONTENT_BOTTOM = 95   // panel is 27px shorter; slight reduction keeps content inset proportional
-const CONTENT_W      = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT   // 740
-const CONTENT_H      = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM   // 459
+const CONTENT_LEFT   = REVAMP_CONTENT_LEFT
+const CONTENT_RIGHT  = REVAMP_CONTENT_RIGHT
+const CONTENT_TOP    = REVAMP_CONTENT_TOP
+const CONTENT_BOTTOM = REVAMP_CONTENT_BOTTOM
+const CONTENT_W      = REVAMP_CONTENT_W
+const CONTENT_H      = REVAMP_CONTENT_H
 
 // ─── Card grid — width matches the tab bar so everything lines up ─────────────
 // Tab bar total: 3 × TAB_W + 2 × TAB_GAP = 3×188 + 2×10 = 584
@@ -40,15 +55,12 @@ const CARD_GAP = 14
 const GRID_W   = 3 * 188 + 2 * 10                                // 584 — same as tab bar
 const CARD_W   = Math.floor((GRID_W - 3 * CARD_GAP) / 3)        // 180 (accounts for right margin on all 3 cards)
 const CARD_H   = 86
-const GRID_ML  = Math.floor((CONTENT_W - GRID_W) / 2)           // 78 — centres grid
+const GRID_ML  = Math.floor((CONTENT_W - GRID_W) / 2)           // centres grid
 
-// ─── Close button — transparent hitbox over the atlas's baked-in X circle ────
-// Use `left` not `right`: DCL's yoga resolves `right` from the screen edge, not the panel.
-// X circle is at ~94% of BG_RECT width → panel x ≈ 843, y ≈ 26
-const CLOSE_SIZE = ss(74)   // 59
-const CLOSE_LEFT = 813 - 59  // = 754 — shifted left by one hitbox width to centre on atlas X
-const CLOSE_TOP  = 0
-const CLOSE_BTN_IMG = 'assets/images/ui_loading/closebutton.png'
+// ─── Close button — same image used everywhere, just resized on mobile ───────
+const CLOSE_SIZE  = REVAMP_CLOSE_SIZE
+const CLOSE_RIGHT = REVAMP_CLOSE_RIGHT
+const CLOSE_TOP   = REVAMP_CLOSE_TOP
 
 // ─── Warm card palette ────────────────────────────────────────────────────────
 const CARD_BORDER      = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -92,13 +104,6 @@ const TAB_LABELS: Record<'stats' | 'rewards' | 'ranking', string> = {
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
-
 function claimReward(level: number): void {
   if (playerState.claimedRewards.includes(level)) return
   const reward = LEVEL_REWARDS.find((r) => r.level === level)
@@ -133,8 +138,9 @@ const ProfilePanelFrame = ({
   const cT  = mob ? CONT_TOP_M  : CONTENT_TOP
   const cW  = mob ? CONT_W_M    : CONTENT_W
   const cH  = mob ? CONT_H_M    : CONTENT_H
-  const clS = mob ? CLOSE_SIZE_M : CLOSE_SIZE
-  const clL = mob ? CLOSE_LEFT_M : CLOSE_LEFT
+  const clS = mob ? CLOSE_SIZE_M  : CLOSE_SIZE
+  const clR = mob ? CLOSE_RIGHT_M : CLOSE_RIGHT
+  const clT = mob ? CLOSE_TOP_M   : CLOSE_TOP
   return (
     <UiEntity
       uiTransform={{
@@ -158,7 +164,7 @@ const ProfilePanelFrame = ({
         }}
       />
 
-      {/* Atlas panel frame */}
+      {/* Shared revamp panel frame */}
       <UiEntity
         uiTransform={{
           width: pW,
@@ -166,12 +172,10 @@ const ProfilePanelFrame = ({
           margin: { top },
           pointerFilter: 'block',
         }}
-        uiBackground={{
-          texture: { src: PROFILE_ATLAS, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-          uvs: bgUvs(BG_RECT),
-        }}
+        uiBackground={{ texture: { src: REVAMP_BG_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       >
+        <RevampTitlePlaque name="profile" panelWidth={pW} scale={mob ? M_FACTOR : 1} />
+
         {/* Content area — clipped to stay inside wooden border */}
         <UiEntity
           uiTransform={{
@@ -186,16 +190,12 @@ const ProfilePanelFrame = ({
           {children}
         </UiEntity>
 
-        {/* Transparent hitbox over the atlas's baked-in X circle */}
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { left: clL, top: CLOSE_TOP },
-            width: clS,
-            height: clS,
-          }}
-          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-          onMouseDown={() => { playSound('buttonclick'); onClose() }}
+        {/* Close button — same image on both desktop and mobile */}
+        <RevampCloseButton
+          onClose={onClose}
+          right={mob ? undefined : clR}
+          top={mob ? undefined : clT}
+          size={mob ? undefined : clS}
         />
       </UiEntity>
     </UiEntity>
@@ -243,31 +243,15 @@ const TabBar = ({ hasUnclaimedReward }: { hasUnclaimedReward: boolean }) => {
 const PageNav = ({
   page, lastPage, onPrev, onNext,
 }: { page: number; lastPage: number; onPrev: () => void; onNext: () => void }) => {
-  const mob     = isMobile()
-  const canPrev = page > 0
-  const canNext = page < lastPage
-  const disabledColor = mob ? { r: 1, g: 1, b: 1, a: 0.35 } : CARD_TEXT_MUTE
-  const pageColor     = mob ? { r: 1, g: 1, b: 1, a: 0.80 } : CARD_TEXT_MUTE
   return (
-    <UiEntity
-      uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: 50, flexShrink: 0 }}
-    >
-      <UiEntity
-        uiTransform={{ width: 110, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: 20 } }}
-        uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
-        onMouseDown={canPrev ? () => { playSound('buttonclick'); onPrev() } : undefined}
-      >
-        <Label value="< Prev" fontSize={20} color={canPrev ? BTN_TEXT : disabledColor} textAlign="middle-center" />
-      </UiEntity>
-      <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={20} color={pageColor} textAlign="middle-center" uiTransform={{ width: 80, height: 40 }} />
-      <UiEntity
-        uiTransform={{ width: 110, height: 40, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: 20 } }}
-        uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
-        onMouseDown={canNext ? () => { playSound('buttonclick'); onNext() } : undefined}
-      >
-        <Label value="Next >" fontSize={20} color={canNext ? BTN_TEXT : disabledColor} textAlign="middle-center" />
-      </UiEntity>
-    </UiEntity>
+    <SharedPaginationBar
+      id="stats-panel"
+      page={page}
+      lastPage={lastPage}
+      onPrev={onPrev}
+      onNext={onNext}
+      mode={isMobile() ? 'mobile' : 'desktop'}
+    />
   )
 }
 
@@ -283,8 +267,9 @@ const STATS = [
 
 const StatsTab = () => {
   const xp     = getXpProgress()
-  const pct    = xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100
-  const maxLv  = playerState.level >= 100
+  const displayLevel = getMobileDebugLevel(playerState.level)
+  const maxLv  = displayLevel >= getGameMaxLevel()
+  const pct    = maxLv ? 100 : (xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100)
   const mobile = isMobile()
   const gW  = mobile ? GRID_W_M  : GRID_W
   const gML = mobile ? GRID_ML_M : GRID_ML
@@ -307,7 +292,7 @@ const StatsTab = () => {
           uiTransform={{ padding: { top: 8, bottom: 8, left: 18, right: 18 }, margin: { right: 18 }, alignItems: 'center', flexShrink: 0, borderRadius: 6 }}
           uiBackground={{ color: { r: 0.72, g: 0.52, b: 0.04, a: 1 } }}
         >
-          <Label value={`Level  ${playerState.level}`} fontSize={24} color={{ r: 0.05, g: 0.03, b: 0, a: 1 }} />
+          <Label value={`Level  ${displayLevel}`} fontSize={24} color={{ r: 0.05, g: 0.03, b: 0, a: 1 }} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
           <Label
@@ -426,31 +411,35 @@ const RewardsTab = () => {
   const contentH  = mob ? LB_CONT_H_M : LB_CONTENT_H
   const gW        = mob ? GRID_W_M    : GRID_W
   const gML       = mob ? GRID_ML_M   : GRID_ML
+  const pageNavH  = mob ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
+  const showNav   = lastPage > 0
 
   return (
     <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', height: contentH }}>
       {/* Centered card grid — paddingBottom reserves space for the absolute PageNav */}
       <UiEntity
-        uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: gW, margin: { left: gML }, flex: 1, alignContent: 'flex-start', padding: { bottom: 58 } }}
+        uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: gW, margin: { left: gML }, flex: 1, alignContent: 'flex-start', padding: { bottom: showNav ? pageNavH : 0 } }}
       >
         {slice.map((r) => <RewardCard key={r.level} reward={r} />)}
       </UiEntity>
       {/* PageNav pinned absolutely to the bottom — same height as leaderboard's */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { bottom: 0, left: 0 },
-          width: '100%',
-          height: 50,
-        }}
-      >
-        <PageNav
-          page={page}
-          lastPage={lastPage}
-          onPrev={() => { rewardsPage.value-- }}
-          onNext={() => { rewardsPage.value++ }}
-        />
-      </UiEntity>
+      {showNav && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { bottom: 0, left: 0 },
+            width: '100%',
+            height: pageNavH,
+          }}
+        >
+          <PageNav
+            page={page}
+            lastPage={lastPage}
+            onPrev={() => { rewardsPage.value-- }}
+            onNext={() => { rewardsPage.value++ }}
+          />
+        </UiEntity>
+      )}
     </UiEntity>
   )
 }
@@ -473,16 +462,17 @@ const LB_NAME_W  = GRID_W - 8 - 58 - LB_SCORE_W  // 438
 // ─── Mobile overrides — everything 10% bigger, pushed down to clear DCL's player profile UI ──
 // All pixel values scale proportionally; derived constants recalculate from their scaled bases.
 const M_FACTOR         = 1.1
-const PANEL_W_M        = Math.round(PANEL_W * M_FACTOR)                                            // 986
-const PANEL_H_M        = Math.round(PANEL_W_M * BG_RECT.h / BG_RECT.w)                            // 693
-const PANEL_TOP_M      = 80
+const PANEL_W_M        = Math.round(PANEL_W * M_FACTOR)
+const PANEL_H_M        = Math.round(PANEL_H * M_FACTOR)
+const PANEL_TOP_M      = Math.round(PANEL_TOP_MARGIN * M_FACTOR)
 const CONT_LEFT_M      = Math.round(CONTENT_LEFT * M_FACTOR)                                       // 86
 const CONT_TOP_M       = Math.round(CONTENT_TOP * M_FACTOR)                                        // 108
 const CONT_BOT_M       = Math.round(CONTENT_BOTTOM * M_FACTOR)                                     // 105
 const CONT_W_M         = PANEL_W_M - CONT_LEFT_M * 2                                              // 814
 const CONT_H_M         = PANEL_H_M - CONT_TOP_M - CONT_BOT_M                                     // 480
-const CLOSE_SIZE_M     = Math.round(CLOSE_SIZE * M_FACTOR)                                         // 65
-const CLOSE_LEFT_M     = Math.round(CLOSE_LEFT * M_FACTOR)                                         // 829
+const CLOSE_SIZE_M     = Math.round(CLOSE_SIZE * M_FACTOR)
+const CLOSE_RIGHT_M    = Math.round(CLOSE_RIGHT * M_FACTOR)
+const CLOSE_TOP_M      = Math.round(CLOSE_TOP * M_FACTOR)
 const TAB_H_M          = Math.round(TAB_H * M_FACTOR)                                              // 51
 const TAB_W_M          = Math.round(TAB_W * M_FACTOR)                                              // 207
 const TAB_GAP_M        = Math.round(TAB_GAP * M_FACTOR)                                            // 11
@@ -517,6 +507,8 @@ const LeaderboardTab = () => {
   const badgeW    = mob ? Math.round(44 * M_FACTOR) : 44
   const badgeH    = mob ? Math.round(36 * M_FACTOR) : 36
   const badgeMR   = mob ? Math.round(14 * M_FACTOR) : 14
+  const pageNavH  = mob ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
+  const showNav   = lastPage > 0
 
   return (
     <UiEntity uiTransform={{ flexDirection: 'column', width: gW, margin: { left: gML }, height: contentH }}>
@@ -546,7 +538,7 @@ const LeaderboardTab = () => {
       </UiEntity>
 
       {/* Entry list — paddingBottom reserves space for the absolute PageNav */}
-      <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%', padding: { bottom: 58 } }}>
+      <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%', padding: { bottom: showNav ? pageNavH : 0 } }}>
         {lbState.loading && (
           <Label value="Loading rankings..." fontSize={22} color={C.textMute} textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 40 } }} />
         )}
@@ -603,21 +595,23 @@ const LeaderboardTab = () => {
       </UiEntity>
 
       {/* PageNav pinned absolutely to the bottom so it stays there regardless of entry count */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { bottom: 0, left: 0 },
-          width: '100%',
-          height: 50,
-        }}
-      >
-        <PageNav
-          page={page}
-          lastPage={lastPage}
-          onPrev={() => { if (lbPage.value > 0) lbPage.value-- }}
-          onNext={() => { if (lbPage.value < lastPage) lbPage.value++ }}
-        />
-      </UiEntity>
+      {showNav && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { bottom: 0, left: 0 },
+            width: '100%',
+            height: pageNavH,
+          }}
+        >
+          <PageNav
+            page={page}
+            lastPage={lastPage}
+            onPrev={() => { if (lbPage.value > 0) lbPage.value-- }}
+            onNext={() => { if (lbPage.value < lastPage) lbPage.value++ }}
+          />
+        </UiEntity>
+      )}
     </UiEntity>
   )
 }

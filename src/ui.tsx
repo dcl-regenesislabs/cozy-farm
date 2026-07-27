@@ -27,7 +27,6 @@ import { FeedBowlMenu }    from './ui/FeedBowlMenu'
 import { VisitHud }         from './ui/VisitHud'
 import { LoadingOverlay }   from './ui/LoadingOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
-import { PROFILE_HUD_DEBUG } from './debug/profileHudDebug'
 
 function applyUiRenderer(): void {
   ReactEcsRenderer.setUiRenderer(MainUi, {
@@ -50,7 +49,7 @@ const MainUi = () => {
   // flash of HUD/menus underneath it before it finishes closing.
   const uiUnlocked   = !playerState.loadingOverlayActive
   const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
-  const showOwnFarmUi = uiUnlocked && (PROFILE_HUD_DEBUG || (playerState.viewingFarm === null && playerState.farmReady))
+  const showOwnFarmUi = uiUnlocked && playerState.viewingFarm === null && playerState.farmReady
 
   return (
     <UiEntity

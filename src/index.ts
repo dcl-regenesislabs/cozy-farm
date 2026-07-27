@@ -36,7 +36,6 @@ import { initCompostBinVfx } from './systems/compostBinVfx'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
-import { PROFILE_HUD_DEBUG, applyProfileHudDebugState } from './debug/profileHudDebug'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -57,6 +56,7 @@ export function main() {
   SkyboxTime.createOrReplace(engine.RootEntity, { fixedTime: 43200 })
 
   setupUi()
+
   setupEntities()
   setupLandscape()
   setupSfxSystem()
@@ -70,13 +70,6 @@ export function main() {
   // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,
   // animal). Init unconditionally on boot so any tutorial can summon it.
   initTutorialArrow()
-
-  if (PROFILE_HUD_DEBUG) {
-    playerState.loadingOverlayActive = false
-    applyProfileHudDebugState()
-    console.log('CozyFarm: PROFILE_HUD_DEBUG enabled - skipping save/server bootstrap')
-    return
-  }
 
   // Wire soil-unlock callbacks BEFORE initTutorialSystem runs.
   // This resolves the circular dep: tutorialSystem → interactionSetup → actions → tutorialSystem.

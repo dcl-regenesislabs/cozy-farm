@@ -364,18 +364,18 @@ export function getPenFoodEntity():   Entity | null { return penFood         }
 // Purchase a building (called when player clicks AnimalBuildingEmpty)
 // ---------------------------------------------------------------------------
 
-export function purchaseBuilding(type: 'chicken' | 'pig'): void {
+export function purchaseBuilding(type: 'chicken' | 'pig'): boolean {
   const requiredLevel = type === 'chicken' ? CHICKEN_COOP_UNLOCK_LEVEL : PIG_PEN_UNLOCK_LEVEL
   if (playerState.level < requiredLevel) {
     console.log(`[AnimalSystem] Level ${requiredLevel} required to buy ${type} building`)
-    return
+    return false
   }
   const alreadyOwned = type === 'chicken' ? playerState.chickenCoopOwned : playerState.pigPenOwned
-  if (alreadyOwned) return
+  if (alreadyOwned) return false
 
   if (playerState.coins < BUILDING_BUY_PRICE) {
     console.log(`[AnimalSystem] Not enough coins to buy ${type} building`)
-    return
+    return false
   }
   playerState.coins -= BUILDING_BUY_PRICE
   if (type === 'chicken') {
@@ -388,6 +388,7 @@ export function purchaseBuilding(type: 'chicken' | 'pig'): void {
   playSound('buttonclick')
   updateBuildingVisuals()
   console.log(`[AnimalSystem] Bought ${type} building`)
+  return true
 }
 
 // ---------------------------------------------------------------------------

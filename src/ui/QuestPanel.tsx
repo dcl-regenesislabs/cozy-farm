@@ -26,34 +26,30 @@ import {
   SHOPINGCART_ICON,
 } from '../data/imagePaths'
 import { playSound } from '../systems/sfxSystem'
+import {
+  RevampPanelFrame,
+  REVAMP_CONTENT_LEFT as CONTENT_LEFT,
+  REVAMP_CONTENT_RIGHT as CONTENT_RIGHT,
+  REVAMP_CONTENT_TOP as CONTENT_TOP,
+  REVAMP_CONTENT_BOTTOM as CONTENT_BOTTOM,
+  REVAMP_CONTENT_W as CONTENT_W,
+  REVAMP_CONTENT_H as CONTENT_H,
+} from './RevampPanel'
+import {
+  SHARED_PAGINATION_HEIGHT_DESKTOP,
+  SHARED_PAGINATION_HEIGHT_MOBILE,
+  SharedPaginationBar,
+} from './SharedPaginationBar'
 
 const NPC_HEAD: Record<string, string> = {}
 for (const npc of NPC_ROSTER) NPC_HEAD[npc.id] = npc.headImage
 
-// ─── Atlas ────────────────────────────────────────────────────────────────────
-const QUEST_ATLAS      = 'assets/images/ui_loading/quest_atlas.png'
-const ATLAS_SIZE       = 1024
-const BG_RECT          = { x: 57, y: 15, w: 909, h: 678 } as const
-const UI_SCALE         = 0.8
-const ss               = (v: number) => Math.round(v * UI_SCALE)
-
-const PANEL_W          = ss(1189)
-const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(120)
-const CONTENT_LEFT     = ss(72)
-const CONTENT_RIGHT    = ss(72)
-const CONTENT_TOP      = ss(100)
-const CONTENT_BOTTOM   = ss(68)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
-const CLOSE_SIZE       = ss(74)
-const CLOSE_RIGHT      = ss(28)
-const CLOSE_TOP        = ss(16)
-const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
 // Mobile pagination bar (big buttons like farm)
-const MOB_PAGINAV_H    = ss(80)
-const DSK_PAGINAV_H    = ss(56)
+const MOB_PAGINAV_H    = SHARED_PAGINATION_HEIGHT_MOBILE
+const DSK_PAGINAV_H    = SHARED_PAGINATION_HEIGHT_DESKTOP
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const CARD_FILL      = { r: 0.95, g: 0.88, b: 0.70, a: 0.55 }
@@ -96,14 +92,6 @@ type QuestItem = {
   qp:   { current: number; status: string }
 }
 type AnyItem = MilestoneItem | QuestItem
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
 
 // ─── Single checklist item ────────────────────────────────────────────────────
 const ChecklistRow = ({ label, status, fontSize }: { key?: string; label: string; status: string; fontSize: number }) => {
@@ -312,89 +300,23 @@ const ItemRow = ({ item }: { key?: string; item: AnyItem }) => {
 
 // ─── Pagination nav ───────────────────────────────────────────────────────────
 const QuestPageNav = ({ page, lastPage }: { page: number; lastPage: number }) => {
-  const mob     = isMobile()
-  const canPrev = page > 0
-  const canNext = page < lastPage
-
-  if (mob) {
-    const btnW = ss(200), btnH = ss(64)
-    return (
-      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: MOB_PAGINAV_H, flexShrink: 0 }}>
-        <UiEntity
-          uiTransform={{ width: btnW, height: btnH, alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { right: ss(24) } }}
-          uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
-          onMouseDown={canPrev ? () => { playSound('buttonclick'); questPage.value-- } : undefined}
-        >
-          <Label value="< Prev" fontSize={ss(26)} color={canPrev ? WHITE : WHITE_DIM} textAlign="middle-center" />
-        </UiEntity>
-        <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(26)} color={{ r: 1, g: 1, b: 1, a: 0.8 }} textAlign="middle-center" uiTransform={{ width: ss(100) }} />
-        <UiEntity
-          uiTransform={{ width: btnW, height: btnH, alignItems: 'center', justifyContent: 'center', borderRadius: 12, margin: { left: ss(24) } }}
-          uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
-          onMouseDown={canNext ? () => { playSound('buttonclick'); questPage.value++ } : undefined}
-        >
-          <Label value="Next >" fontSize={ss(26)} color={canNext ? WHITE : WHITE_DIM} textAlign="middle-center" />
-        </UiEntity>
-      </UiEntity>
-    )
-  }
-
-  const disabledCol = CARD_TEXT_MUTE
   return (
-    <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', height: DSK_PAGINAV_H, flexShrink: 0 }}>
-      <UiEntity
-        uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: ss(20) } }}
-        uiBackground={{ color: canPrev ? BTN_ON : BTN_OFF }}
-        onMouseDown={canPrev ? () => { playSound('buttonclick'); questPage.value-- } : undefined}
-      >
-        <Label value="< Prev" fontSize={ss(22)} color={canPrev ? BTN_TEXT : disabledCol} textAlign="middle-center" />
-      </UiEntity>
-      <Label value={`${page + 1} / ${lastPage + 1}`} fontSize={ss(22)} color={CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ width: ss(90), height: ss(44) }} />
-      <UiEntity
-        uiTransform={{ width: ss(130), height: ss(44), alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { left: ss(20) } }}
-        uiBackground={{ color: canNext ? BTN_ON : BTN_OFF }}
-        onMouseDown={canNext ? () => { playSound('buttonclick'); questPage.value++ } : undefined}
-      >
-        <Label value="Next >" fontSize={ss(22)} color={canNext ? BTN_TEXT : disabledCol} textAlign="middle-center" />
-      </UiEntity>
-    </UiEntity>
+    <SharedPaginationBar
+      id="quest-panel"
+      page={page}
+      lastPage={lastPage}
+      onPrev={() => { questPage.value-- }}
+      onNext={() => { questPage.value++ }}
+      mode={isMobile() ? 'mobile' : 'desktop'}
+    />
   )
 }
 
 // ─── Panel frame ─────────────────────────────────────────────────────────────
 const QuestPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => (
-  <UiEntity
-    uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
-  >
-    <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', pointerFilter: 'block' }} />
-    <UiEntity
-      uiTransform={{ width: PANEL_W, height: PANEL_H, margin: { top: PANEL_TOP_MARGIN }, pointerFilter: 'block' }}
-      uiBackground={{ texture: { src: QUEST_ATLAS, wrapMode: 'clamp' }, textureMode: 'stretch', uvs: bgUvs(BG_RECT) }}
-    >
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-          width: CONTENT_W,
-          height: CONTENT_H,
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {children}
-      </UiEntity>
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: isMobile() ? ss(90) : CLOSE_SIZE,
-          height: isMobile() ? ss(90) : CLOSE_SIZE,
-        }}
-        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-        onMouseDown={() => { playSound('buttonclick'); onClose() }}
-      />
-    </UiEntity>
-  </UiEntity>
+  <RevampPanelFrame name="quest" onClose={onClose}>
+    {children}
+  </RevampPanelFrame>
 )
 
 // ─── Main panel ───────────────────────────────────────────────────────────────

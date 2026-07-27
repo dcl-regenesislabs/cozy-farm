@@ -215,11 +215,6 @@ const FarmMessages = {
   /** Client → Server: clear any outstanding worker back-pay */
   payWorkerWages: Schemas.Map({}),
 
-  debugWorkerAction: Schemas.Map({
-    action: Schemas.String,
-    amount: Schemas.Int,
-  }),
-
   /** Client → Server: fetch a page of known players */
   loadPlayerRegistry: Schemas.Map({ page: Schemas.Int }),
 
@@ -341,19 +336,6 @@ const FarmMessages = {
     success: Schemas.Boolean,
     reason: Schemas.String,
     coinsDelta: Schemas.Int,
-    workerOutstandingWages: Schemas.Int,
-    workerUnpaidDays: Schemas.Int,
-    workerLastWageProcessedAt: Schemas.Int64,
-  }),
-
-  debugWorkerStateUpdated: Schemas.Map({
-    requester: Schemas.String,
-    success: Schemas.Boolean,
-    reason: Schemas.String,
-    coins: Schemas.Int,
-    cropsUnlocked: Schemas.Boolean,
-    farmerHired: Schemas.Boolean,
-    farmerSeeds: Schemas.Array(CropCountSchema),
     workerOutstandingWages: Schemas.Int,
     workerUnpaidDays: Schemas.Int,
     workerLastWageProcessedAt: Schemas.Int64,

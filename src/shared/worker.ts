@@ -3,7 +3,6 @@ import { CropType } from '../data/cropData'
 export const WORKER_HIRE_COST = 800
 export const WORKER_DAILY_WAGE = 150
 export const WORKER_DAY_MS = 24 * 60 * 60 * 1000
-export const WORKER_DEBUG_ENABLED = false
 
 export type WorkerStatus = 'inactive' | 'active' | 'idle_no_seeds' | 'idle_unpaid'
 

@@ -4,7 +4,6 @@ import {
   createFarmProgressStore, emptyFarm, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
 } from './storage/playerFarm'
-import { WORKER_DEBUG_ENABLED } from '../shared/worker'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval (seconds) — same cadence as reference project
@@ -189,61 +188,6 @@ export function setupFarmServer(): void {
         workerOutstandingWages: store.get(requester)?.workerOutstandingWages ?? 0,
         workerUnpaidDays: store.get(requester)?.workerUnpaidDays ?? 0,
         workerLastWageProcessedAt: store.get(requester)?.workerLastWageProcessedAt ?? 0,
-      }, { to: [requester] })
-    }
-  })
-
-  room.onMessage('debugWorkerAction', async (_data, context) => {
-    if (!context) return
-    const requester = context.from.toLowerCase()
-    if (!WORKER_DEBUG_ENABLED) {
-      const farm = store.get(requester)
-      void room.send('debugWorkerStateUpdated', {
-        requester,
-        success: false,
-        reason: 'debug_disabled',
-        coins: farm?.coins ?? 0,
-        cropsUnlocked: farm?.cropsUnlocked ?? false,
-        farmerHired: farm?.farmerHired ?? false,
-        farmerSeeds: farm?.farmerSeeds ?? [],
-        workerOutstandingWages: farm?.workerOutstandingWages ?? 0,
-        workerUnpaidDays: farm?.workerUnpaidDays ?? 0,
-        workerLastWageProcessedAt: farm?.workerLastWageProcessedAt ?? 0,
-      }, { to: [requester] })
-      return
-    }
-    try {
-      const result = await store.debugWorkerAction(
-        requester,
-        typeof _data.action === 'string' ? _data.action : '',
-        typeof _data.amount === 'number' ? _data.amount : 0,
-      )
-      void room.send('debugWorkerStateUpdated', {
-        requester,
-        success: result.success,
-        reason: result.reason,
-        coins: result.coins,
-        cropsUnlocked: result.cropsUnlocked,
-        farmerHired: result.farmerHired,
-        farmerSeeds: result.farmerSeeds,
-        workerOutstandingWages: result.workerOutstandingWages,
-        workerUnpaidDays: result.workerUnpaidDays,
-        workerLastWageProcessedAt: result.workerLastWageProcessedAt,
-      }, { to: [requester] })
-    } catch (err) {
-      console.error('[FarmServer] debugWorkerAction error:', err)
-      const farm = store.get(requester)
-      void room.send('debugWorkerStateUpdated', {
-        requester,
-        success: false,
-        reason: 'server_error',
-        coins: farm?.coins ?? 0,
-        cropsUnlocked: farm?.cropsUnlocked ?? false,
-        farmerHired: farm?.farmerHired ?? false,
-        farmerSeeds: farm?.farmerSeeds ?? [],
-        workerOutstandingWages: farm?.workerOutstandingWages ?? 0,
-        workerUnpaidDays: farm?.workerUnpaidDays ?? 0,
-        workerLastWageProcessedAt: farm?.workerLastWageProcessedAt ?? 0,
       }, { to: [requester] })
     }
   })
