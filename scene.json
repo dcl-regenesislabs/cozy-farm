@@ -3,7 +3,7 @@
   "runtimeVersion": "7",
   "display": {
     "title": "CozyFarm",
-    "description": "Empty Scene Template",
+    "description": "Grow crops, raise animals, and build your dream farm! Claim your own plot, harvest and sell produce, decorate your space, and enjoy this cozy farming world.",
     "favicon": "favicon_asset",
     "navmapThumbnail": "assets/scene/Images/CozyFarm.png"
   },
