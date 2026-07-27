@@ -1,6 +1,6 @@
 # CozyFarm
 
-A multiplayer farming game built on Decentraland SDK7, deployed to a DCL World at **pepino.dcl.eth**.
+A multiplayer farming game built on Decentraland SDK7, deployed to a DCL World at **cozyfarm.dcl.eth**.
 
 Players buy seeds, plant and water crops, hire a farmer, adopt a dog, complete quests, and level up — with progress saved server-side per wallet address.
 
