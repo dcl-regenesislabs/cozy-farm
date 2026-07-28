@@ -2,52 +2,48 @@ import ReactEcs, { ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { getExplorerInformation } from '~system/Runtime'
 import { playerState } from './game/gameState'
-import { TopHud }        from './ui/TopHud'
-import { BottomNav }     from './ui/BottomNav'
-import { PlantMenu }     from './ui/PlantMenu'
+import { TopHud } from './ui/TopHud'
+import { BottomNav } from './ui/BottomNav'
+import { PlantMenu } from './ui/PlantMenu'
 import { FertilizeMenu } from './ui/FertilizeMenu'
-import { ShopMenu }      from './ui/ShopMenu'
-import { SellMenu }      from './ui/SellMenu'
-import { UnlockMenu }          from './ui/UnlockMenu'
-import { ExpansionMenu }       from './ui/ExpansionMenu'
+import { ShopMenu } from './ui/ShopMenu'
+import { SellMenu } from './ui/SellMenu'
+import { UnlockMenu } from './ui/UnlockMenu'
+import { ExpansionMenu } from './ui/ExpansionMenu'
 import { PlotGroupUnlockMenu } from './ui/PlotGroupUnlockMenu'
-import { FarmerMenu }    from './ui/FarmerMenu'
+import { FarmerMenu } from './ui/FarmerMenu'
 import { NpcDialogMenu } from './ui/NpcDialogMenu'
 import { InventoryPanel } from './ui/InventoryPanel'
-import { StatsPanel }    from './ui/StatsPanel'
-import { QuestPanel }    from './ui/QuestPanel'
-import { FarmPanel }     from './ui/FarmPanel'
-import { JukeboxMenu }  from './ui/JukeboxMenu'
-import { MailboxMenu }      from './ui/MailboxMenu'
-import { CompostBinMenu }  from './ui/CompostBinMenu'
+import { StatsPanel } from './ui/StatsPanel'
+import { QuestPanel } from './ui/QuestPanel'
+import { FarmPanel } from './ui/FarmPanel'
+import { JukeboxMenu } from './ui/JukeboxMenu'
+import { MailboxMenu } from './ui/MailboxMenu'
+import { CompostBinMenu } from './ui/CompostBinMenu'
 import { LeaderboardPanel } from './ui/LeaderboardPanel'
 import { ChickenCoopPanel } from './ui/ChickenCoopPanel'
-import { PigPenPanel }      from './ui/PigPenPanel'
-import { FeedBowlMenu }    from './ui/FeedBowlMenu'
-import { VisitHud }         from './ui/VisitHud'
-import { LoadingOverlay }   from './ui/LoadingOverlay'
+import { PigPenPanel } from './ui/PigPenPanel'
+import { FeedBowlMenu } from './ui/FeedBowlMenu'
+import { VisitHud } from './ui/VisitHud'
+import { LoadingOverlay } from './ui/LoadingOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
 function applyUiRenderer(): void {
   ReactEcsRenderer.setUiRenderer(MainUi, {
     virtualWidth: isMobile() ? 1600 : 1920,
-    virtualHeight: isMobile() ? 720 : 1080
+    virtualHeight: isMobile() ? 720 : 1080,
   })
 }
 
 export function setupUi() {
   applyUiRenderer()
-  // isMobile() resolves getExplorerInformation() asynchronously, so the first
-  // call above may still report desktop — reapply once the real platform is known.
   void getExplorerInformation({})
     .then(() => applyUiRenderer())
     .catch(() => {})
 }
 
 const MainUi = () => {
-  // Nothing else renders while the boot loading overlay is up — avoids a
-  // flash of HUD/menus underneath it before it finishes closing.
-  const uiUnlocked   = !playerState.loadingOverlayActive
+  const uiUnlocked = !playerState.loadingOverlayActive
   const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
   const showOwnFarmUi = uiUnlocked && playerState.viewingFarm === null && playerState.farmReady
 
@@ -62,31 +58,31 @@ const MainUi = () => {
       <LoadingOverlay />
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
-      {showOwnFarmUi && !['npcDialog','shop','inventory','farm','quests','plant','sell','compost','jukebox'].includes(playerState.activeMenu) && <BottomNav />}
+      {showOwnFarmUi && !['npcDialog', 'shop', 'inventory', 'farm', 'quests', 'plant', 'sell', 'compost', 'jukebox'].includes(playerState.activeMenu) && <BottomNav />}
 
-      {showOwnFarmUi && playerState.activeMenu === 'plant'     && <PlantMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'plant' && <PlantMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'fertilize' && <FertilizeMenu />}
-      {showOwnFarmUi && playerState.activeMenu === 'shop'      && <ShopMenu />}
-      {showOwnFarmUi && playerState.activeMenu === 'sell'      && <SellMenu />}
-      {showOwnFarmUi && playerState.activeMenu === 'unlock'         && <UnlockMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'shop' && <ShopMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'sell' && <SellMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'unlock' && <UnlockMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'plotGroupUnlock' && <PlotGroupUnlockMenu />}
       {showOwnFarmUi && (playerState.activeMenu === 'expansion1' || playerState.activeMenu === 'expansion2') && <ExpansionMenu />}
-      {showOwnFarmUi && playerState.activeMenu === 'farmer'    && <FarmerMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'farmer' && <FarmerMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'npcDialog' && <NpcDialogMenu />}
 
-      {showOwnFarmUi && playerState.activeMenu === 'jukebox'   && <JukeboxMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'jukebox' && <JukeboxMenu />}
       {showOwnFarmUi && MAILBOX_FEATURE_ENABLED && playerState.activeMenu === 'mailbox' && <MailboxMenu />}
-      {showOwnFarmUi && playerState.activeMenu === 'compost'   && <CompostBinMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'compost' && <CompostBinMenu />}
       {showOwnFarmUi && playerState.activeMenu === 'chickenCoop' && <ChickenCoopPanel />}
-      {showOwnFarmUi && playerState.activeMenu === 'pigPen'      && <PigPenPanel />}
-      {showOwnFarmUi && playerState.activeMenu === 'feedBowl'  && <FeedBowlMenu />}
+      {showOwnFarmUi && playerState.activeMenu === 'pigPen' && <PigPenPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'feedBowl' && <FeedBowlMenu />}
 
       {showOwnFarmUi && playerState.activeMenu === 'leaderboard' && <LeaderboardPanel />}
 
       {showOwnFarmUi && playerState.activeMenu === 'inventory' && <InventoryPanel />}
-      {showOwnFarmUi && playerState.activeMenu === 'stats'     && <StatsPanel />}
-      {showOwnFarmUi && playerState.activeMenu === 'quests'    && <QuestPanel />}
-      {showOwnFarmUi && playerState.activeMenu === 'farm'      && <FarmPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'stats' && <StatsPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'quests' && <QuestPanel />}
+      {showOwnFarmUi && playerState.activeMenu === 'farm' && <FarmPanel />}
     </UiEntity>
   )
 }

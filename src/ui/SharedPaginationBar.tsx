@@ -12,6 +12,7 @@ const PAGE_TEXT_DISABLED = { r: 0.82, g: 0.79, b: 0.74, a: 0.72 }
 const PAGE_CHIP_BG = { r: 0.16, g: 0.10, b: 0.04, a: 0.94 }
 const PAGE_CHIP_BORDER = { r: 0.94, g: 0.75, b: 0.24, a: 0.95 }
 const PAGE_CHIP_TEXT = { r: 0.98, g: 0.90, b: 0.72, a: 1 }
+const PAGE_TOUCH_CAPTURE = { r: 0, g: 0, b: 0, a: 0.001 }
 
 type PaginationMode = 'auto' | 'desktop' | 'mobile'
 
@@ -24,10 +25,20 @@ type SharedPaginationBarProps = {
   mode?: PaginationMode
   marginTop?: number
   hideIfSinglePage?: boolean
+  buttonTextureSrc?: string
+  buttonDisabledTextureSrc?: string
+  buttonAspect?: number
+  buttonLabelTopOffset?: number
+  pageTextTopOffset?: number
+  buttonLabelColor?: { r: number; g: number; b: number; a: number }
+  buttonLabelDisabledColor?: { r: number; g: number; b: number; a: number }
+  pageChipBgColor?: { r: number; g: number; b: number; a: number }
+  pageChipBorderColor?: { r: number; g: number; b: number; a: number }
+  pageChipTextColor?: { r: number; g: number; b: number; a: number }
 }
 
 export const SHARED_PAGINATION_HEIGHT_DESKTOP = 52
-export const SHARED_PAGINATION_HEIGHT_MOBILE = 64
+export const SHARED_PAGINATION_HEIGHT_MOBILE = 78
 
 export const SharedPaginationBar = ({
   id = 'shared-pagination',
@@ -38,6 +49,16 @@ export const SharedPaginationBar = ({
   mode = 'auto',
   marginTop = 0,
   hideIfSinglePage = false,
+  buttonTextureSrc = PAGE_BUTTON_IMG,
+  buttonDisabledTextureSrc = PAGE_BUTTON_DISABLED_IMG,
+  buttonAspect = PAGE_BUTTON_ASPECT,
+  buttonLabelTopOffset = 0,
+  pageTextTopOffset = 0,
+  buttonLabelColor = PAGE_TEXT_ACTIVE,
+  buttonLabelDisabledColor = PAGE_TEXT_DISABLED,
+  pageChipBgColor = PAGE_CHIP_BG,
+  pageChipBorderColor = PAGE_CHIP_BORDER,
+  pageChipTextColor = PAGE_CHIP_TEXT,
 }: SharedPaginationBarProps) => {
   if (hideIfSinglePage && lastPage <= 0) return null
 
@@ -45,11 +66,13 @@ export const SharedPaginationBar = ({
   const canPrev = page > 0
   const canNext = page < lastPage
   const rowHeight = mobile ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
-  const buttonWidth = mobile ? 184 : 150
-  const buttonHeight = Math.round(buttonWidth / PAGE_BUTTON_ASPECT)
-  const buttonGap = mobile ? 18 : 14
-  const pageWidth = mobile ? 110 : 92
-  const pageHeight = mobile ? 42 : 34
+  const buttonWidth = mobile ? 214 : 150
+  const buttonHeight = Math.round(buttonWidth / buttonAspect)
+  const buttonTouchWidth = mobile ? buttonWidth + 56 : buttonWidth
+  const buttonTouchHeight = mobile ? buttonHeight + 18 : buttonHeight
+  const buttonGap = mobile ? 14 : 14
+  const pageWidth = mobile ? 118 : 92
+  const pageHeight = mobile ? 44 : 34
   const pageRadius = mobile ? 18 : 14
   const pageBorder = mobile ? 3 : 2
   const labelFont = mobile ? 21 : 17
@@ -58,6 +81,20 @@ export const SharedPaginationBar = ({
   const nextKey = `${id}_next`
   const prevScale = getZoomScale(prevKey)
   const nextScale = getZoomScale(nextKey)
+  const runPrev = canPrev ? () => {
+    if (isZooming(prevKey)) return
+    playSound('pagination')
+    playSound('buttonclick')
+    triggerCardZoom(prevKey)
+    setTimeout(onPrev, 290)
+  } : undefined
+  const runNext = canNext ? () => {
+    if (isZooming(nextKey)) return
+    playSound('pagination')
+    playSound('buttonclick')
+    triggerCardZoom(nextKey)
+    setTimeout(onNext, 290)
+  } : undefined
 
   return (
     <UiEntity
@@ -73,31 +110,41 @@ export const SharedPaginationBar = ({
     >
       <UiEntity
         uiTransform={{
-          width: Math.round(buttonWidth * prevScale),
-          height: Math.round(buttonHeight * prevScale),
+          width: Math.round(buttonTouchWidth * prevScale),
+          height: Math.round(buttonTouchHeight * prevScale),
           alignItems: 'center',
           justifyContent: 'center',
           margin: { right: buttonGap },
+          pointerFilter: 'block',
         }}
-        uiBackground={{
-          texture: { src: canPrev ? PAGE_BUTTON_IMG : PAGE_BUTTON_DISABLED_IMG, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-        }}
-        onMouseDown={canPrev ? () => {
-          if (isZooming(prevKey)) return
-          playSound('pagination')
-          playSound('buttonclick')
-          triggerCardZoom(prevKey)
-          setTimeout(onPrev, 290)
-        } : undefined}
+        uiBackground={mobile ? { color: PAGE_TOUCH_CAPTURE } : undefined}
+        onMouseDown={runPrev}
       >
-        <Label
-          value="<b>Prev</b>"
-          fontSize={labelFont}
-          color={canPrev ? PAGE_TEXT_ACTIVE : PAGE_TEXT_DISABLED}
-          textAlign="middle-center"
-          uiTransform={{ width: '100%', margin: { bottom: mobile ? 1 : 0 } }}
-        />
+        <UiEntity
+          uiTransform={{
+            width: Math.round(buttonWidth * prevScale),
+            height: Math.round(buttonHeight * prevScale),
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          uiBackground={{
+            texture: { src: canPrev ? buttonTextureSrc : buttonDisabledTextureSrc, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+          }}
+        >
+          <Label
+            value="<b>Prev</b>"
+            fontSize={labelFont}
+            color={canPrev ? buttonLabelColor : buttonLabelDisabledColor}
+            textAlign="middle-center"
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: buttonLabelTopOffset, left: 0 },
+              width: Math.round(buttonWidth * prevScale),
+              height: Math.round(buttonHeight * prevScale),
+            }}
+          />
+        </UiEntity>
       </UiEntity>
 
       <UiEntity
@@ -108,48 +155,91 @@ export const SharedPaginationBar = ({
           justifyContent: 'center',
           borderRadius: pageRadius,
           borderWidth: pageBorder,
-          borderColor: PAGE_CHIP_BORDER,
+          borderColor: pageChipBorderColor,
           margin: { top: mobile ? 1 : 0 },
         }}
-        uiBackground={{ color: PAGE_CHIP_BG }}
+        uiBackground={{ color: pageChipBgColor }}
       >
         <Label
           value={`<b>${page + 1}</b> / ${lastPage + 1}`}
           fontSize={pageFont}
-          color={PAGE_CHIP_TEXT}
+          color={pageChipTextColor}
           textAlign="middle-center"
-          uiTransform={{ width: '100%' }}
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: pageTextTopOffset, left: 0 },
+            width: pageWidth,
+            height: pageHeight,
+          }}
         />
       </UiEntity>
 
       <UiEntity
         uiTransform={{
-          width: Math.round(buttonWidth * nextScale),
-          height: Math.round(buttonHeight * nextScale),
+          width: Math.round(buttonTouchWidth * nextScale),
+          height: Math.round(buttonTouchHeight * nextScale),
           alignItems: 'center',
           justifyContent: 'center',
           margin: { left: buttonGap },
+          pointerFilter: 'block',
         }}
-        uiBackground={{
-          texture: { src: canNext ? PAGE_BUTTON_IMG : PAGE_BUTTON_DISABLED_IMG, wrapMode: 'clamp' },
-          textureMode: 'stretch',
-        }}
-        onMouseDown={canNext ? () => {
-          if (isZooming(nextKey)) return
-          playSound('pagination')
-          playSound('buttonclick')
-          triggerCardZoom(nextKey)
-          setTimeout(onNext, 290)
-        } : undefined}
+        uiBackground={mobile ? { color: PAGE_TOUCH_CAPTURE } : undefined}
+        onMouseDown={runNext}
       >
-        <Label
-          value="<b>Next</b>"
-          fontSize={labelFont}
-          color={canNext ? PAGE_TEXT_ACTIVE : PAGE_TEXT_DISABLED}
-          textAlign="middle-center"
-          uiTransform={{ width: '100%', margin: { bottom: mobile ? 1 : 0 } }}
-        />
+        <UiEntity
+          uiTransform={{
+            width: Math.round(buttonWidth * nextScale),
+            height: Math.round(buttonHeight * nextScale),
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+          uiBackground={{
+            texture: { src: canNext ? buttonTextureSrc : buttonDisabledTextureSrc, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+          }}
+        >
+          <Label
+            value="<b>Next</b>"
+            fontSize={labelFont}
+            color={canNext ? buttonLabelColor : buttonLabelDisabledColor}
+            textAlign="middle-center"
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: buttonLabelTopOffset, left: 0 },
+              width: Math.round(buttonWidth * nextScale),
+              height: Math.round(buttonHeight * nextScale),
+            }}
+          />
+        </UiEntity>
       </UiEntity>
+
+      {mobile && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { left: 0, top: 0 },
+            width: '43%',
+            height: '100%',
+            pointerFilter: 'block',
+          }}
+          uiBackground={{ color: PAGE_TOUCH_CAPTURE }}
+          onMouseDown={runPrev}
+        />
+      )}
+
+      {mobile && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { right: 0, top: 0 },
+            width: '43%',
+            height: '100%',
+            pointerFilter: 'block',
+          }}
+          uiBackground={{ color: PAGE_TOUCH_CAPTURE }}
+          onMouseDown={runNext}
+        />
+      )}
     </UiEntity>
   )
 }

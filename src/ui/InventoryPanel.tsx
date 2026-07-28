@@ -5,7 +5,6 @@ import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA } from '../data/fertilizerData'
 import { CROP_HARVEST_IMAGES, CROP_SEED_IMAGES, ORGANIC_WASTE_ICON } from '../data/imagePaths'
 import { playerState } from '../game/gameState'
 import { playSound } from '../systems/sfxSystem'
-import { C } from './PanelShell'
 import { RevampPanelFrame } from './RevampPanel'
 import {
   SHARED_PAGINATION_HEIGHT_DESKTOP,
@@ -20,11 +19,10 @@ const ss = (v: number) => Math.round(v * UI_SCALE)
 const INVENTORY_TAB_SELECTED_IMG = 'assets/images/revamp/selected.png'
 const INVENTORY_TAB_IDLE_IMG = 'assets/images/revamp/notselected.png'
 const INVENTORY_CARD_IMG = 'assets/images/revamp/card.png'
-const INVENTORY_COUNT_BUTTON_IMG = 'assets/images/revamp/mini-button.png'
-const INVENTORY_MINI_BUTTON_ASPECT = 196 / 52
 const INVENTORY_CARD_ASPECT = 236 / 326
 
 const INVENTORY_CARD_TEXT = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const INVENTORY_COUNT_TEXT = { r: 0.45, g: 0.27, b: 0.11, a: 1 }
 const INVENTORY_CARD_TEXT_MUTE = { r: 0.55, g: 0.40, b: 0.24, a: 1 }
 const INVENTORY_EMPTY_TEXT = { r: 0.96, g: 0.88, b: 0.70, a: 0.88 }
 const INVENTORY_TAB_TEXT_IDLE = { r: 0.34, g: 0.20, b: 0.10, a: 1 }
@@ -35,25 +33,26 @@ const INVENTORY_TAB_ASPECT = 151 / 68
 const INVENTORY_TAB_H = Math.round(INVENTORY_TAB_W / INVENTORY_TAB_ASPECT)
 const INVENTORY_TAB_GAP = ss(14)
 
-const INVENTORY_CARD_W = 142
-const INVENTORY_CARD_W_MOBILE = 136
-const INVENTORY_CARD_PAD_TOP = 18
-const INVENTORY_CARD_PAD_BOTTOM = 16
+const INVENTORY_CARD_W = 156
+const INVENTORY_CARD_W_MOBILE = 142
+const INVENTORY_CARD_PAD_TOP = 14
+const INVENTORY_CARD_PAD_BOTTOM = 12
 const INVENTORY_CARD_PAD_SIDE = 14
-const INVENTORY_CARD_ICON = 74
-const INVENTORY_CARD_ICON_MOBILE = 78
-const INVENTORY_CARD_TITLE_H = 44
-const INVENTORY_CARD_TITLE_H_MOBILE = 50
-const INVENTORY_CARD_SLOT_PAD_X = 12
-const INVENTORY_CARD_ROW_GAP = 8
+const INVENTORY_CARD_ICON = 92
+const INVENTORY_CARD_ICON_MOBILE = 84
+const INVENTORY_CARD_ICON_MARGIN = 8
+const INVENTORY_CARD_TITLE_H = 42
+const INVENTORY_CARD_TITLE_H_MOBILE = 44
+const INVENTORY_CARD_COUNT_H = 26
+const INVENTORY_CARD_COUNT_H_MOBILE = 28
+const INVENTORY_CARD_SLOT_PAD_X = 4
+const INVENTORY_CARD_ROW_GAP = 2
 const INVENTORY_CARD_BG_SCALE = 1.03
-const INVENTORY_CARD_BG_SCALE_MOBILE = 0.97
+const INVENTORY_CARD_BG_SCALE_MOBILE = 1
 const INVENTORY_COLUMNS_DESKTOP = 5
 const INVENTORY_COLUMNS_MOBILE = 3
 const INVENTORY_ITEMS_PER_PAGE_DESKTOP = 10
 const INVENTORY_ITEMS_PER_PAGE_MOBILE = 6
-const INVENTORY_COUNT_BUTTON_W = 114
-const INVENTORY_COUNT_BUTTON_W_MOBILE = 120
 
 type InventoryTabValue = 'seeds' | 'harvested' | 'other'
 
@@ -62,7 +61,6 @@ type InventoryCardItem = {
   title: string
   imageSrc: string
   count: number
-  countColor: { r: number; g: number; b: number; a: number }
 }
 
 const inventoryTab = { value: 'seeds' as InventoryTabValue }
@@ -90,25 +88,21 @@ function getInventoryCardSlotWidth(): number {
   return getInventoryCardVisualWidth() + INVENTORY_CARD_SLOT_PAD_X
 }
 
-function getInventoryCountButtonWidth(): number {
-  return isMobile() ? INVENTORY_COUNT_BUTTON_W_MOBILE : INVENTORY_COUNT_BUTTON_W
-}
-
 function getInventoryTitleFont(title: string): number {
   const mobile = isMobile()
-  if (title.length <= 10) return mobile ? 22 : 21
-  if (title.length <= 14) return mobile ? 20 : 19
-  return mobile ? 18 : 17
+  if (title.length <= 10) return mobile ? 22 : 22
+  if (title.length <= 14) return mobile ? 20 : 20
+  if (title.length <= 18) return mobile ? 18 : 18
+  return mobile ? 16 : 16
 }
 
-const InventoryCard = ({ title, imageSrc, count, countColor }: InventoryCardItem) => {
+const InventoryCard = ({ title, imageSrc, count }: InventoryCardItem) => {
   const mobile = isMobile()
   const cardWidth = getInventoryCardVisualWidth()
   const cardHeight = getInventoryCardHeight()
   const iconSize = mobile ? INVENTORY_CARD_ICON_MOBILE : INVENTORY_CARD_ICON
   const titleHeight = mobile ? INVENTORY_CARD_TITLE_H_MOBILE : INVENTORY_CARD_TITLE_H
-  const countButtonWidth = getInventoryCountButtonWidth()
-  const countButtonHeight = Math.round(countButtonWidth / INVENTORY_MINI_BUTTON_ASPECT)
+  const countHeight = mobile ? INVENTORY_CARD_COUNT_H_MOBILE : INVENTORY_CARD_COUNT_H
 
   return (
     <UiEntity
@@ -123,6 +117,7 @@ const InventoryCard = ({ title, imageSrc, count, countColor }: InventoryCardItem
         },
         flexDirection: 'column',
         alignItems: 'center',
+        justifyContent: 'center',
       }}
       uiBackground={{
         texture: { src: INVENTORY_CARD_IMG, wrapMode: 'clamp' },
@@ -133,7 +128,7 @@ const InventoryCard = ({ title, imageSrc, count, countColor }: InventoryCardItem
         uiTransform={{
           width: iconSize,
           height: iconSize,
-          margin: { bottom: 10 },
+          margin: { bottom: INVENTORY_CARD_ICON_MARGIN },
           flexShrink: 0,
         }}
         uiBackground={{
@@ -144,7 +139,7 @@ const InventoryCard = ({ title, imageSrc, count, countColor }: InventoryCardItem
 
       <UiEntity
         uiTransform={{
-          width: cardWidth - 22,
+          width: cardWidth - 20,
           height: titleHeight,
           alignItems: 'center',
           justifyContent: 'center',
@@ -159,27 +154,21 @@ const InventoryCard = ({ title, imageSrc, count, countColor }: InventoryCardItem
         />
       </UiEntity>
 
-      <UiEntity uiTransform={{ flex: 1 }} />
-
       <UiEntity
         uiTransform={{
-          width: countButtonWidth,
-          height: countButtonHeight,
+          width: cardWidth - 28,
+          height: countHeight,
           alignItems: 'center',
           justifyContent: 'center',
-          margin: { top: 6 },
-        }}
-        uiBackground={{
-          texture: { src: INVENTORY_COUNT_BUTTON_IMG, wrapMode: 'clamp' },
-          textureMode: 'stretch',
+          margin: { top: 4 },
         }}
       >
         <Label
           value={`<b>x${count}</b>`}
-          fontSize={mobile ? 19 : 18}
-          color={countColor}
+          fontSize={mobile ? 20 : 18}
+          color={INVENTORY_COUNT_TEXT}
           textAlign="middle-center"
-          uiTransform={{ width: '100%', margin: { bottom: 1 } }}
+          uiTransform={{ width: '100%', height: '100%' }}
         />
       </UiEntity>
     </UiEntity>
@@ -352,7 +341,6 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
         title: CROP_NAMES[crop],
         imageSrc: CROP_SEED_IMAGES[crop],
         count: playerState.seeds.get(crop) ?? 0,
-        countColor: C.green,
       }))
   }
 
@@ -364,7 +352,6 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
         title: CROP_NAMES[crop],
         imageSrc: CROP_HARVEST_IMAGES[crop],
         count: playerState.harvested.get(crop) ?? 0,
-        countColor: C.orange,
       }))
   }
 
@@ -375,7 +362,6 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
       title: 'Organic Waste',
       imageSrc: ORGANIC_WASTE_ICON,
       count: playerState.organicWaste,
-      countColor: INVENTORY_CARD_TEXT_MUTE,
     })
   }
   for (const fertilizer of ALL_FERTILIZER_TYPES) {
@@ -387,7 +373,6 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
       title: def.name,
       imageSrc: def.iconSrc,
       count,
-      countColor: C.gold,
     })
   }
   return otherItems

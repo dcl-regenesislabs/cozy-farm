@@ -1,7 +1,7 @@
 import { isMobile } from '@dcl/sdk/platform'
 import { XP_TABLE } from '../shared/leveling'
 
-export const MOBILE_UI_DEBUG = true
+export const MOBILE_UI_DEBUG = false
 export const MOBILE_DEBUG_LEVEL = XP_TABLE.length
 export const MOBILE_DEBUG_COINS = 1_000_000
 
