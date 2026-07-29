@@ -343,19 +343,6 @@ export const TopHud = () => {
                 uiBackground={{ avatarTexture: { userId: playerState.userId }, textureMode: 'stretch' }}
               />
             )}
-            <UiEntity
-              uiTransform={{
-                positionType: 'absolute',
-                position: { bottom: -2, right: -4 },
-                width: s(40),
-                height: s(40),
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-              uiBackground={{ color: { r: 0.92, g: 0.77, b: 0.22, a: 1 } }}
-            >
-              <Label value={`${displayLevel}`} fontSize={s(18)} color={HUD_BROWN} textAlign="middle-center" />
-            </UiEntity>
             {LEVEL_REWARDS.some((reward) => displayLevel >= reward.level && !playerState.claimedRewards.includes(reward.level)) && (
               <BadgeDot top={-3} right={-3} size={s(16)} />
             )}
