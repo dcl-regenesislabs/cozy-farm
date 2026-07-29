@@ -26,6 +26,7 @@ import { PigPenPanel } from './ui/PigPenPanel'
 import { FeedBowlMenu } from './ui/FeedBowlMenu'
 import { VisitHud } from './ui/VisitHud'
 import { LoadingOverlay } from './ui/LoadingOverlay'
+import { UiDebugShowcase, UI_DEBUG_SHOWCASE_ENABLED } from './ui/UiDebugShowcase'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
 function applyUiRenderer(): void {
@@ -43,6 +44,10 @@ export function setupUi() {
 }
 
 const MainUi = () => {
+  if (UI_DEBUG_SHOWCASE_ENABLED) {
+    return <UiDebugShowcase />
+  }
+
   const uiUnlocked = !playerState.loadingOverlayActive
   const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
   const showOwnFarmUi = uiUnlocked && playerState.viewingFarm === null && playerState.farmReady

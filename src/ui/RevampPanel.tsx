@@ -1,4 +1,4 @@
-import ReactEcs, { UiEntity } from '@dcl/sdk/react-ecs'
+import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { playSound } from '../systems/sfxSystem'
 
@@ -115,6 +115,49 @@ export const RevampTitlePlaque = ({ name, panelWidth, scale = 1 }: { name: Revam
   )
 }
 
+export const RevampTextPlaque = ({
+  title,
+  panelWidth,
+  scale = 1,
+  fontSize,
+}: {
+  title: string
+  panelWidth: number
+  scale?: number
+  fontSize?: number
+}) => {
+  const plaqueW = Math.round(PLAQUE_W * scale)
+  const plaqueH = Math.round(PLAQUE_H * scale)
+  const plaqueTop = Math.round(PLAQUE_TOP * scale)
+  const textFontSize = fontSize ?? Math.round(30 * scale)
+
+  return (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: { left: Math.round((panelWidth - plaqueW) / 2), top: plaqueTop },
+        width: plaqueW,
+        height: plaqueH,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+      uiBackground={{
+        texture: { src: REVAMP_NAMES_IMG, wrapMode: 'clamp', filterMode: 'tri-linear' },
+        textureMode: 'stretch',
+        uvs: atlasUvs(TILE_RECT, NAMES_ATLAS_SIZE),
+      }}
+    >
+      <Label
+        value={`<b>${title}</b>`}
+        fontSize={textFontSize}
+        color={{ r: 1, g: 0.88, b: 0.5, a: 1 }}
+        textAlign="middle-center"
+        uiTransform={{ width: plaqueW - Math.round(36 * scale), height: plaqueH }}
+      />
+    </UiEntity>
+  )
+}
+
 export const RevampCloseButton = ({
   onClose,
   right,
@@ -161,13 +204,14 @@ export const RevampCloseButton = ({
 }
 
 type Props = {
-  name: RevampPanelName
+  name?: RevampPanelName
+  titleText?: string
   onClose: () => void
   contentTop?: number
   children?: ReactEcs.JSX.ReactNode
 }
 
-export const RevampPanelFrame = ({ name, onClose, contentTop = REVAMP_CONTENT_TOP, children }: Props) => {
+export const RevampPanelFrame = ({ name, titleText, onClose, contentTop = REVAMP_CONTENT_TOP, children }: Props) => {
   const contentH = REVAMP_PANEL_H - contentTop - REVAMP_CONTENT_BOTTOM
 
   return (
@@ -201,7 +245,7 @@ export const RevampPanelFrame = ({ name, onClose, contentTop = REVAMP_CONTENT_TO
         }}
         uiBackground={{ texture: { src: REVAMP_BG_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       >
-        <RevampTitlePlaque name={name} panelWidth={REVAMP_PANEL_W} />
+        {name ? <RevampTitlePlaque name={name} panelWidth={REVAMP_PANEL_W} /> : titleText ? <RevampTextPlaque title={titleText} panelWidth={REVAMP_PANEL_W} /> : null}
 
         {/* Content area */}
         <UiEntity

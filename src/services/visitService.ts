@@ -21,6 +21,10 @@ export function getVisitedPayload(): FarmStatePayload | null {
   return visitedPayload
 }
 
+export function setVisitedPayloadForDebug(payload: FarmStatePayload | null): void {
+  visitedPayload = payload
+}
+
 // UI callbacks — wired by UI components that need visit events
 export const visitUiCallbacks = {
   onOtherFarmError: null as ((address: string) => void) | null,
@@ -64,7 +68,16 @@ export function enterVisitMode(address: string, payload: FarmStatePayload): void
 }
 
 export function exitVisitMode(): void {
-  if (!ownPlotSnapshot) return
+  if (!ownPlotSnapshot) {
+    playerState.viewingFarm = null
+    playerState.viewingFarmDisplayName = ''
+    playerState.visitorSessionWaterCount = 0
+    pendingVisitAddress = null
+    visitedPayload = null
+    clearVisitSessionWater()
+    refreshAllPlotHoverTexts()
+    return
+  }
 
   // Clear visited crop models
   for (const entity of getSoilEntities()) {
