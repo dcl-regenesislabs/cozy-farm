@@ -52,7 +52,7 @@ import {
 const UI_SCALE = 0.9
 const ss = (value: number) => Math.round(value * UI_SCALE)
 
-const QUEST_DEBUG = true
+const QUEST_DEBUG = false
 const MOBILE_PAGINATION_BUTTON_IMG = 'assets/images/revamp/Type=Secondary, State=Default.png'
 const MOBILE_PAGINATION_BUTTON_ASPECT = 366 / 84
 const QUEST_MOBILE_FRAME_SCALE = 1.1
