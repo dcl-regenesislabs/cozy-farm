@@ -17,6 +17,8 @@ import {
 } from '../data/imagePaths'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
+const BTN_PRIMARY_IMG = 'assets/images/revamp/Type=Primary, State=Focused.png'
+const BTN_SECONDARY_IMG = 'assets/images/revamp/Type=Secondary, State=Default.png'
 
 const ZOOM_KEY       = 'dialog_btn_zoom'
 const ZOOM_DURATION  = 290
@@ -61,9 +63,8 @@ const TEXT_BROWN       = { r: 0.28, g: 0.15, b: 0.04, a: 1 }
 const TEXT_BROWN_MUTE  = { r: 0.48, g: 0.30, b: 0.10, a: 1 }
 const NAME_OUTLINE     = { r: 0.15, g: 0.07, b: 0.02, a: 1 }
 const GOLD_OUTLINE     = { r: 0.34, g: 0.18, b: 0.03, a: 1 }
-const BTN_BG_PRIMARY   = { r: 0.45, g: 0.26, b: 0.06, a: 1 }
-const BTN_BG_SECONDARY = { r: 0.62, g: 0.42, b: 0.16, a: 1 }
-const BTN_TEXT         = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
+const BTN_TEXT_PRIMARY   = { r: 1, g: 1, b: 1, a: 1 }
+const BTN_TEXT_SECONDARY = { r: 0.34, g: 0.20, b: 0.10, a: 1 }
 
 const OUTLINE_OFFSETS = [
   { left: -1, top: 0 }, { left: 1, top: 0 },
@@ -123,20 +124,49 @@ function DialogButton(props: {
   zoomScale?: number
   onClick: () => void
 }) {
+  const mobile = isMobile()
   const w = Math.round(props.width * (props.zoomScale ?? 1))
   const h = Math.round(props.height * (props.zoomScale ?? 1))
+  const hitboxW = mobile ? w + 44 : w
+  const hitboxH = mobile ? h + 18 : h
   return (
     <UiEntity
-      uiTransform={{ width: w, height: h, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
-      uiBackground={{ color: props.primary ? BTN_BG_PRIMARY : BTN_BG_SECONDARY }}
-      onMouseDown={props.onClick}
+      uiTransform={{ width: hitboxW, height: hitboxH, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
     >
-      <Label
-        value={props.label}
-        fontSize={props.fontSize}
-        color={BTN_TEXT}
-        textAlign="middle-center"
-        uiTransform={{ width: w, height: h }}
+      <UiEntity
+        uiTransform={{ width: w, height: h, alignItems: 'center', justifyContent: 'center', borderRadius: 8 }}
+        uiBackground={{
+          texture: {
+            src: props.primary ? BTN_PRIMARY_IMG : BTN_SECONDARY_IMG,
+            wrapMode: 'clamp',
+          },
+          textureMode: 'stretch',
+        }}
+      >
+        <Label
+          value={`<b>${props.label}</b>`}
+          fontSize={props.fontSize}
+          color={props.primary ? BTN_TEXT_PRIMARY : BTN_TEXT_SECONDARY}
+          textAlign="middle-center"
+          textWrap="nowrap"
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: -1, left: 0 },
+            width: w,
+            height: h,
+          }}
+        />
+      </UiEntity>
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { left: 0, top: 0 },
+          width: hitboxW,
+          height: hitboxH,
+          pointerFilter: 'block',
+        }}
+        uiBackground={{ color: { r: 0, g: 0, b: 0, a: 0.001 } }}
+        onMouseDown={props.onClick}
       />
     </UiEntity>
   )

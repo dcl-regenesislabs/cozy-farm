@@ -35,6 +35,8 @@ type SharedPaginationBarProps = {
   pageChipBgColor?: { r: number; g: number; b: number; a: number }
   pageChipBorderColor?: { r: number; g: number; b: number; a: number }
   pageChipTextColor?: { r: number; g: number; b: number; a: number }
+  labelFontSize?: number
+  pageFontSize?: number
 }
 
 export const SHARED_PAGINATION_HEIGHT_DESKTOP = 52
@@ -59,6 +61,8 @@ export const SharedPaginationBar = ({
   pageChipBgColor = PAGE_CHIP_BG,
   pageChipBorderColor = PAGE_CHIP_BORDER,
   pageChipTextColor = PAGE_CHIP_TEXT,
+  labelFontSize,
+  pageFontSize,
 }: SharedPaginationBarProps) => {
   if (hideIfSinglePage && lastPage <= 0) return null
 
@@ -75,8 +79,8 @@ export const SharedPaginationBar = ({
   const pageHeight = mobile ? 44 : 34
   const pageRadius = mobile ? 18 : 14
   const pageBorder = mobile ? 3 : 2
-  const labelFont = mobile ? 21 : 17
-  const pageFont = mobile ? 20 : 16
+  const labelFont = labelFontSize ?? (mobile ? 21 : 17)
+  const pageFont = pageFontSize ?? (mobile ? 20 : 16)
   const prevKey = `${id}_prev`
   const nextKey = `${id}_next`
   const prevScale = getZoomScale(prevKey)
