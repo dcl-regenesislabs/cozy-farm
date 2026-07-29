@@ -10,6 +10,7 @@ import { playSound } from '../systems/sfxSystem'
 import { triggerCardZoom, getZoomScale } from './cardZoomSystem'
 import { formatPlayerLabel } from '../utils/playerLabel'
 import { PanelShell, C } from './PanelShell'
+import { SharedPaginationBar } from './SharedPaginationBar'
 
 const state = {
   tab:          'directory' as 'directory' | 'mailbox',
@@ -277,49 +278,22 @@ const DirectoryTab = () => (
     )}
 
     {!state.loading && (
-      <UiEntity
-        uiTransform={{
-          width: '100%',
-          height: 60,
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          margin: { top: 8 },
-        }}
-      >
-        <UiEntity
-          uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { right: 20 } }}
-          uiBackground={{ color: state.page > 0 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
-          onMouseDown={state.page > 0 ? () => {
-            playSound('buttonclick')
+      <UiEntity uiTransform={{ width: '100%', margin: { top: 8 } }}>
+        <SharedPaginationBar
+          id="mailbox-directory"
+          page={state.page}
+          lastPage={Math.max(0, state.totalPages - 1)}
+          onPrev={() => {
             state.loading = true
             state.errorAddr = ''
             requestPlayerRegistry(state.page - 1)
-          } : undefined}
-        >
-          <Label value="<" fontSize={26} color={state.page > 0 ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
-
-        <Label
-          value={`${state.page + 1} / ${state.totalPages}`}
-          fontSize={24}
-          color={C.textMute}
-          textAlign="middle-center"
-          uiTransform={{ width: 110 }}
-        />
-
-        <UiEntity
-          uiTransform={{ width: 72, height: 48, alignItems: 'center', justifyContent: 'center', margin: { left: 20 } }}
-          uiBackground={{ color: state.page < state.totalPages - 1 ? { r: 0.25, g: 0.18, b: 0.08, a: 1 } : { r: 0.12, g: 0.10, b: 0.06, a: 1 } }}
-          onMouseDown={state.page < state.totalPages - 1 ? () => {
-            playSound('buttonclick')
+          }}
+          onNext={() => {
             state.loading = true
             state.errorAddr = ''
             requestPlayerRegistry(state.page + 1)
-          } : undefined}
-        >
-          <Label value=">" fontSize={26} color={state.page < state.totalPages - 1 ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
+          }}
+        />
       </UiEntity>
     )}
   </UiEntity>

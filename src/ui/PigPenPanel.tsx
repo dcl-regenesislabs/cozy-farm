@@ -11,27 +11,18 @@ import { breedPigs, harvestPig, purchaseBuilding } from '../systems/animalSystem
 import { playSound } from '../systems/sfxSystem'
 import { C } from './PanelShell'
 import type { PigData } from '../game/gameState'
+import {
+  RevampPanelFrame,
+  REVAMP_CONTENT_LEFT as CONTENT_LEFT,
+  REVAMP_CONTENT_RIGHT as CONTENT_RIGHT,
+  REVAMP_CONTENT_TOP as CONTENT_TOP,
+  REVAMP_CONTENT_BOTTOM as CONTENT_BOTTOM,
+  REVAMP_CONTENT_W as CONTENT_W,
+  REVAMP_CONTENT_H as CONTENT_H,
+} from './RevampPanel'
 
-// ─── Pig atlas frame — same layout as chicken_atlas ───────────────────────────
-const PIG_ATLAS       = 'assets/images/ui_loading/pig_atlas.png'
-const ATLAS_SIZE      = 1024
-const BG_RECT         = { x: 17, y: 13, w: 993, h: 682 } as const
-const UI_SCALE        = 0.8
-const ss              = (v: number) => Math.round(v * UI_SCALE)
-
-const PANEL_W          = ss(1290)
-const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(120)
-const CONTENT_LEFT     = ss(82)
-const CONTENT_RIGHT    = ss(34)
-const CONTENT_TOP      = ss(176)
-const CONTENT_BOTTOM   = ss(74)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
-const CLOSE_SIZE       = ss(74)
-const CLOSE_RIGHT      = ss(28)
-const CLOSE_TOP        = ss(16)
-const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
 // ─── Card colours ─────────────────────────────────────────────────────────────
 const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
@@ -56,13 +47,6 @@ const BAR_RADIUS  = 6
 type CardColor = { r: number; g: number; b: number; a: number }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
 
 function formatMs(ms: number): string {
   if (ms <= 0) return 'Ready!'
@@ -121,66 +105,9 @@ const PigPanelFrame = ({
   onClose: () => void
   children?: ReactEcs.JSX.ReactNode
 }) => (
-  <UiEntity
-    uiTransform={{
-      positionType: 'absolute',
-      position: { top: 0, left: 0 },
-      width: '100%',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      pointerFilter: 'none',
-    }}
-  >
-    <UiEntity
-      uiTransform={{
-        positionType: 'absolute',
-        position: { top: 0, left: 0 },
-        width: '100%',
-        height: '100%',
-        pointerFilter: 'block',
-      }}
-    />
-    <UiEntity
-      uiTransform={{
-        width: PANEL_W,
-        height: PANEL_H,
-        margin: { top: PANEL_TOP_MARGIN },
-        pointerFilter: 'block',
-      }}
-      uiBackground={{
-        texture: { src: PIG_ATLAS, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-        uvs: bgUvs(BG_RECT),
-      }}
-    >
-      {/* Content area */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-          width: CONTENT_W,
-          height: CONTENT_H,
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {children}
-      </UiEntity>
-
-      {/* Close button hotspot */}
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: isMobile() ? ss(90) : CLOSE_SIZE,
-          height: isMobile() ? ss(90) : CLOSE_SIZE,
-        }}
-        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-        onMouseDown={() => { playSound('buttonclick'); onClose() }}
-      />
-    </UiEntity>
-  </UiEntity>
+  <RevampPanelFrame name="pigPen" onClose={onClose}>
+    {children}
+  </RevampPanelFrame>
 )
 
 // ─── PigTile ──────────────────────────────────────────────────────────────────

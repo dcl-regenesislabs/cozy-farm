@@ -1,96 +1,383 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
-import { playerState } from '../game/gameState'
 import { ALL_CROP_TYPES, CROP_NAMES } from '../data/cropData'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA } from '../data/fertilizerData'
-import { CROP_SEED_IMAGES, CROP_HARVEST_IMAGES, ORGANIC_WASTE_ICON } from '../data/imagePaths'
+import { CROP_HARVEST_IMAGES, CROP_SEED_IMAGES, ORGANIC_WASTE_ICON } from '../data/imagePaths'
+import { playerState } from '../game/gameState'
 import { playSound } from '../systems/sfxSystem'
-import { C } from './PanelShell'
+import { RevampPanelFrame } from './RevampPanel'
+import {
+  SHARED_PAGINATION_HEIGHT_DESKTOP,
+  SHARED_PAGINATION_HEIGHT_MOBILE,
+  SharedPaginationBar,
+} from './SharedPaginationBar'
+import { lerpColor, setTabActive } from './tabFadeSystem'
 
-// ─── Atlas frame — swap src to inventory_atlas.png when available ─────────────
-const INV_ATLAS     = 'assets/images/ui_loading/inventory.png'
-const ATLAS_SIZE    = 1024
-const BG_RECT       = { x: 18, y: 14, w: 989, h: 676 } as const
-const UI_SCALE      = 0.8
-const ss            = (v: number) => Math.round(v * UI_SCALE)
+const UI_SCALE = 0.8
+const ss = (v: number) => Math.round(v * UI_SCALE)
 
-const PANEL_W          = ss(1290)
-const PANEL_H          = Math.round((PANEL_W * BG_RECT.h) / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(120)
-const CONTENT_LEFT     = ss(72)
-const CONTENT_RIGHT    = ss(72)
-const CONTENT_TOP      = ss(96)
-const CONTENT_BOTTOM   = ss(68)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
-const CLOSE_SIZE       = ss(100)
-const CLOSE_RIGHT      = ss(10)
-const CLOSE_TOP        = ss(10)
-const CLOSE_BTN_IMG    = 'assets/images/ui_loading/closebutton.png'
+const INVENTORY_TAB_SELECTED_IMG = 'assets/images/revamp/selected.png'
+const INVENTORY_TAB_IDLE_IMG = 'assets/images/revamp/notselected.png'
+const INVENTORY_CARD_IMG = 'assets/images/revamp/card.png'
+const INVENTORY_CARD_ASPECT = 236 / 326
 
-// ─── Card colours ─────────────────────────────────────────────────────────────
-const CARD_BORDER     = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
-const CARD_FILL       = { r: 0.95, g: 0.88, b: 0.70, a: 0.55 }
-const CARD_TEXT       = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
-const CARD_TEXT_MUTE  = { r: 0.45, g: 0.28, b: 0.10, a: 1 }
-const FRAME_THICKNESS = 4
+const INVENTORY_CARD_TEXT = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const INVENTORY_COUNT_TEXT = { r: 0.45, g: 0.27, b: 0.11, a: 1 }
+const INVENTORY_CARD_TEXT_MUTE = { r: 0.55, g: 0.40, b: 0.24, a: 1 }
+const INVENTORY_EMPTY_TEXT = { r: 0.96, g: 0.88, b: 0.70, a: 0.88 }
+const INVENTORY_TAB_TEXT_IDLE = { r: 0.34, g: 0.20, b: 0.10, a: 1 }
+const INVENTORY_TAB_TEXT_SELECTED = { r: 1, g: 1, b: 1, a: 1 }
 
-// ─── Card dimensions ─────────────────────────────────────────────────────────
-const CARD_W      = ss(180)
-const CARD_H      = ss(215)
-const CARD_MARGIN = ss(12)
-const CARD_ICON   = ss(96)
-const CARD_PAD_V  = ss(12)
-const CARD_PAD_H  = ss(10)
+const INVENTORY_TAB_W = 160
+const INVENTORY_TAB_ASPECT = 151 / 68
+const INVENTORY_TAB_H = Math.round(INVENTORY_TAB_W / INVENTORY_TAB_ASPECT)
+const INVENTORY_TAB_GAP = ss(14)
 
-// ─── Tab ─────────────────────────────────────────────────────────────────────
-const TAB_H   = ss(44)
-const TAB_W   = ss(210)
-const TAB_GAP = ss(10)
+const INVENTORY_CARD_W = 156
+const INVENTORY_CARD_W_MOBILE = 142
+const INVENTORY_CARD_PAD_TOP = 14
+const INVENTORY_CARD_PAD_BOTTOM = 12
+const INVENTORY_CARD_PAD_SIDE = 14
+const INVENTORY_CARD_ICON = 92
+const INVENTORY_CARD_ICON_MOBILE = 84
+const INVENTORY_CARD_ICON_MARGIN = 8
+const INVENTORY_CARD_TITLE_H = 42
+const INVENTORY_CARD_TITLE_H_MOBILE = 44
+const INVENTORY_CARD_COUNT_H = 26
+const INVENTORY_CARD_COUNT_H_MOBILE = 28
+const INVENTORY_CARD_SLOT_PAD_X = 4
+const INVENTORY_CARD_ROW_GAP = 2
+const INVENTORY_CARD_BG_SCALE = 1.03
+const INVENTORY_CARD_BG_SCALE_MOBILE = 1
+const INVENTORY_COLUMNS_DESKTOP = 5
+const INVENTORY_COLUMNS_MOBILE = 3
+const INVENTORY_ITEMS_PER_PAGE_DESKTOP = 10
+const INVENTORY_ITEMS_PER_PAGE_MOBILE = 6
 
-const invTab = { value: 'seeds' as 'seeds' | 'harvested' | 'other' }
+type InventoryTabValue = 'seeds' | 'harvested' | 'other'
 
-type CardColor = { r: number; g: number; b: number; a: number }
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
+type InventoryCardItem = {
+  key: string
+  title: string
+  imageSrc: string
+  count: number
 }
 
-// ─── InvCard ─────────────────────────────────────────────────────────────────
-const InvCard = ({
-  borderColor = CARD_BORDER,
-  children,
-}: {
-  key?: string | number
-  borderColor?: CardColor
-  children?: ReactEcs.JSX.ReactNode
-}) => {
+const inventoryTab = { value: 'seeds' as InventoryTabValue }
+const inventoryPage: Record<InventoryTabValue, number> = {
+  seeds: 0,
+  harvested: 0,
+  other: 0,
+}
+
+function getInventoryCardWidth(): number {
+  return isMobile() ? INVENTORY_CARD_W_MOBILE : INVENTORY_CARD_W
+}
+
+function getInventoryCardVisualWidth(): number {
+  const width = getInventoryCardWidth()
+  const scale = isMobile() ? INVENTORY_CARD_BG_SCALE_MOBILE : INVENTORY_CARD_BG_SCALE
+  return Math.round(width * scale)
+}
+
+function getInventoryCardHeight(): number {
+  return Math.round(getInventoryCardVisualWidth() / INVENTORY_CARD_ASPECT)
+}
+
+function getInventoryCardSlotWidth(): number {
+  return getInventoryCardVisualWidth() + INVENTORY_CARD_SLOT_PAD_X
+}
+
+function getInventoryTitleFont(title: string): number {
   const mobile = isMobile()
+  if (title.length <= 10) return mobile ? 22 : 22
+  if (title.length <= 14) return mobile ? 20 : 20
+  if (title.length <= 18) return mobile ? 18 : 18
+  return mobile ? 16 : 16
+}
+
+const InventoryCard = ({ title, imageSrc, count }: InventoryCardItem) => {
+  const mobile = isMobile()
+  const cardWidth = getInventoryCardVisualWidth()
+  const cardHeight = getInventoryCardHeight()
+  const iconSize = mobile ? INVENTORY_CARD_ICON_MOBILE : INVENTORY_CARD_ICON
+  const titleHeight = mobile ? INVENTORY_CARD_TITLE_H_MOBILE : INVENTORY_CARD_TITLE_H
+  const countHeight = mobile ? INVENTORY_CARD_COUNT_H_MOBILE : INVENTORY_CARD_COUNT_H
+
   return (
     <UiEntity
       uiTransform={{
+        width: cardWidth,
+        height: cardHeight,
+        padding: {
+          top: INVENTORY_CARD_PAD_TOP,
+          bottom: INVENTORY_CARD_PAD_BOTTOM,
+          left: INVENTORY_CARD_PAD_SIDE,
+          right: INVENTORY_CARD_PAD_SIDE,
+        },
         flexDirection: 'column',
         alignItems: 'center',
-        width: CARD_W,
-        height: CARD_H,
-        margin: { right: CARD_MARGIN, bottom: CARD_MARGIN },
-        padding: { top: CARD_PAD_V, bottom: CARD_PAD_V, left: CARD_PAD_H, right: CARD_PAD_H },
-        borderWidth: 3,
-        borderColor,
-        borderRadius: 12,
+        justifyContent: 'center',
       }}
-      uiBackground={{ color: CARD_FILL }}
+      uiBackground={{
+        texture: { src: INVENTORY_CARD_IMG, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+      }}
     >
-      {children}
+      <UiEntity
+        uiTransform={{
+          width: iconSize,
+          height: iconSize,
+          margin: { bottom: INVENTORY_CARD_ICON_MARGIN },
+          flexShrink: 0,
+        }}
+        uiBackground={{
+          texture: { src: imageSrc, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+        }}
+      />
+
+      <UiEntity
+        uiTransform={{
+          width: cardWidth - 20,
+          height: titleHeight,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Label
+          value={`<b>${title}</b>`}
+          fontSize={getInventoryTitleFont(title)}
+          color={INVENTORY_CARD_TEXT}
+          textAlign="middle-center"
+          uiTransform={{ width: '100%', height: '100%' }}
+        />
+      </UiEntity>
+
+      <UiEntity
+        uiTransform={{
+          width: cardWidth - 28,
+          height: countHeight,
+          alignItems: 'center',
+          justifyContent: 'center',
+          margin: { top: 4 },
+        }}
+      >
+        <Label
+          value={`<b>x${count}</b>`}
+          fontSize={mobile ? 20 : 18}
+          color={INVENTORY_COUNT_TEXT}
+          textAlign="middle-center"
+          uiTransform={{ width: '100%', height: '100%' }}
+        />
+      </UiEntity>
     </UiEntity>
   )
 }
 
-// ─── InventoryPanelFrame ──────────────────────────────────────────────────────
+const InventoryTabChip = ({
+  tabKey,
+  label,
+  selected,
+  onClick,
+}: {
+  tabKey: InventoryTabValue
+  label: string
+  selected: boolean
+  onClick: () => void
+}) => {
+  const mobile = isMobile()
+  const hitWidth = mobile ? INVENTORY_TAB_W + 22 : INVENTORY_TAB_W
+  const hitHeight = mobile ? INVENTORY_TAB_H + 18 : INVENTORY_TAB_H
+  const hitLeft = Math.round((INVENTORY_TAB_W - hitWidth) / 2)
+  const fade = setTabActive(`inventory-tab-${tabKey}`, selected)
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width: INVENTORY_TAB_W,
+        height: hitHeight,
+        margin: { right: INVENTORY_TAB_GAP },
+      }}
+    >
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 0, left: 0 },
+          width: INVENTORY_TAB_W,
+          height: INVENTORY_TAB_H,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <UiEntity
+          uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: INVENTORY_TAB_W, height: INVENTORY_TAB_H }}
+          uiBackground={{
+            texture: { src: INVENTORY_TAB_IDLE_IMG, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+            color: { r: 1, g: 1, b: 1, a: 1 - fade },
+          }}
+        />
+        <UiEntity
+          uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: INVENTORY_TAB_W, height: INVENTORY_TAB_H }}
+          uiBackground={{
+            texture: { src: INVENTORY_TAB_SELECTED_IMG, wrapMode: 'clamp' },
+            textureMode: 'stretch',
+            color: { r: 1, g: 1, b: 1, a: fade },
+          }}
+        />
+        <Label
+          value={`<b>${label}</b>`}
+          fontSize={mobile ? 24 : 22}
+          color={lerpColor(INVENTORY_TAB_TEXT_IDLE, INVENTORY_TAB_TEXT_SELECTED, fade)}
+          textAlign="middle-center"
+          textWrap="nowrap"
+          uiTransform={{ width: INVENTORY_TAB_W - 18, height: INVENTORY_TAB_H, padding: { bottom: 10 } }}
+        />
+      </UiEntity>
+      <UiEntity
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 0, left: hitLeft },
+          width: hitWidth,
+          height: hitHeight,
+        }}
+        onMouseDown={() => {
+          playSound('buttonclick')
+          onClick()
+        }}
+      />
+    </UiEntity>
+  )
+}
+
+const TabBar = ({ hasOther }: { hasOther: boolean }) => (
+  <UiEntity
+    uiTransform={{
+      width: '100%',
+      flexDirection: 'row',
+      justifyContent: 'center',
+      margin: { bottom: 10 },
+      flexShrink: 0,
+    }}
+  >
+    <InventoryTabChip
+      tabKey="seeds"
+      label="Seeds"
+      selected={inventoryTab.value === 'seeds'}
+      onClick={() => { inventoryTab.value = 'seeds' }}
+    />
+    <InventoryTabChip
+      tabKey="harvested"
+      label="Harvested"
+      selected={inventoryTab.value === 'harvested'}
+      onClick={() => { inventoryTab.value = 'harvested' }}
+    />
+    {hasOther && (
+      <InventoryTabChip
+        tabKey="other"
+        label="Other"
+        selected={inventoryTab.value === 'other'}
+        onClick={() => { inventoryTab.value = 'other' }}
+      />
+    )}
+  </UiEntity>
+)
+
+const EmptyState = ({ message }: { message: string }) => (
+  <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+    <Label value={message} fontSize={isMobile() ? 24 : 22} color={INVENTORY_EMPTY_TEXT} textAlign="middle-center" />
+  </UiEntity>
+)
+
+const InventoryGrid = ({ items }: { items: InventoryCardItem[] }) => {
+  const mobile = isMobile()
+  const columns = mobile ? INVENTORY_COLUMNS_MOBILE : INVENTORY_COLUMNS_DESKTOP
+  const slotWidth = getInventoryCardSlotWidth()
+  const cardWidth = getInventoryCardVisualWidth()
+  const cardHeight = getInventoryCardHeight()
+  const offsetX = Math.round((slotWidth - cardWidth) / 2)
+  const gridWidth = columns * slotWidth
+  const rows: InventoryCardItem[][] = []
+
+  for (let index = 0; index < items.length; index += columns) {
+    rows.push(items.slice(index, index + columns))
+  }
+
+  return (
+    <UiEntity uiTransform={{ flex: 1, width: '100%', alignItems: 'center', justifyContent: rows.length > 1 ? 'center' : 'flex-start' }}>
+      <UiEntity uiTransform={{ width: gridWidth, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        {rows.map((row, rowIndex) => (
+          <UiEntity
+            key={`inventory-row-${rowIndex}`}
+            uiTransform={{
+              width: gridWidth,
+              height: cardHeight,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              margin: { bottom: rowIndex < rows.length - 1 ? INVENTORY_CARD_ROW_GAP : 0 },
+            }}
+          >
+            {row.map((item) => (
+              <UiEntity key={item.key} uiTransform={{ width: slotWidth, height: cardHeight }}>
+                <UiEntity uiTransform={{ positionType: 'absolute', position: { left: offsetX, top: 0 } }}>
+                  <InventoryCard {...item} />
+                </UiEntity>
+              </UiEntity>
+            ))}
+          </UiEntity>
+        ))}
+      </UiEntity>
+    </UiEntity>
+  )
+}
+
+function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
+  if (tab === 'seeds') {
+    return ALL_CROP_TYPES
+      .filter((crop) => (playerState.seeds.get(crop) ?? 0) > 0)
+      .map((crop) => ({
+        key: `seed-${crop}`,
+        title: CROP_NAMES[crop],
+        imageSrc: CROP_SEED_IMAGES[crop],
+        count: playerState.seeds.get(crop) ?? 0,
+      }))
+  }
+
+  if (tab === 'harvested') {
+    return ALL_CROP_TYPES
+      .filter((crop) => (playerState.harvested.get(crop) ?? 0) > 0)
+      .map((crop) => ({
+        key: `harvest-${crop}`,
+        title: CROP_NAMES[crop],
+        imageSrc: CROP_HARVEST_IMAGES[crop],
+        count: playerState.harvested.get(crop) ?? 0,
+      }))
+  }
+
+  const otherItems: InventoryCardItem[] = []
+  if (playerState.organicWaste > 0) {
+    otherItems.push({
+      key: 'organic-waste',
+      title: 'Organic Waste',
+      imageSrc: ORGANIC_WASTE_ICON,
+      count: playerState.organicWaste,
+    })
+  }
+  for (const fertilizer of ALL_FERTILIZER_TYPES) {
+    const count = playerState.fertilizers.get(fertilizer) ?? 0
+    if (count <= 0) continue
+    const def = FERTILIZER_DATA.get(fertilizer)!
+    otherItems.push({
+      key: `fert-${fertilizer}`,
+      title: def.name,
+      imageSrc: def.iconSrc,
+      count,
+    })
+  }
+  return otherItems
+}
+
 const InventoryPanelFrame = ({
   onClose,
   children,
@@ -98,205 +385,72 @@ const InventoryPanelFrame = ({
   onClose: () => void
   children?: ReactEcs.JSX.ReactNode
 }) => (
-  <UiEntity
-    uiTransform={{
-      positionType: 'absolute',
-      position: { top: 0, left: 0 },
-      width: '100%',
-      height: '100%',
-      alignItems: 'center',
-      justifyContent: 'center',
-      pointerFilter: 'none',
-    }}
-  >
-    <UiEntity
-      uiTransform={{
-        positionType: 'absolute',
-        position: { top: 0, left: 0 },
-        width: '100%',
-        height: '100%',
-        pointerFilter: 'block',
-      }}
-    />
-    <UiEntity
-      uiTransform={{
-        width: PANEL_W,
-        height: PANEL_H,
-        margin: { top: PANEL_TOP_MARGIN },
-        pointerFilter: 'block',
-      }}
-      uiBackground={{
-        texture: { src: INV_ATLAS, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-        uvs: bgUvs(BG_RECT),
-      }}
-    >
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-          width: CONTENT_W,
-          height: CONTENT_H,
-          flexDirection: 'column',
-          overflow: 'hidden',
-        }}
-      >
-        {children}
-      </UiEntity>
-      <UiEntity
-        uiTransform={{
-          positionType: 'absolute',
-          position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
-          width: CLOSE_SIZE,
-          height: CLOSE_SIZE,
-        }}
-        uiBackground={isMobile() ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-        onMouseDown={() => { playSound('buttonclick'); onClose() }}
-      />
-    </UiEntity>
-  </UiEntity>
+  <RevampPanelFrame name="inventory" onClose={onClose}>
+    {children}
+  </RevampPanelFrame>
 )
 
-// ─── TabBar ───────────────────────────────────────────────────────────────────
-const TabBar = ({ tab, hasOther }: { tab: 'seeds' | 'harvested' | 'other'; hasOther: boolean }) => {
-  const mob = isMobile()
-  const tH  = mob ? ss(60)  : TAB_H
-  const tW  = mob ? ss(240) : TAB_W
-  const tG  = mob ? ss(12)  : TAB_GAP
-  return (
-    <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { bottom: ss(12) }, flexShrink: 0 }}>
-      {(['seeds', 'harvested', 'other'] as const).map((t) => {
-        if (t === 'other' && !hasOther) return null
-        const active = tab === t
-        const label  = t === 'seeds' ? 'Seeds' : t === 'harvested' ? 'Harvested' : 'Other Items'
-        return (
-          <UiEntity
-            key={t}
-            uiTransform={{ width: tW, height: tH, alignItems: 'center', justifyContent: 'center', borderRadius: 10, margin: { right: tG } }}
-            uiBackground={{ color: active ? { r: 0.45, g: 0.26, b: 0.06, a: 0.9 } : { r: 0.58, g: 0.38, b: 0.12, a: 0.72 } }}
-            onMouseDown={() => { playSound('buttonclick'); invTab.value = t }}
-          >
-            <Label
-              value={label}
-              fontSize={mob ? ss(26) : ss(20)}
-              color={active
-                ? (mob ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.97, g: 0.90, b: 0.68, a: 1 })
-                : (mob ? { r: 1, g: 1, b: 1, a: 0.65 } : { r: 0.97, g: 0.90, b: 0.68, a: 0.65 })}
-              textAlign="middle-center"
-            />
-          </UiEntity>
-        )
-      })}
-    </UiEntity>
-  )
-}
-
-// ─── Empty state ─────────────────────────────────────────────────────────────
-const EmptyState = ({ message }: { message: string }) => {
-  const mob = isMobile()
-  return (
-    <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Label value={message} fontSize={mob ? ss(26) : ss(22)} color={mob ? { r: 1, g: 1, b: 1, a: 0.7 } : CARD_TEXT_MUTE} textAlign="middle-center" />
-    </UiEntity>
-  )
-}
-
-// ─── Main panel ───────────────────────────────────────────────────────────────
 export const InventoryPanel = () => {
-  const mob         = isMobile()
-  const seedRows    = ALL_CROP_TYPES.filter((c) => (playerState.seeds.get(c)     ?? 0) > 0)
-  const harvestRows = ALL_CROP_TYPES.filter((c) => (playerState.harvested.get(c) ?? 0) > 0)
-  const fertRows    = ALL_FERTILIZER_TYPES.filter((f) => (playerState.fertilizers.get(f) ?? 0) > 0)
-  const hasOther    = playerState.organicWaste > 0 || fertRows.length > 0
-  const tab         = invTab.value
-  const labelColor  = mob ? { r: 1, g: 1, b: 1, a: 1 }    : CARD_TEXT
-  const labelFs     = mob ? ss(26) : ss(20)
-  const countFs     = mob ? ss(26) : ss(21)
+  const mobile = isMobile()
+  const hasOther = playerState.organicWaste > 0 || ALL_FERTILIZER_TYPES.some((f) => (playerState.fertilizers.get(f) ?? 0) > 0)
+  if (inventoryTab.value === 'other' && !hasOther) inventoryTab.value = 'seeds'
 
-  // Auto-switch if "other" tab selected but nothing there
-  if (tab === 'other' && !hasOther) invTab.value = 'seeds'
+  const tab = inventoryTab.value
+  const items = getInventoryItems(tab)
+  const itemsPerPage = mobile ? INVENTORY_ITEMS_PER_PAGE_MOBILE : INVENTORY_ITEMS_PER_PAGE_DESKTOP
+  const lastPage = Math.max(0, Math.ceil(items.length / itemsPerPage) - 1)
+  if (inventoryPage[tab] > lastPage) inventoryPage[tab] = lastPage
+  const page = inventoryPage[tab]
+  const pageSlice = items.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
+  const paginationHeight = mobile ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
 
   return (
     <InventoryPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
+      <TabBar hasOther={hasOther} />
 
-      <TabBar tab={invTab.value} hasOther={hasOther} />
+      {items.length === 0 ? (
+        <EmptyState
+          message={
+            tab === 'seeds'
+              ? 'No seeds in stock'
+              : tab === 'harvested'
+                ? 'Nothing harvested yet'
+                : 'No extra items stored'
+          }
+        />
+      ) : (
+        <UiEntity uiTransform={{ flex: 1, width: '100%', flexDirection: 'column' }}>
+          <UiEntity
+            uiTransform={{
+              flex: 1,
+              width: '100%',
+              padding: { bottom: lastPage > 0 ? paginationHeight : 0 },
+            }}
+          >
+            <InventoryGrid items={pageSlice} />
+          </UiEntity>
 
-      {/* Seeds tab */}
-      {tab === 'seeds' && (
-        seedRows.length === 0
-          ? <EmptyState message="No seeds in stock" />
-          : (
-            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
-              {seedRows.map((c) => (
-                <InvCard key={`s${c}`} borderColor={{ r: 0.32, g: 0.78, b: 0.32, a: 0.95 }}>
-                  <UiEntity
-                    uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
-                    uiBackground={{ texture: { src: CROP_SEED_IMAGES[c], wrapMode: 'clamp' }, textureMode: 'stretch' }}
-                  />
-                  <Label value={CROP_NAMES[c]} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
-                  <Label value={`x${playerState.seeds.get(c)}`} fontSize={countFs} color={C.green} textAlign="middle-center"
-                    uiTransform={{ margin: { top: ss(4) } }} />
-                </InvCard>
-              ))}
-            </UiEntity>
-          )
-      )}
-
-      {/* Harvested tab */}
-      {tab === 'harvested' && (
-        harvestRows.length === 0
-          ? <EmptyState message="Nothing harvested yet" />
-          : (
-            <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
-              {harvestRows.map((c) => (
-                <InvCard key={`h${c}`} borderColor={{ r: 0.85, g: 0.55, b: 0.15, a: 0.95 }}>
-                  <UiEntity
-                    uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
-                    uiBackground={{ texture: { src: CROP_HARVEST_IMAGES[c], wrapMode: 'clamp' }, textureMode: 'stretch' }}
-                  />
-                  <Label value={CROP_NAMES[c]} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
-                  <Label value={`x${playerState.harvested.get(c)}`} fontSize={countFs} color={C.orange} textAlign="middle-center"
-                    uiTransform={{ margin: { top: ss(4) } }} />
-                </InvCard>
-              ))}
-            </UiEntity>
-          )
-      )}
-
-      {/* Other items tab */}
-      {tab === 'other' && (
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%', alignContent: 'flex-start', justifyContent: 'center' }}>
-
-          {playerState.organicWaste > 0 && (
-            <InvCard borderColor={{ r: 0.70, g: 0.50, b: 0.15, a: 0.95 }}>
-              <UiEntity
-                uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
-                uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+          {lastPage > 0 && (
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { bottom: 0, left: 0 },
+                width: '100%',
+                height: paginationHeight,
+              }}
+            >
+              <SharedPaginationBar
+                id={`inventory-${tab}`}
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { inventoryPage[tab]-- }}
+                onNext={() => { inventoryPage[tab]++ }}
+                mode={mobile ? 'mobile' : 'desktop'}
               />
-              <Label value="Organic Waste" fontSize={labelFs} color={labelColor} textAlign="middle-center" />
-              <Label value={`x${playerState.organicWaste}`} fontSize={countFs} color={{ r: 0.75, g: 0.52, b: 0.18, a: 1 }} textAlign="middle-center"
-                uiTransform={{ margin: { top: ss(4) } }} />
-            </InvCard>
+            </UiEntity>
           )}
-
-          {fertRows.map((f) => {
-            const def = FERTILIZER_DATA.get(f)!
-            return (
-              <InvCard key={f} borderColor={{ r: 0.40, g: 0.75, b: 0.30, a: 0.95 }}>
-                <UiEntity
-                  uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(10) } }}
-                  uiBackground={{ texture: { src: def.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-                />
-                <Label value={def.name} fontSize={labelFs} color={labelColor} textAlign="middle-center" />
-                <Label value={`x${playerState.fertilizers.get(f)}`} fontSize={countFs} color={C.green} textAlign="middle-center"
-                  uiTransform={{ margin: { top: ss(4) } }} />
-              </InvCard>
-            )
-          })}
-
         </UiEntity>
       )}
-
     </InventoryPanelFrame>
   )
 }

@@ -3,8 +3,11 @@ import { engine } from '@dcl/sdk/ecs'
 import { playerState } from '../game/gameState'
 import { room } from '../shared/farmMessages'
 
-const BACKGROUND_W = 1024
-const BACKGROUND_H = 683
+const LOADING_SCALE = 1.15
+const ls = (value: number) => Math.round(value * LOADING_SCALE)
+
+const BACKGROUND_W = ls(1024)
+const BACKGROUND_H = ls(683)
 const ATLAS_SIZE = 1024
 const LOADING_BACKGROUND = 'assets/images/ui_loading/background.png'
 const LOADING_ATLAS = 'assets/images/ui_loading/atlas.png'
@@ -16,30 +19,30 @@ const STEP_GREEN = { r: 0.36, g: 0.56, b: 0.14, a: 1 }
 const TRACK_COLOR = { r: 0.60, g: 0.40, b: 0.19, a: 1 }
 const PROGRESS_GREEN = { r: 0.40, g: 0.67, b: 0.14, a: 1 }
 
-const TITLE_W = 620
-const TITLE_H = 58
-const TITLE_TOP = 164
-const TITLE_LEFT = 176
-const SUBTITLE_TOP = 224
-const SUBTITLE_LEFT = 176
+const TITLE_W = ls(620)
+const TITLE_H = ls(58)
+const TITLE_TOP = ls(164)
+const TITLE_LEFT = ls(176)
+const SUBTITLE_TOP = ls(224)
+const SUBTITLE_LEFT = ls(176)
 
-const ICON_STRIP_TOP = 266
-const ICON_STRIP_LEFT = 176
-const ICON_STRIP_W = 670
-const ICON_STRIP_H = 96
-const STEP_TEXT_TOP = ICON_STRIP_TOP + ICON_STRIP_H + 10
+const ICON_STRIP_TOP = ls(266)
+const ICON_STRIP_LEFT = ls(176)
+const ICON_STRIP_W = ls(670)
+const ICON_STRIP_H = ls(96)
+const STEP_TEXT_TOP = ICON_STRIP_TOP + ICON_STRIP_H + ls(10)
 
-const PROGRESS_TOP = 436
-const PROGRESS_LEFT = 176
-const PROGRESS_W = 665
-const PROGRESS_H = 20
-const PROGRESS_FILL_INSET = 4
-const PROGRESS_FILL_H = 12
-const PROGRESS_RADIUS = 10
+const PROGRESS_TOP = ls(436)
+const PROGRESS_LEFT = ls(176)
+const PROGRESS_W = ls(665)
+const PROGRESS_H = ls(20)
+const PROGRESS_FILL_INSET = ls(4)
+const PROGRESS_FILL_H = ls(12)
+const PROGRESS_RADIUS = ls(10)
 
-const FOOTER_TOP = 480
-const FOOTER_LEFT = 176
-const FOOTER_W = 660
+const FOOTER_TOP = ls(480)
+const FOOTER_LEFT = ls(176)
+const FOOTER_W = ls(660)
 
 type AtlasRect = { x: number; y: number; w: number; h: number }
 type LoadingStep = { id: string; label: string; threshold: number; labelLeft: number; labelWidth: number }
@@ -52,10 +55,10 @@ const SPRITES = {
 // no longer means "claiming a slot" like it used to, so it's relabeled as a
 // generic setup step in between connecting and loading the actual farm data.
 const STEPS: LoadingStep[] = [
-  { id: 'connecting', label: 'Connecting',   threshold: 0,    labelLeft: -8,  labelWidth: 140 },
-  { id: 'preparing',  label: 'Preparing',    threshold: 0.15, labelLeft: 181, labelWidth: 140 },
-  { id: 'loading',    label: 'Loading farm', threshold: 0.45, labelLeft: 364, labelWidth: 140 },
-  { id: 'ready',      label: 'Ready!',       threshold: 0.99, labelLeft: 552, labelWidth: 140 },
+  { id: 'connecting', label: 'Connecting',   threshold: 0,    labelLeft: ls(-8),  labelWidth: ls(140) },
+  { id: 'preparing',  label: 'Preparing',    threshold: 0.15, labelLeft: ls(181), labelWidth: ls(140) },
+  { id: 'loading',    label: 'Loading farm', threshold: 0.45, labelLeft: ls(364), labelWidth: ls(140) },
+  { id: 'ready',      label: 'Ready!',       threshold: 0.99, labelLeft: ls(552), labelWidth: ls(140) },
 ]
 
 function getAnimatedEllipsis(): string {
@@ -124,7 +127,7 @@ const LoadingTitle = () => (
   >
     <Label
       value="Preparing your farm"
-      fontSize={42}
+      fontSize={ls(42)}
       color={TITLE_COLOR}
       textAlign="middle-left"
       uiTransform={{ width: TITLE_W, height: TITLE_H }}
@@ -154,21 +157,21 @@ const LoadingStepLabels = ({ progress }: { progress: number }) => (
       positionType: 'absolute',
       position: { top: STEP_TEXT_TOP, left: ICON_STRIP_LEFT },
       width: ICON_STRIP_W,
-      height: 24,
+      height: ls(24),
     }}
   >
     {STEPS.map((step) => (
       <Label
         key={step.id}
         value={step.label}
-        fontSize={16}
+        fontSize={ls(16)}
         color={progress >= step.threshold ? STEP_GREEN : STEP_BROWN}
         textAlign="middle-center"
         uiTransform={{
           positionType: 'absolute',
           position: { top: 0, left: step.labelLeft },
           width: step.labelWidth,
-          height: 24,
+          height: ls(24),
         }}
       />
     ))}
@@ -191,9 +194,9 @@ const LoadingProgressBar = ({ progress }: { progress: number }) => {
         uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: PROGRESS_W, height: PROGRESS_H, borderRadius: PROGRESS_RADIUS }}
         uiBackground={{ color: TRACK_COLOR }}
       />
-      {fillWidth > 0 && (
+        {fillWidth > 0 && (
         <UiEntity
-          uiTransform={{ positionType: 'absolute', position: { top: PROGRESS_FILL_INSET, left: PROGRESS_FILL_INSET }, width: fillWidth, height: PROGRESS_FILL_H, borderRadius: 6 }}
+          uiTransform={{ positionType: 'absolute', position: { top: PROGRESS_FILL_INSET, left: PROGRESS_FILL_INSET }, width: fillWidth, height: PROGRESS_FILL_H, borderRadius: ls(6) }}
           uiBackground={{ color: PROGRESS_GREEN }}
         />
       )}
@@ -227,14 +230,14 @@ export const LoadingOverlay = () => {
 
         <Label
           value={subtitle}
-          fontSize={24}
+          fontSize={ls(24)}
           color={SUBTITLE_COLOR}
           textAlign="middle-left"
           uiTransform={{
             positionType: 'absolute',
             position: { top: SUBTITLE_TOP, left: SUBTITLE_LEFT },
-            width: 520,
-            height: 32,
+            width: ls(520),
+            height: ls(32),
           }}
         />
 
@@ -244,27 +247,27 @@ export const LoadingOverlay = () => {
 
         <Label
           value="Setting up your plots and buildings"
-          fontSize={18}
+          fontSize={ls(18)}
           color={STEP_BROWN}
           textAlign="middle-left"
           uiTransform={{
             positionType: 'absolute',
             position: { top: FOOTER_TOP, left: FOOTER_LEFT },
             width: FOOTER_W,
-            height: 26,
+            height: ls(26),
           }}
         />
 
         <Label
           value={`${progressPct}%`}
-          fontSize={34}
+          fontSize={ls(34)}
           color={TITLE_COLOR}
           textAlign="middle-right"
           uiTransform={{
             positionType: 'absolute',
-            position: { top: FOOTER_TOP - 6, right: 285 },
-            width: 120,
-            height: 40,
+            position: { top: FOOTER_TOP - ls(6), right: ls(285) },
+            width: ls(120),
+            height: ls(40),
           }}
         />
       </UiEntity>

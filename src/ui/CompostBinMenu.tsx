@@ -9,43 +9,19 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { formatTime } from '../systems/growthSystem'
 import { fireCompostWasteAdded, fireCompostCollected } from '../systems/progressionEventsSystem'
 import { onCollectFertilizer } from '../game/questState'
+import { RevampPanelFrame } from './RevampPanel'
 
 const COMPOST_CYCLE_MS          = 300_000  // 5 minutes per waste unit
 const TUTORIAL_COMPOST_CYCLE_MS = 15_000   // 15 seconds during the Level 5 tutorial
 
-// ─── Atlas frame — same scale/close-button convention as ShopMenu ───────────
-const COMPOST_ATLAS   = 'assets/images/ui_loading/compostbin_atlas.png'
-const CLOSE_BTN_IMG   = 'assets/images/ui_loading/closebutton.png'
-const ATLAS_SIZE      = 1024
-const BG_RECT         = { x: 75, y: 16, w: 874, h: 672 } as const
-const UI_SCALE        = 0.8
-const ss              = (v: number) => Math.round(v * UI_SCALE)
-
-const PANEL_W          = ss(1180)
-const PANEL_H          = Math.round(PANEL_W * BG_RECT.h / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(190)
-const CONTENT_LEFT     = ss(100)
-const CONTENT_RIGHT    = ss(40)
-const CONTENT_TOP      = ss(104)
-const CONTENT_BOTTOM   = ss(24)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CONTENT_H        = PANEL_H - CONTENT_TOP - CONTENT_BOTTOM
-const CLOSE_SIZE       = ss(74)
-const CLOSE_RIGHT      = ss(28)
-const CLOSE_TOP        = ss(16)
+const UI_SCALE = 0.8
+const ss       = (v: number) => Math.round(v * UI_SCALE)
 
 // Shop-style card chrome (matches ShopMenu's ShopCardFrame palette)
 const CARD_BORDER = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
 const CARD_FILL   = { r: 0.23, g: 0.13, b: 0.05, a: 0.34 }
 const BTN_GREEN   = { r: 0.2,  g: 0.55, b: 0.2,  a: 1 }
 const BTN_GRAY    = { r: 0.25, g: 0.25, b: 0.25, a: 1 }
-
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
-}
 
 function getCompostState() {
   const now = Date.now()
@@ -95,44 +71,14 @@ function addWaste() {
   fireCompostWasteAdded()
 }
 
-// ─── Panel frame — atlas background with the title & close X baked in ───────
-const CompostPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => {
-  const mob = isMobile()
-  return (
-    <UiEntity
-      uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
-    >
-      <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', pointerFilter: 'block' }} />
-      <UiEntity
-        uiTransform={{ width: PANEL_W, height: PANEL_H, margin: { top: PANEL_TOP_MARGIN }, pointerFilter: 'block' }}
-        uiBackground={{ texture: { src: COMPOST_ATLAS, wrapMode: 'clamp' }, textureMode: 'stretch', uvs: bgUvs(BG_RECT) }}
-      >
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-            width: CONTENT_W,
-            height: CONTENT_H,
-            flexDirection: 'row',
-            overflow: 'hidden',
-          }}
-        >
-          {children}
-        </UiEntity>
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: isMobile() ? { right: ss(20), top: ss(8) } : { right: CLOSE_RIGHT, top: CLOSE_TOP },
-            width: isMobile() ? ss(90) : CLOSE_SIZE,
-            height: isMobile() ? ss(90) : CLOSE_SIZE,
-          }}
-          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-          onMouseDown={() => { playSound('buttonclick'); onClose() }}
-        />
-      </UiEntity>
+// ─── Panel frame — shared revamp background + "Compost Bin" title plaque ────
+const CompostPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => (
+  <RevampPanelFrame name="compostBin" onClose={onClose}>
+    <UiEntity uiTransform={{ flexDirection: 'row', width: '100%', height: '100%' }}>
+      {children}
     </UiEntity>
-  )
-}
+  </RevampPanelFrame>
+)
 
 // ─── Section rule — plain thin line, no ornamentation ────────────────────────
 const SectionRule = ({ width }: { width: number | '100%' }) => (

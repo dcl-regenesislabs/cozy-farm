@@ -8,6 +8,7 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { saveFarm } from '../services/saveService'
+import { SharedPaginationBar } from './SharedPaginationBar'
 
 // 4 cards per row, 1 row per page
 const FARMER_SEED_PAGE_SIZE = 4
@@ -251,29 +252,13 @@ export const FarmerMenu = () => {
                 ))}
               </UiEntity>
               {seedLast > 0 && (
-                <UiEntity
-                  uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%', margin: { top: 10 } }}
-                >
-                  <Button
-                    value="< Prev"
-                    variant="secondary"
-                    fontSize={22}
-                    uiTransform={{ width: 160, height: 58, margin: { right: 20 } }}
-                    onMouseDown={() => { if (farmerSeedPage.value > 0) { playSound('pagination'); playSound('buttonclick'); farmerSeedPage.value-- } }}
-                  />
-                  <Label
-                    value={`${seedPage + 1} / ${seedLast + 1}`}
-                    fontSize={22}
-                    color={C.textMute}
-                    textAlign="middle-center"
-                    uiTransform={{ width: 90 }}
-                  />
-                  <Button
-                    value="Next >"
-                    variant="secondary"
-                    fontSize={22}
-                    uiTransform={{ width: 160, height: 58, margin: { left: 20 } }}
-                    onMouseDown={() => { if (farmerSeedPage.value < seedLast) { playSound('pagination'); playSound('buttonclick'); farmerSeedPage.value++ } }}
+                <UiEntity uiTransform={{ width: '100%', margin: { top: 10 } }}>
+                  <SharedPaginationBar
+                    id="farmer-seeds"
+                    page={seedPage}
+                    lastPage={seedLast}
+                    onPrev={() => { if (farmerSeedPage.value > 0) farmerSeedPage.value-- }}
+                    onNext={() => { if (farmerSeedPage.value < seedLast) farmerSeedPage.value++ }}
                   />
                 </UiEntity>
               )}

@@ -15,11 +15,12 @@ type Props = {
   width:        number
   height:       number
   textAlign?:   'middle-left' | 'middle-center' | 'middle-right' | 'top-left' | 'top-center'
+  textWrap?:    'wrap' | 'nowrap'
 }
 
 // Mirrors NpcNameLabel: 4 offset outline layers + 2 main layers (for solid fill)
 // Inner labels use width:'100%' so they match the parent container exactly on all platforms
-export const OutlineLabel = ({ value, fontSize, color, outlineColor, width, height, textAlign = 'middle-left' }: Props) => (
+export const OutlineLabel = ({ value, fontSize, color, outlineColor, width, height, textAlign = 'middle-left', textWrap }: Props) => (
   <UiEntity uiTransform={{ width, height }}>
     {OFFSETS.map((off, i) => (
       <Label
@@ -28,6 +29,7 @@ export const OutlineLabel = ({ value, fontSize, color, outlineColor, width, heig
         fontSize={fontSize}
         color={outlineColor}
         textAlign={textAlign}
+        textWrap={textWrap}
         uiTransform={{ width: '100%', height, positionType: 'absolute', position: off }}
       />
     ))}
@@ -36,6 +38,7 @@ export const OutlineLabel = ({ value, fontSize, color, outlineColor, width, heig
       fontSize={fontSize}
       color={color}
       textAlign={textAlign}
+      textWrap={textWrap}
       uiTransform={{ width: '100%', height, positionType: 'absolute', position: { left: 1, top: 0 } }}
     />
     <Label
@@ -43,6 +46,7 @@ export const OutlineLabel = ({ value, fontSize, color, outlineColor, width, heig
       fontSize={fontSize}
       color={color}
       textAlign={textAlign}
+      textWrap={textWrap}
       uiTransform={{ width: '100%', height, positionType: 'absolute', position: { left: 0, top: 0 } }}
     />
   </UiEntity>

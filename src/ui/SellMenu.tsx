@@ -2,176 +2,394 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
 import { sellCrop } from '../game/actions'
-import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
+import { ALL_CROP_TYPES, CROP_DATA } from '../data/cropData'
 import { CROP_HARVEST_IMAGES, COINS_IMAGE, EGG_ICON, PIG_ICON } from '../data/imagePaths'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { sellEggs, sellPigMeat } from '../systems/animalSystem'
 import { EGG_SELL_PRICE, PIG_MEAT_SELL_PRICE } from '../data/animalData'
+import {
+  RevampPanelFrame,
+  REVAMP_CONTENT_H as CONTENT_H,
+  REVAMP_CONTENT_W as CONTENT_W,
+} from './RevampPanel'
 
-// ─── Debug ───────────────────────────────────────────────────────────────────
 const SELL_DEBUG = false
 
-// ─── Atlas frame ─────────────────────────────────────────────────────────────
-const SELL_ATLAS    = 'assets/images/ui_loading/sellcrops_atlas.png'
-const CLOSE_BTN_IMG = 'assets/images/ui_loading/closebutton.png'
-const ATLAS_SIZE    = 1024
-const BG_RECT       = { x: 80, y: 6, w: 859, h: 686 } as const
-const UI_SCALE      = 0.8
-const ss            = (v: number) => Math.round(v * UI_SCALE)
+const UI_SCALE = 0.8
+const ss = (value: number) => Math.round(value * UI_SCALE)
 
-const PANEL_W          = ss(1100)
-const PANEL_H          = Math.round(PANEL_W * BG_RECT.h / BG_RECT.w)
-const PANEL_TOP_MARGIN = ss(80)
-const CONTENT_LEFT     = ss(60)
-const CONTENT_RIGHT    = ss(60)
-const CONTENT_TOP      = ss(78)
-const CONTENT_BOTTOM   = ss(52)
-const CONTENT_W        = PANEL_W - CONTENT_LEFT - CONTENT_RIGHT
-const CLOSE_SIZE       = ss(74)
-const CLOSE_SIZE_M     = ss(90)
-const CLOSE_RIGHT      = ss(20)
-const CLOSE_TOP        = ss(8)
+const SELL_CARD_IMG = 'assets/images/revamp/card.png'
+const SELL_BUTTON_IMG = 'assets/images/revamp/mini-button.png'
+const SELL_CARD_ASPECT = 236 / 326
+const SELL_BUTTON_ASPECT = 196 / 52
 
-// ─── Card layout — shop style, 3 per row, centered ───────────────────────────
-const CARD_GAP   = ss(14)
-const CARD_W     = ss(210)
-const CARD_H     = ss(238)
-const CARD_PAD_V = ss(14)
-const CARD_PAD_H = ss(9)
-const ICON_SIZE  = ss(70)
-const BTN_H      = ss(44)
-// scroll shows 2 full rows + gap
-const SCROLL_H   = CARD_H * 2 + CARD_GAP + ss(16)
+const SELL_CARD_TEXT = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const SELL_CARD_TEXT_MUTE = { r: 0.55, g: 0.40, b: 0.24, a: 1 }
+const SELL_HEADER_TEXT = { r: 0.96, g: 0.88, b: 0.70, a: 1 }
+const SELL_GOLD = { r: 0.92, g: 0.72, b: 0.10, a: 1 }
+const SELL_EARN = { r: 0.18, g: 0.82, b: 0.28, a: 1 }
+const SELL_SCROLL_BG = { r: 0.15, g: 0.09, b: 0.03, a: 0.18 }
+const SELL_EMPTY_TEXT = { r: 0.96, g: 0.88, b: 0.70, a: 0.88 }
 
-// ─── Shop-style palette ───────────────────────────────────────────────────────
-const CARD_FILL   = { r: 0.23, g: 0.13, b: 0.05, a: 0.34 }
-const CARD_BORDER = { r: 0.82, g: 0.69, b: 0.39, a: 0.95 }
-const CARD_TEXT   = { r: 0.97, g: 0.90, b: 0.68, a: 1 }
-const CARD_MUTE   = { r: 0.72, g: 0.55, b: 0.28, a: 1 }
-const COIN_GOLD   = { r: 0.92, g: 0.72, b: 0.10, a: 1 }
-const SELL_GREEN  = { r: 0.10, g: 0.46, b: 0.14, a: 1 }
-const SCROLL_BG   = { r: 0.22, g: 0.13, b: 0.04, a: 0.50 }
-const GREEN_EARN  = { r: 0.30, g: 0.90, b: 0.35, a: 1 }
-const HEADER_BG   = { r: 0.16, g: 0.09, b: 0.03, a: 0.60 }
+const SELL_CARD_W = 184
+const SELL_CARD_H = 246
+const SELL_CARD_BG_SCALE = 1.15
+const SELL_CARD_BG_SCALE_MOBILE = 1.05
+const SELL_CARD_CONTENT_SCALE_MOBILE = 1.12
+const SELL_CARD_MARGIN = 2
+const SELL_CARD_PAD_TOP = 24
+const SELL_CARD_PAD_BOTTOM = 18
+const SELL_CARD_PAD_SIDE = 14
+const SELL_CARD_ICON = 90
+const SELL_CARD_ICON_MARGIN = ss(10)
+const SELL_CARD_TITLE_LG = ss(25)
+const SELL_CARD_TITLE_MD = ss(23)
+const SELL_CARD_TITLE_SM = ss(21)
+const SELL_CARD_COUNT_FONT = ss(19)
+const SELL_BUTTON_SCALE = 1.1
+const SELL_BUTTON_W = 124
+const SELL_BUTTON_H = Math.round(SELL_BUTTON_W / SELL_BUTTON_ASPECT)
+const SELL_BUTTON_FONT = ss(24)
+const SELL_BUTTON_TOP_MARGIN = ss(10)
+const SELL_FLOAT_MS = 900
+const SELL_FLOAT_RISE = ss(46)
+const SELL_FLOAT_RISE_MOBILE = ss(62)
+const SELL_FLOAT_FONT_MOBILE = ss(32)
+const SELL_GRID_SLOT_TRIM = 10
+const SELL_GRID_COLUMNS_DESKTOP = 4
+const SELL_GRID_COLUMNS_MOBILE = 3
+const SELL_GRID_ROW_GAP = 0
+const SELL_GRID_TOP_OFFSET = ss(8)
+const SELL_HEADER_ROW_H = ss(44)
+const SELL_SUBTITLE_H = ss(30)
+const SELL_GRID_VIEW_H = CONTENT_H - SELL_HEADER_ROW_H - SELL_SUBTITLE_H - ss(18)
 
-// ─── UV helper ───────────────────────────────────────────────────────────────
-function bgUvs(rect: { x: number; y: number; w: number; h: number }): number[] {
-  const S = ATLAS_SIZE
-  const l = rect.x / S, r = (rect.x + rect.w) / S
-  const t = 1 - rect.y / S, b = 1 - (rect.y + rect.h) / S
-  return [l, b, l, t, r, t, r, b]
+type SellFloatEntry = {
+  id: number
+  key: string
+  text: string
+  startedAt: number
 }
 
-// ─── Panel frame ─────────────────────────────────────────────────────────────
-const SellPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => {
-  const mob = isMobile()
-  return (
-    <UiEntity
-      uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center', pointerFilter: 'none' }}
-    >
-      <UiEntity uiTransform={{ positionType: 'absolute', position: { top: 0, left: 0 }, width: '100%', height: '100%', pointerFilter: 'block' }} />
-      <UiEntity
-        uiTransform={{ width: PANEL_W, height: PANEL_H, margin: { top: PANEL_TOP_MARGIN }, pointerFilter: 'block' }}
-        uiBackground={{ texture: { src: SELL_ATLAS, wrapMode: 'clamp' }, textureMode: 'stretch', uvs: bgUvs(BG_RECT) }}
-      >
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { left: CONTENT_LEFT, top: CONTENT_TOP },
-            width: CONTENT_W,
-            height: PANEL_H - CONTENT_TOP - CONTENT_BOTTOM,
-            flexDirection: 'column',
-            alignItems: 'center',
-            overflow: 'hidden',
-          }}
-        >
-          {children}
-        </UiEntity>
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: { right: CLOSE_RIGHT, top: CLOSE_TOP },
-            width: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
-            height: mob ? CLOSE_SIZE_M : CLOSE_SIZE,
-          }}
-          uiBackground={mob ? { texture: { src: CLOSE_BTN_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' } : undefined}
-          onMouseDown={() => { playSound('buttonclick'); onClose() }}
-        />
-      </UiEntity>
-    </UiEntity>
+type SellGridItem = {
+  key: string | number
+  node: ReactEcs.JSX.ReactNode
+}
+
+type SellCardData = {
+  key?: string
+  icon: string
+  name: string
+  count: number
+  unitPrice: number
+  zoomKey: string
+  onSell: () => void
+}
+
+let nextSellFloatId = 1
+const sellFloats: SellFloatEntry[] = []
+
+function triggerSellFloat(key: string, text: string): void {
+  sellFloats.push({
+    id: nextSellFloatId++,
+    key,
+    text,
+    startedAt: Date.now(),
+  })
+}
+
+function getSellFloats(key: string): SellFloatEntry[] {
+  const now = Date.now()
+  for (let i = sellFloats.length - 1; i >= 0; i--) {
+    if (now - sellFloats[i].startedAt > SELL_FLOAT_MS) {
+      sellFloats.splice(i, 1)
+    }
+  }
+  return sellFloats.filter((entry) => entry.key === key)
+}
+
+function getSellCardBgScale(): number {
+  return isMobile() ? SELL_CARD_BG_SCALE_MOBILE : SELL_CARD_BG_SCALE
+}
+
+function scaleSellCardContent(value: number): number {
+  return isMobile() ? Math.round(value * SELL_CARD_CONTENT_SCALE_MOBILE) : value
+}
+
+function getSellCardVisualWidth(scale = 1): number {
+  return Math.round(SELL_CARD_W * scale * getSellCardBgScale())
+}
+
+function getSellCardVisualHeight(scale = 1): number {
+  const width = getSellCardVisualWidth(scale)
+  return Math.max(
+    Math.round(width / SELL_CARD_ASPECT),
+    Math.round(SELL_CARD_H * scale * getSellCardBgScale()),
   )
 }
 
-// ─── Sell card — shop-style border, no manual frame lines ────────────────────
-type SellCardData = { key?: string; icon: string; name: string; count: number; unitPrice: number; zoomKey: string; onSell: () => void }
+function getSellCardTransform(scale: number) {
+  return {
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    width: getSellCardVisualWidth(scale),
+    height: getSellCardVisualHeight(scale),
+    margin: { right: SELL_CARD_MARGIN, bottom: SELL_CARD_MARGIN },
+    padding: {
+      top: isMobile() ? SELL_CARD_PAD_TOP + 4 : SELL_CARD_PAD_TOP,
+      bottom: isMobile() ? SELL_CARD_PAD_BOTTOM + 4 : SELL_CARD_PAD_BOTTOM,
+      left: isMobile() ? SELL_CARD_PAD_SIDE - 2 : SELL_CARD_PAD_SIDE,
+      right: isMobile() ? SELL_CARD_PAD_SIDE - 2 : SELL_CARD_PAD_SIDE,
+    },
+  }
+}
 
-const SellCard = ({ icon, name, count, unitPrice, zoomKey, onSell }: SellCardData) => {
-  const mob        = isMobile()
-  const scale      = getZoomScale(zoomKey)
-  const W          = Math.round(CARD_W * scale)
-  const H          = Math.round(CARD_H * scale)
-  const totalValue = unitPrice * count
-  const btnW       = W - CARD_PAD_H * 2
+function getSellGridColumns(): number {
+  return isMobile() ? SELL_GRID_COLUMNS_MOBILE : SELL_GRID_COLUMNS_DESKTOP
+}
+
+function getSellGridSlotWidth(): number {
+  return Math.max(0, getSellCardVisualWidth() - SELL_GRID_SLOT_TRIM)
+}
+
+function getSellTitleFont(title: string): number {
+  if (title.length <= 10) return scaleSellCardContent(SELL_CARD_TITLE_LG)
+  if (title.length <= 13) return scaleSellCardContent(SELL_CARD_TITLE_MD)
+  return scaleSellCardContent(SELL_CARD_TITLE_SM)
+}
+
+function getSellFloatRise(): number {
+  return isMobile() ? SELL_FLOAT_RISE_MOBILE : SELL_FLOAT_RISE
+}
+
+function getSellFloatFont(): number {
+  return isMobile() ? scaleSellCardContent(SELL_FLOAT_FONT_MOBILE) : scaleSellCardContent(SELL_BUTTON_FONT)
+}
+
+function runSellPress({
+  zoomKey,
+  totalValue,
+  onSell,
+}: {
+  zoomKey: string
+  totalValue: number
+  onSell: () => void
+}): void {
+  if (isZooming(zoomKey)) return
+  playSound('buttonclick')
+  triggerCardZoom(zoomKey)
+  triggerSellFloat(zoomKey, `+${totalValue}`)
+  setTimeout(onSell, 290)
+}
+
+const SellPanelFrame = ({ onClose, children }: { onClose: () => void; children?: ReactEcs.JSX.ReactNode }) => (
+  <RevampPanelFrame name="sellCrops" onClose={onClose}>
+    <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center', width: '100%', height: '100%' }}>
+      {children}
+    </UiEntity>
+  </RevampPanelFrame>
+)
+
+const SellValueButton = ({ totalValue, floatKey }: { totalValue: number; floatKey: string }) => {
+  const buttonScale = isMobile() ? SELL_BUTTON_SCALE * SELL_CARD_CONTENT_SCALE_MOBILE : SELL_BUTTON_SCALE
+  const buttonWidth = Math.round(SELL_BUTTON_W * buttonScale)
+  const buttonHeight = Math.round(SELL_BUTTON_H * buttonScale)
+  const labelTopOffset = -ss(4)
+  const priceLeft = Math.round(buttonWidth * 0.42)
+  const priceWidth = Math.round(buttonWidth * 0.38)
+  const floats = getSellFloats(floatKey)
 
   return (
     <UiEntity
       uiTransform={{
-        flexDirection: 'column',
         alignItems: 'center',
-        width: W,
-        height: H,
-        margin: { right: CARD_GAP, bottom: CARD_GAP },
-        padding: { top: CARD_PAD_V, bottom: CARD_PAD_V, left: CARD_PAD_H, right: CARD_PAD_H },
-        borderWidth: 2,
-        borderColor: CARD_BORDER,
-        borderRadius: 10,
+        justifyContent: 'center',
+        width: buttonWidth,
+        height: buttonHeight,
+        margin: { top: scaleSellCardContent(SELL_BUTTON_TOP_MARGIN) },
       }}
-      uiBackground={mob ? { color: CARD_FILL } : { color: CARD_FILL }}
+      uiBackground={{
+        texture: { src: SELL_BUTTON_IMG, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+      }}
     >
-      {/* Icon */}
-      <UiEntity
-        uiTransform={{ width: ICON_SIZE, height: ICON_SIZE, margin: { bottom: ss(6) }, flexShrink: 0 }}
-        uiBackground={{ texture: { src: icon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      <Label
+        value={`<b>${totalValue}</b>`}
+        fontSize={scaleSellCardContent(SELL_BUTTON_FONT)}
+        color={{ r: 1, g: 1, b: 1, a: 1 }}
+        textAlign="middle-left"
+        textWrap="nowrap"
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: labelTopOffset, left: priceLeft },
+          width: priceWidth,
+          height: buttonHeight,
+        }}
       />
-      {/* Name */}
-      <Label value={name} fontSize={ss(23)} color={CARD_TEXT} textAlign="middle-center"
-        uiTransform={{ width: W - CARD_PAD_H * 2, margin: { bottom: ss(4) } }} />
-      {/* Count */}
-      <Label value={`x${count}`} fontSize={ss(20)} color={CARD_MUTE} textAlign="middle-center"
-        uiTransform={{ margin: { bottom: ss(10) } }} />
-      {/* Sell button — single row, no wrap */}
+
+      {floats.map((entry) => {
+        const progress = Math.min(1, (Date.now() - entry.startedAt) / SELL_FLOAT_MS)
+        const rise = Math.round(progress * getSellFloatRise())
+        return (
+          <Label
+            key={entry.id}
+            value={`<b>${entry.text}</b>`}
+            fontSize={getSellFloatFont()}
+            color={{ r: SELL_EARN.r, g: SELL_EARN.g, b: SELL_EARN.b, a: 1 - progress }}
+            textAlign="middle-center"
+            uiTransform={{
+              positionType: 'absolute',
+              position: { top: -ss(18) - rise, left: 0 },
+              width: buttonWidth,
+              height: buttonHeight,
+            }}
+          />
+        )
+      })}
+    </UiEntity>
+  )
+}
+
+const SellCardFrame = ({
+  scale,
+  onCardPress,
+  children,
+}: {
+  scale: number
+  onCardPress: () => void
+  children?: ReactEcs.JSX.ReactNode
+}) => {
+  const transform = getSellCardTransform(scale)
+
+  return (
+    <UiEntity
+      uiTransform={transform}
+      uiBackground={{
+        texture: { src: SELL_CARD_IMG, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+      }}
+    >
+      {children}
       <UiEntity
         uiTransform={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'center',
-          width: btnW,
-          height: BTN_H,
-          borderRadius: 6,
+          positionType: 'absolute',
+          position: { top: 0, left: 0 },
+          width: transform.width,
+          height: transform.height,
+        }}
+        onMouseDown={onCardPress}
+      />
+    </UiEntity>
+  )
+}
+
+const SellCard = ({ icon, name, count, unitPrice, zoomKey, onSell }: SellCardData) => {
+  const scale = getZoomScale(zoomKey)
+  const totalValue = unitPrice * count
+  const iconSize = scaleSellCardContent(SELL_CARD_ICON)
+
+  return (
+    <SellCardFrame
+      scale={scale}
+      onCardPress={() => {
+        if (count <= 0) return
+        runSellPress({ zoomKey, totalValue, onSell })
+      }}
+    >
+      <UiEntity uiTransform={{ height: scaleSellCardContent(ss(8)), flexShrink: 0 }} />
+      <UiEntity
+        uiTransform={{
+          width: iconSize,
+          height: iconSize,
+          margin: { bottom: scaleSellCardContent(SELL_CARD_ICON_MARGIN) },
           flexShrink: 0,
         }}
-        uiBackground={{ color: SELL_GREEN }}
-        onMouseDown={() => {
-          if (isZooming(zoomKey)) return
-          playSound('buttonclick')
-          triggerCardZoom(zoomKey)
-          setTimeout(onSell, 290)
+        uiBackground={{ texture: { src: icon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+      />
+      <Label value={`<b>${name}</b>`} fontSize={getSellTitleFont(name)} color={SELL_CARD_TEXT} textAlign="middle-center" />
+      <Label
+        value={`x${count}`}
+        fontSize={scaleSellCardContent(SELL_CARD_COUNT_FONT)}
+        color={SELL_CARD_TEXT_MUTE}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: ss(4) } }}
+      />
+      <SellValueButton totalValue={totalValue} floatKey={zoomKey} />
+    </SellCardFrame>
+  )
+}
+
+const SellCardGrid = ({ items, viewHeight }: { items: SellGridItem[]; viewHeight: number }) => {
+  const columns = getSellGridColumns()
+  const slotWidth = getSellGridSlotWidth()
+  const visualWidth = getSellCardVisualWidth()
+  const slotHeight = getSellCardVisualHeight()
+  const offsetX = Math.round((slotWidth - visualWidth) / 2)
+  const gridWidth = columns * slotWidth
+  const rows: SellGridItem[][] = []
+
+  for (let i = 0; i < items.length; i += columns) {
+    rows.push(items.slice(i, i + columns))
+  }
+
+  return (
+    <UiEntity
+      uiTransform={{
+        width: CONTENT_W,
+        height: viewHeight,
+        overflow: 'scroll',
+        flexShrink: 0,
+        margin: { top: ss(6) },
+      }}
+      uiBackground={{ color: SELL_SCROLL_BG }}
+    >
+      <UiEntity
+        uiTransform={{
+          width: '100%',
+          flexDirection: 'column',
+          alignItems: 'center',
+          padding: { top: ss(10), bottom: ss(10) },
         }}
       >
-        <Label value={`${totalValue}`} fontSize={ss(24)} color={COIN_GOLD}
-          uiTransform={{ flexShrink: 0, margin: { right: ss(5) } }} />
         <UiEntity
-          uiTransform={{ width: ss(24), height: ss(24), flexShrink: 0 }}
-          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
+          uiTransform={{
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            width: gridWidth,
+            margin: { top: SELL_GRID_TOP_OFFSET },
+          }}
+        >
+          {rows.map((row, rowIndex) => (
+            <UiEntity
+              key={`sell-row-${rowIndex}`}
+              uiTransform={{
+                flexDirection: 'row',
+                width: gridWidth,
+                height: slotHeight,
+                justifyContent: 'center',
+                margin: { bottom: rowIndex < rows.length - 1 ? SELL_GRID_ROW_GAP : 0 },
+              }}
+            >
+              {row.map((item) => (
+                <UiEntity key={item.key} uiTransform={{ width: slotWidth, height: slotHeight }}>
+                  <UiEntity uiTransform={{ positionType: 'absolute', position: { left: offsetX, top: 0 } }}>
+                    {item.node}
+                  </UiEntity>
+                </UiEntity>
+              ))}
+            </UiEntity>
+          ))}
+        </UiEntity>
       </UiEntity>
     </UiEntity>
   )
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export const SellMenu = () => {
+  const mobile = isMobile()
   if (SELL_DEBUG) {
     for (const ct of ALL_CROP_TYPES) {
       if (!playerState.harvested.has(ct)) playerState.harvested.set(ct, 25)
@@ -179,109 +397,151 @@ export const SellMenu = () => {
   }
 
   const harvestedCrops = ALL_CROP_TYPES.filter((ct) => (playerState.harvested.get(ct) ?? 0) > 0)
-  const hasEggs     = playerState.chickenCoopOwned && playerState.eggsCount > 0
-  const hasMeat     = playerState.pigMeatCount > 0
+  const hasEggs = playerState.chickenCoopOwned && playerState.eggsCount > 0
+  const hasMeat = playerState.pigMeatCount > 0
   const hasAnything = harvestedCrops.length > 0 || hasEggs || hasMeat
 
-  const totalCropValue = harvestedCrops.reduce((sum, ct) => {
-    return sum + (CROP_DATA.get(ct)?.sellPrice ?? 0) * (playerState.harvested.get(ct) ?? 0)
-  }, 0)
+  const totalCropValue = harvestedCrops.reduce((sum, ct) => (
+    sum + (CROP_DATA.get(ct)?.sellPrice ?? 0) * (playerState.harvested.get(ct) ?? 0)
+  ), 0)
+
   const totalValue =
     totalCropValue +
     (hasEggs ? EGG_SELL_PRICE * playerState.eggsCount : 0) +
     (hasMeat ? PIG_MEAT_SELL_PRICE * playerState.pigMeatCount : 0)
 
+  const headerRowH = mobile ? ss(54) : SELL_HEADER_ROW_H
+  const subtitleH = mobile ? ss(40) : SELL_SUBTITLE_H
+  const gridViewH = CONTENT_H - headerRowH - subtitleH - ss(18)
+  const headerIconSize = mobile ? ss(40) : ss(32)
+  const headerCoinsFont = mobile ? ss(34) : ss(28)
+  const headerGainFont = mobile ? ss(34) : ss(28)
+  const subtitleFont = mobile ? ss(24) : ss(18)
+  const emptyTitleFont = mobile ? ss(36) : ss(32)
+  const emptyBodyFont = mobile ? ss(24) : ss(20)
+
+  const items: SellGridItem[] = [
+    ...harvestedCrops.map((ct) => {
+      const def = CROP_DATA.get(ct)!
+      return {
+        key: `${ct}`,
+        node: (
+          <SellCard
+            key={`${ct}`}
+            icon={CROP_HARVEST_IMAGES[ct]}
+            name={def.name}
+            count={playerState.harvested.get(ct)!}
+            unitPrice={def.sellPrice}
+            zoomKey={`sell_${ct}`}
+            onSell={() => sellCrop(ct, playerState.harvested.get(ct)!)}
+          />
+        ),
+      }
+    }),
+    ...(hasEggs ? [{
+      key: 'eggs',
+      node: (
+        <SellCard
+          key="eggs"
+          icon={EGG_ICON}
+          name="Eggs"
+          count={playerState.eggsCount}
+          unitPrice={EGG_SELL_PRICE}
+          zoomKey="sell_eggs"
+          onSell={() => sellEggs(playerState.eggsCount)}
+        />
+      ),
+    }] : []),
+    ...(hasMeat ? [{
+      key: 'meat',
+      node: (
+        <SellCard
+          key="meat"
+          icon={PIG_ICON}
+          name="Pig Meat"
+          count={playerState.pigMeatCount}
+          unitPrice={PIG_MEAT_SELL_PRICE}
+          zoomKey="sell_meat"
+          onSell={() => sellPigMeat(playerState.pigMeatCount)}
+        />
+      ),
+    }] : []),
+  ]
+
   return (
     <SellPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
-
-      {/* Header — coins + total, floating (no background) */}
       <UiEntity
         uiTransform={{
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
           width: CONTENT_W,
-          height: ss(54),
-          margin: { top: ss(20), bottom: ss(18) },
+          height: headerRowH,
+          margin: { top: ss(16) },
           flexShrink: 0,
         }}
       >
-        <UiEntity uiTransform={{ width: ss(38), height: ss(38), margin: { right: ss(7) }, flexShrink: 0 }}
-          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }} />
-        <Label value={`${playerState.coins}`} fontSize={ss(32)} color={COIN_GOLD}
-          uiTransform={{ flexShrink: 0 }} />
+        <UiEntity
+          uiTransform={{ width: headerIconSize, height: headerIconSize, margin: { right: ss(10) }, flexShrink: 0 }}
+          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
+        />
+        <Label value={`<b>${playerState.coins}</b>`} fontSize={headerCoinsFont} color={SELL_GOLD} textAlign="middle-center" />
         {hasAnything && (
-          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', flexShrink: 0 }}>
-            <Label value="  ·  " fontSize={ss(22)} color={CARD_MUTE} uiTransform={{ flexShrink: 0 }} />
-            <Label value={`+${totalValue}`} fontSize={ss(32)} color={GREEN_EARN} uiTransform={{ flexShrink: 0 }} />
-            <UiEntity uiTransform={{ width: ss(34), height: ss(34), margin: { left: ss(7) }, flexShrink: 0 }}
-              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }} />
+          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { left: ss(12) } }}>
+            <Label value="·" fontSize={ss(24)} color={SELL_CARD_TEXT_MUTE} textAlign="middle-center" />
+            <Label
+              value={`<b>+${totalValue}</b>`}
+              fontSize={headerGainFont}
+              color={SELL_EARN}
+              textAlign="middle-center"
+              uiTransform={{ margin: { left: ss(12) } }}
+            />
           </UiEntity>
         )}
       </UiEntity>
 
-      {/* Cards scroll area — brown background, 2 rows visible */}
-      {!hasAnything ? (
-        <UiEntity uiTransform={{ width: CONTENT_W, height: SCROLL_H, alignItems: 'center', justifyContent: 'center', flexDirection: 'column', borderRadius: 8 }}
-          uiBackground={{ color: SCROLL_BG }}>
-          <Label value="Nothing to sell." fontSize={ss(34)} color={{ r:1, g:1, b:1, a:1 }} textAlign="middle-center" />
-          <Label value="Harvest crops or collect eggs first!" fontSize={ss(22)} color={{ r:1, g:1, b:1, a:0.75 }} textAlign="middle-center"
-            uiTransform={{ margin: { top: ss(10) } }} />
-        </UiEntity>
+      <UiEntity
+        uiTransform={{
+          width: CONTENT_W,
+          height: subtitleH,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <Label
+          value={hasAnything ? '<b>Tap a card to sell</b>' : '<b>No crops ready to sell</b>'}
+          fontSize={subtitleFont}
+          color={SELL_HEADER_TEXT}
+          textAlign="middle-center"
+        />
+      </UiEntity>
+
+      {hasAnything ? (
+        <SellCardGrid items={items} viewHeight={gridViewH} />
       ) : (
         <UiEntity
-          uiTransform={{ width: CONTENT_W, height: SCROLL_H, overflow: 'scroll', borderRadius: 8, flexShrink: 0 }}
-          uiBackground={{ color: SCROLL_BG }}
+          uiTransform={{
+            width: CONTENT_W,
+            height: gridViewH,
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            flexShrink: 0,
+            margin: { top: ss(6) },
+          }}
+          uiBackground={{ color: SELL_SCROLL_BG }}
         >
-          <UiEntity
-            uiTransform={{
-              flexDirection: 'row',
-              flexWrap: 'wrap',
-              justifyContent: 'center',
-              width: CONTENT_W,
-              padding: { top: ss(16), bottom: ss(8), left: ss(8), right: ss(8) },
-            }}
-          >
-            {harvestedCrops.map((ct) => {
-              const def = CROP_DATA.get(ct)!
-              return (
-                <SellCard
-                  key={`${ct}`}
-                  icon={CROP_HARVEST_IMAGES[ct]}
-                  name={def.name}
-                  count={playerState.harvested.get(ct)!}
-                  unitPrice={def.sellPrice}
-                  zoomKey={`sell_${ct}`}
-                  onSell={() => sellCrop(ct, playerState.harvested.get(ct)!)}
-                />
-              )
-            })}
-            {hasEggs && (
-              <SellCard
-                key="eggs"
-                icon={EGG_ICON}
-                name="Eggs"
-                count={playerState.eggsCount}
-                unitPrice={EGG_SELL_PRICE}
-                zoomKey="sell_eggs"
-                onSell={() => sellEggs(playerState.eggsCount)}
-              />
-            )}
-            {hasMeat && (
-              <SellCard
-                key="meat"
-                icon={PIG_ICON}
-                name="Pig Meat"
-                count={playerState.pigMeatCount}
-                unitPrice={PIG_MEAT_SELL_PRICE}
-                zoomKey="sell_meat"
-                onSell={() => sellPigMeat(playerState.pigMeatCount)}
-              />
-            )}
-          </UiEntity>
+          <Label value="Nothing to sell." fontSize={emptyTitleFont} color={SELL_EMPTY_TEXT} textAlign="middle-center" />
+          <Label
+            value="Harvest crops or collect eggs first."
+            fontSize={emptyBodyFont}
+            color={{ r: SELL_EMPTY_TEXT.r, g: SELL_EMPTY_TEXT.g, b: SELL_EMPTY_TEXT.b, a: 0.78 }}
+            textAlign="middle-center"
+            uiTransform={{ margin: { top: ss(8) } }}
+          />
         </UiEntity>
       )}
-
     </SellPanelFrame>
   )
 }
