@@ -12,7 +12,7 @@ import { getGameMaxLevel, getMobileDebugCoins, getMobileDebugLevel } from '../ga
 const HUD_ATLAS = 'assets/images/ui_loading/profile_atlas.png'
 const ATLAS_SIZE = 1024
 
-const SHOW_SERVER_INDICATOR = true // set to true for internal testing only
+const SHOW_SERVER_INDICATOR = false
 
 const HUD_BROWN = { r: 0.32, g: 0.18, b: 0.06, a: 1 }
 const HUD_BROWN_DARK = { r: 0.18, g: 0.09, b: 0.03, a: 1 }
@@ -67,10 +67,10 @@ function formatMobileHudCoins(value: number): string {
 }
 
 function getMobileHudCoinFontSize(displayValue: string): number {
-  if (displayValue.length <= 3) return s(50)
-  if (displayValue.length <= 5) return s(43)
-  if (displayValue.length === 6) return s(38)
-  return s(34)
+  if (displayValue.length <= 3) return s(56)
+  if (displayValue.length <= 5) return s(48)
+  if (displayValue.length === 6) return s(42)
+  return s(38)
 }
 
 function getMobileHudXpFontSize(displayValue: string): number {
@@ -602,28 +602,28 @@ export const TopHud = () => {
               <UiEntity
                 uiTransform={{
                   positionType: 'absolute',
-                  position: { top: 0, left: 0 },
+                  position: { top: s(2), left: 0 },
                   width: coinCapsuleWidth,
                   height: coinCapsuleHeight,
                 }}
               >
-                <AtlasSprite rect={COIN_STACK_RECT} width={s(56)} height={s(42)} position={{ top: s(26), left: s(18) }} />
+                <AtlasSprite rect={COIN_STACK_RECT} width={s(56)} height={s(42)} position={{ top: s(24), left: s(32) }} />
                 <UiEntity
                   uiTransform={{
                     positionType: 'absolute',
-                    position: { top: s(10), left: s(78) },
-                    width: s(176),
-                    height: s(52),
+                    position: { top: s(2), left: s(92) },
+                    width: coinCapsuleWidth - s(112),
+                    height: s(60),
                   }}
                 >
                   <OutlinedLabel
                     value={`<b>${mobileCoinsText}</b>`}
                     fontSize={mobileCoinsFontSize}
-                    width={s(176)}
-                    height={s(52)}
+                    width={coinCapsuleWidth - s(112)}
+                    height={s(60)}
                     color={COIN_GOLD}
                     outlineColor={HUD_BROWN_DARK}
-                    textAlign="middle-right"
+                    textAlign="middle-center"
                   />
                 </UiEntity>
               </UiEntity>
