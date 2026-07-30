@@ -44,6 +44,7 @@ const SHOP_MINI_BUTTON_ASPECT = 196 / 52
 const SHOP_MINI_BUTTON_W = 124
 const SHOP_MINI_BUTTON_H = Math.round(SHOP_MINI_BUTTON_W / SHOP_MINI_BUTTON_ASPECT)
 const SHOP_PANEL_SCALE = 1.14
+const SHOP_MOBILE_FRAME_SCALE = 0.96
 const SHOP_PANEL_W = Math.round(ss(1290) * SHOP_PANEL_SCALE)
 const SHOP_PANEL_H = Math.round((SHOP_PANEL_W * SHOP_BG_RECT.h) / SHOP_BG_RECT.w)
 const SHOP_TAB_SCALE = 0.62 * SHOP_UI_SCALE
@@ -61,6 +62,7 @@ const SHOP_CONTENT_BOTTOM = ss(74)
 const SHOP_CONTENT_W = SHOP_PANEL_W - SHOP_CONTENT_LEFT - SHOP_CONTENT_RIGHT
 const SHOP_CONTENT_H = SHOP_PANEL_H - SHOP_CONTENT_TOP - SHOP_CONTENT_BOTTOM
 const SHOP_PANEL_TOP_MARGIN = ss(120)
+const SHOP_PANEL_TOP_MARGIN_MOBILE = SHOP_PANEL_TOP_MARGIN + ss(54)
 const SHOP_PANEL_TOP_MARGIN_DESKTOP_EXTRA = ss(140)
 const SHOP_MOBILE_FRAME_THICKNESS = 4
 // card.png/lockedlevel.png are light cream — the old off-white/gray C.textMain/C.textMute
@@ -288,7 +290,27 @@ function getShopOrnamentRarityTextColor(rarity: BeautyRarity): { r: number; g: n
 function getShopTabsLeftInset() {
   const visibleTabs = getVisibleShopTabs()
   const tabsRowWidth = visibleTabs.length * SHOP_TAB_W + Math.max(0, visibleTabs.length - 1) * SHOP_TAB_GAP
-  return Math.max(0, Math.round((SHOP_CONTENT_W - tabsRowWidth) / 2))
+  return Math.max(0, Math.round((getShopContentWidth() - tabsRowWidth) / 2))
+}
+
+function scaleShopFrame(value: number): number {
+  return Math.round(value * SHOP_MOBILE_FRAME_SCALE)
+}
+
+function getShopPanelWidth(): number {
+  return isMobile() ? scaleShopFrame(SHOP_PANEL_W) : SHOP_PANEL_W
+}
+
+function getShopPanelHeight(): number {
+  return isMobile() ? scaleShopFrame(SHOP_PANEL_H) : SHOP_PANEL_H
+}
+
+function getShopContentWidth(): number {
+  return isMobile() ? scaleShopFrame(SHOP_CONTENT_W) : SHOP_CONTENT_W
+}
+
+function getShopContentHeight(): number {
+  return isMobile() ? scaleShopFrame(SHOP_CONTENT_H) : SHOP_CONTENT_H
 }
 
 function getShopCardTransform(baseHeight: number, scale: number) {
@@ -545,10 +567,14 @@ const ShopPanelFrame = ({
 }) => {
   const mobile = isMobile()
   const visibleTabs = getVisibleShopTabs()
-  const contentLeft = Math.round((SHOP_PANEL_W - SHOP_CONTENT_W) / 2)
-  const tabsTop = mobile ? SHOP_TAB_TOP + ss(10) : SHOP_TAB_TOP + ss(10)
-  const contentTop = mobile ? SHOP_CONTENT_TOP + ss(16) : SHOP_CONTENT_TOP - ss(18)
-  const panelTopMargin = mobile ? SHOP_PANEL_TOP_MARGIN : SHOP_PANEL_TOP_MARGIN + SHOP_PANEL_TOP_MARGIN_DESKTOP_EXTRA
+  const panelWidth = getShopPanelWidth()
+  const panelHeight = getShopPanelHeight()
+  const contentWidth = getShopContentWidth()
+  const contentHeight = getShopContentHeight()
+  const contentLeft = Math.round((panelWidth - contentWidth) / 2)
+  const tabsTop = mobile ? scaleShopFrame(SHOP_TAB_TOP + ss(10)) : SHOP_TAB_TOP + ss(10)
+  const contentTop = mobile ? scaleShopFrame(SHOP_CONTENT_TOP + ss(16)) : SHOP_CONTENT_TOP - ss(18)
+  const panelTopMargin = mobile ? SHOP_PANEL_TOP_MARGIN_MOBILE : SHOP_PANEL_TOP_MARGIN + SHOP_PANEL_TOP_MARGIN_DESKTOP_EXTRA
 
   return (
     <UiEntity
@@ -574,21 +600,21 @@ const ShopPanelFrame = ({
 
       <UiEntity
         uiTransform={{
-          width: SHOP_PANEL_W,
-          height: SHOP_PANEL_H,
+          width: panelWidth,
+          height: panelHeight,
           margin: { top: panelTopMargin },
           pointerFilter: 'block',
         }}
         uiBackground={{ texture: { src: REVAMP_BG_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       >
-        <RevampTitlePlaque name="shop" panelWidth={SHOP_PANEL_W} />
+        <RevampTitlePlaque name="shop" panelWidth={panelWidth} scale={mobile ? SHOP_MOBILE_FRAME_SCALE : 1} />
 
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
             position: { left: contentLeft, top: contentTop },
-            width: SHOP_CONTENT_W,
-            height: SHOP_CONTENT_H,
+            width: contentWidth,
+            height: contentHeight,
             flexDirection: 'column',
             overflow: 'hidden',
           }}
@@ -600,7 +626,7 @@ const ShopPanelFrame = ({
           uiTransform={{
             positionType: 'absolute',
             position: { left: contentLeft, top: tabsTop },
-            width: SHOP_CONTENT_W,
+            width: contentWidth,
             flexDirection: 'row',
             flexWrap: 'wrap',
             justifyContent: 'center',
@@ -1195,7 +1221,7 @@ const WorkerPanel = () => {
           fontSize={scaleShopCardContent(SHOP_CARD_META)}
           color={outstanding > 0 ? SHOP_WORKER_WARNING_COLOR : C.header}
           textAlign="middle-center"
-          uiTransform={{ width: Math.min(720, SHOP_CONTENT_W) }}
+          uiTransform={{ width: Math.min(720, getShopContentWidth()) }}
         />
       </UiEntity>
     </UiEntity>
@@ -1268,7 +1294,7 @@ const FertilizersPanel = () => {
 
       {owned && (
         <UiEntity
-          uiTransform={{ width: Math.min(520, SHOP_CONTENT_W - fertilizerLeftInset), margin: { top: 16 } }}
+          uiTransform={{ width: Math.min(520, getShopContentWidth() - fertilizerLeftInset), margin: { top: 16 } }}
         >
           <Label
             value="Compost Bin unlocked — visit it on your farm to start composting rotten crops."

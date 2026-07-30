@@ -1136,7 +1136,7 @@ export function createFarmProgressStore(): FarmProgressStore {
 // Scene-scoped (global) player registry — list of all players who have saved
 // ---------------------------------------------------------------------------
 const REGISTRY_KEY       = 'player_registry'
-const REGISTRY_PAGE_SIZE = 10
+const REGISTRY_PAGE_SIZE = 3
 const REGISTRY_MAX       = 1000
 
 type RegistryEntry = { address: string; level: number; displayName: string; beautyScore: number; updatedAt: number }
