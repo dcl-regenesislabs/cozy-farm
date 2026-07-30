@@ -8,6 +8,7 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { saveFarm } from '../services/saveService'
+import { trackEvent } from '../analytics/analytics'
 
 // 4 cards per row, 1 row per page
 const FARMER_SEED_PAGE_SIZE = 4
@@ -176,6 +177,7 @@ export const FarmerMenu = () => {
                 playerState.workerOutstandingWages = 0
                 playerState.workerUnpaidDays = 0
                 playerState.workerLastWageProcessedAt = Date.now()
+                trackEvent('feature unlocked', { feature: 'farmer_hired' })
                 saveFarm()
               }, 290)
             }}

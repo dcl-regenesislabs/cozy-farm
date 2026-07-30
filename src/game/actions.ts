@@ -19,6 +19,7 @@ import { playSound } from '../systems/sfxSystem'
 import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
 import { placeOrnamentInNextSlot, isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 import { tryDropVeggieScrap } from '../systems/animalSystem'
+import { trackEvent } from '../analytics/analytics'
 
 /** Create or update the crop child entity on a soil plot */
 export function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -514,6 +515,7 @@ export function buyCompostBin(): boolean {
   playerState.coins -= COMPOST_BIN_PRICE
   playerState.compostBinUnlocked = true
   setCompostBinVisible(true)
+  trackEvent('feature unlocked', { feature: 'compost_bin' })
   const cb = onBuyCompostBinCb
   onBuyCompostBinCb = null
   cb?.()
@@ -527,5 +529,6 @@ export function buyDog() {
   playerState.coins   -= 500
   playerState.dogOwned = true
   spawnDog()
+  trackEvent('feature unlocked', { feature: 'dog' })
   console.log('CozyFarm Dog: purchased and spawned')
 }

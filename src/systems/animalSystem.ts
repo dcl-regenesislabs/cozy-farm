@@ -32,6 +32,7 @@ import {
   getPigStage, getPigletScale, PIG_MEAT_SELL_PRICE,
 } from '../data/animalData'
 import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
+import { trackEvent } from '../analytics/analytics'
 
 // ---------------------------------------------------------------------------
 // Wander state
@@ -380,9 +381,11 @@ export function purchaseBuilding(type: 'chicken' | 'pig'): void {
   playerState.coins -= BUILDING_BUY_PRICE
   if (type === 'chicken') {
     playerState.chickenCoopOwned = true
+    trackEvent('feature unlocked', { feature: 'chicken_coop' })
     animalTutorialCallbacks.onCoopPurchased()
   } else {
     playerState.pigPenOwned = true
+    trackEvent('feature unlocked', { feature: 'pig_pen' })
     animalTutorialCallbacks.onPenPurchased()
   }
   playSound('buttonclick')

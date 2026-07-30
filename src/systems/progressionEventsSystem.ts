@@ -9,6 +9,7 @@ import { setCompostBinVisible, getCompostBinEntity, getSoilEntities, getComputer
 import { playSound } from './sfxSystem'
 import { setArrowTarget } from './tutorialArrowSystem'
 import { setOnBuyCompostBin } from '../game/actions'
+import { trackEvent } from '../analytics/analytics'
 import { setOnNextPlant, setOnNextWater, setOnNextFertilize, unlockFertilizerQuest } from '../game/questState'
 import { PlotState } from '../components/farmComponents'
 
@@ -262,6 +263,7 @@ function completeProgressionChain(): void {
   playerState.rotSystemUnlocked    = true
   progressionEventState.step       = 'complete'
   playerState.progressionEventStep = 'complete'
+  trackEvent('progression event completed', { event: 'rot_intro' })
 
   // Unlock the Mayor fertilizer quest (auto-start it as active)
   unlockFertilizerQuest()
@@ -351,6 +353,7 @@ function resumeProgressionEvent(): void {
 // ---------------------------------------------------------------------------
 function triggerLevel5Event(): void {
   progressionEventState.active     = true
+  trackEvent('progression event started', { event: 'rot_intro' })
 
   departAllActiveNpcs()
 

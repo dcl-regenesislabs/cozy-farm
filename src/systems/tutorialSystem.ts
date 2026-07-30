@@ -17,6 +17,7 @@ import { animalTutorialState } from '../game/animalTutorialState'
 import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
 import { getEntityWorldPosition } from './farmInstances'
 import { saveFarm } from '../services/saveService'
+import { trackEvent } from '../analytics/analytics'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
 const SEEDS_TO_BUY          = 5
@@ -142,6 +143,7 @@ function goToTalkMayor() {
   // setOnQuestClaimed fires when Mayor's quest reward is collected.
   setOnQuestAccepted(() => {
     tutorialState.step = 'sell_quest'
+    trackEvent('tutorial step reached', { step: 'sell_quest_accepted' })
     setArrowTarget((tutorialCallbacks.getTruckEntity() as import('@dcl/sdk/ecs').Entity | null))
     // Once the player sells enough, point back to Mayor to claim the reward
     setOnQuestClaimable(() => {
@@ -155,6 +157,7 @@ function goToTalkMayor() {
     tutorialState.step   = 'complete'
     tutorialState.active = false
     setArrowTarget(null)   // tutorial done — hide arrow
+    trackEvent('tutorial completed')
     // Mayor is already walking away (departure was triggered by closeDialog)
     showTutorialDialog(
       "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you. Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.\n\nThe town of CozyFarm is proud of you. Good luck!",
@@ -222,6 +225,7 @@ function tutorialWatcherSystem(_dt: number) {
     case 'open_quests': {
       // Advance once the player actually opens the quests panel
       if (playerState.activeMenu === 'quests') {
+        trackEvent('tutorial step reached', { step: 'quests_opened' })
         tutorialState.step = 'close_quests'
       }
       break
@@ -251,6 +255,7 @@ export function onTutorialAction(action: TutorialActionType) {
       if (tutorialState.step !== 'buy_seeds') return
       tutorialState.seedsBought++
       if (tutorialState.seedsBought >= SEEDS_TO_BUY) {
+        trackEvent('tutorial step reached', { step: 'seeds_purchased' })
         goToPlantFirst()
       }
       break
@@ -258,6 +263,7 @@ export function onTutorialAction(action: TutorialActionType) {
 
     case 'plant': {
       if (tutorialState.step !== 'plant_first') return
+      trackEvent('tutorial step reached', { step: 'first_planted' })
       // Don't show the dialog yet — plantSeed() resets activeMenu='none' right after
       // this hook fires, which would immediately hide the dialog.
       // Instead, set an intermediate step and let the watcher detect when the
@@ -268,6 +274,7 @@ export function onTutorialAction(action: TutorialActionType) {
 
     case 'water': {
       if (tutorialState.step !== 'water_first') return
+      trackEvent('tutorial step reached', { step: 'first_watered' })
       // Don't show the grow dialog immediately — waterCrop() is called in the same
       // frame as the tutorial action, and the dialog would open before the player
       // can even see the timer start counting.  Also, the 3D watering-can VFX model
@@ -280,10 +287,12 @@ export function onTutorialAction(action: TutorialActionType) {
 
     case 'harvest': {
       if (tutorialState.step === 'harvest_first') {
+        trackEvent('tutorial step reached', { step: 'first_harvested' })
         goToHarvestMore()
       } else if (tutorialState.step === 'harvest_more') {
         tutorialState.harvestMoreCount++
         if (tutorialState.harvestMoreCount >= HARVEST_MORE_TARGET) {
+          trackEvent('tutorial step reached', { step: 'harvest_practice_done' })
           goToOpenQuests()
         }
       }

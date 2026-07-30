@@ -37,6 +37,7 @@ import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
 import { PROFILE_HUD_DEBUG, applyProfileHudDebugState } from './debug/profileHudDebug'
+import { setAnalyticsWallet, trackEvent } from './analytics/analytics'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -118,6 +119,14 @@ export function main() {
     // Tutorial and NPC systems start inside onLoaded so they see the
     // restored state (tutorialComplete, tutorialStep, etc.) before firing.
     initSaveService(() => {
+      // ── Analytics: session started ──────────────────────────────────────────
+      setAnalyticsWallet(playerState.wallet)
+      trackEvent('session started', {
+        is_new_user:       playerState.level === 1 && playerState.totalCropsHarvested === 0,
+        level:             playerState.level,
+        tutorial_complete: !tutorialState.active,
+      })
+
       recomputeStartupBadges()
       initTutorialSystem()
 
@@ -130,10 +139,13 @@ export function main() {
       setOnPigTutorialComplete(startRegularNpcRotation)
 
       // Show a 4-second HUD banner whenever the player levels up.
+      const TRACKED_LEVELS = new Set([2, 5, 10, 15, 20])
       onLevelUp((newLevel) => {
         console.log('CozyFarm: Level up toast →', newLevel)
         playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
         playerState.levelUpToastExpiresAt = Date.now() + 4000
+
+        if (TRACKED_LEVELS.has(newLevel)) trackEvent('level reached', { level: newLevel })
 
         // Animal tutorial triggers (skip if another modal tutorial is mid-flow)
         if (
