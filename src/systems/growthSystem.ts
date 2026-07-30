@@ -155,12 +155,14 @@ function growthSystem(_dt: number) {
     // Update timer text every frame (cheap — just updates TextShape content)
     setSoilTimerText(entity, formatTime(effectiveGrowTimeMs - elapsed))
 
-    // Refresh hover text when canWater changes, or on a timer based on remaining time
-    // (sub-minute: every second so the countdown feels live; otherwise every 60s)
+    // Refresh hover text when canWater changes, or on a timer based on remaining time.
+    // formatTime() only shows "Xh Ym" once an hour+ remains (changes once a minute),
+    // but drops to "Xm Ys"/"Xs" under an hour (changes every second) — match that
+    // exactly so short-grow crops (e.g. Onion, 2 min) never show a stale value.
     const wasCanWater = prevCanWater.get(entity)
     const lastUpdate = lastHoverUpdateAt.get(entity) ?? 0
     const remaining = effectiveGrowTimeMs - elapsed
-    const updateInterval = remaining < 60_000 ? 1_000 : 60_000
+    const updateInterval = remaining >= 3_600_000 ? 60_000 : 1_000
     if (wasCanWater !== canWater || now - lastUpdate > updateInterval) {
       prevCanWater.set(entity, canWater)
       lastHoverUpdateAt.set(entity, now)
