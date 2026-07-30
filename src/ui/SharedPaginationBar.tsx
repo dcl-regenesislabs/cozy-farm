@@ -3,15 +3,15 @@ import { isMobile } from '@dcl/sdk/platform'
 import { playSound } from '../systems/sfxSystem'
 import { getZoomScale, isZooming, triggerCardZoom } from './cardZoomSystem'
 
-const PAGE_BUTTON_IMG = 'assets/images/revamp/mini-button.png'
-const PAGE_BUTTON_DISABLED_IMG = 'assets/images/revamp/mini-button-not-coins.png'
-const PAGE_BUTTON_ASPECT = 196 / 52
+const PAGE_BUTTON_IMG = 'assets/images/revamp/Type=Secondary, State=Default.png'
+const PAGE_BUTTON_DISABLED_IMG = 'assets/images/revamp/Type=Secondary, State=Default.png'
+const PAGE_BUTTON_ASPECT = 366 / 84
 
-const PAGE_TEXT_ACTIVE = { r: 0.98, g: 0.96, b: 0.93, a: 1 }
-const PAGE_TEXT_DISABLED = { r: 0.82, g: 0.79, b: 0.74, a: 0.72 }
-const PAGE_CHIP_BG = { r: 0.16, g: 0.10, b: 0.04, a: 0.94 }
-const PAGE_CHIP_BORDER = { r: 0.94, g: 0.75, b: 0.24, a: 0.95 }
-const PAGE_CHIP_TEXT = { r: 0.98, g: 0.90, b: 0.72, a: 1 }
+const PAGE_TEXT_ACTIVE = { r: 0.34, g: 0.20, b: 0.10, a: 1 }
+const PAGE_TEXT_DISABLED = { r: 0.53, g: 0.39, b: 0.25, a: 0.72 }
+const PAGE_CHIP_BG = { r: 0.34, g: 0.18, b: 0.07, a: 0.96 }
+const PAGE_CHIP_BORDER = { r: 0.95, g: 0.90, b: 0.80, a: 0.98 }
+const PAGE_CHIP_TEXT = { r: 1, g: 1, b: 1, a: 1 }
 const PAGE_TOUCH_CAPTURE = { r: 0, g: 0, b: 0, a: 0.001 }
 
 type PaginationMode = 'auto' | 'desktop' | 'mobile'
@@ -54,8 +54,8 @@ export const SharedPaginationBar = ({
   buttonTextureSrc = PAGE_BUTTON_IMG,
   buttonDisabledTextureSrc = PAGE_BUTTON_DISABLED_IMG,
   buttonAspect = PAGE_BUTTON_ASPECT,
-  buttonLabelTopOffset = 0,
-  pageTextTopOffset = 0,
+  buttonLabelTopOffset = -1,
+  pageTextTopOffset = -1,
   buttonLabelColor = PAGE_TEXT_ACTIVE,
   buttonLabelDisabledColor = PAGE_TEXT_DISABLED,
   pageChipBgColor = PAGE_CHIP_BG,

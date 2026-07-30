@@ -8,6 +8,7 @@ import { triggerCardShake, isShaking } from './cardShakeSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
 import { OutlineLabel } from './OutlineLabel'
+import { DialogActionButton } from './RevampButtons'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
 
@@ -194,57 +195,36 @@ export const PlotGroupUnlockMenu = () => {
             flexDirection: 'row',
           }}
         >
-          <UiEntity
-            uiTransform={{
-              width: Math.round(BTN_W * buyScale),
-              height: Math.round(BTN_H * buyScale),
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-              margin: { right: d(10) },
-            }}
-            uiBackground={{ color: canBuy ? BTN_BG_PRIMARY : BTN_BG_DISABLED }}
-            onMouseDown={() => {
+          <DialogActionButton
+            label={`Buy ${cost}`}
+            primary
+            width={BTN_W}
+            height={BTN_H}
+            fontSize={BTN_FONT}
+            zoomScale={buyScale}
+            disabled={!canBuy}
+            onPress={() => {
               if (!canBuy || isZooming('plotgroup_confirm')) return
               playSound('buttonclick')
               triggerCardZoom('plotgroup_confirm')
               setTimeout(doConfirm, ZOOM_DURATION)
             }}
-          >
-            <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <Label
-                value={`Buy  ${cost}`}
-                fontSize={BTN_FONT}
-                color={canBuy ? BTN_TEXT : BTN_TEXT_MUTED}
-                textAlign="middle-center"
-                uiTransform={{ width: d(88), height: BTN_H, flexShrink: 0 }}
-              />
-              <UiEntity
-                uiTransform={{ width: d(16), height: d(16), flexShrink: 0 }}
-                uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-              />
-            </UiEntity>
-          </UiEntity>
+          />
 
-          <UiEntity
-            uiTransform={{
-              width: BTN_W,
-              height: BTN_H,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-            }}
-            uiBackground={{ color: BTN_BG_SECONDARY }}
-            onMouseDown={() => {
+          <UiEntity uiTransform={{ width: d(10), height: 1 }} />
+
+          <DialogActionButton
+            label="Not now"
+            width={BTN_W}
+            height={BTN_H}
+            fontSize={BTN_FONT}
+            onPress={() => {
               if (isShaking('plotgroup_cancel')) return
               playSound('buttonclick')
               triggerCardShake('plotgroup_cancel')
               setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
             }}
-          >
-            <Label value="Not now" fontSize={BTN_FONT} color={BTN_TEXT} textAlign="middle-center"
-              uiTransform={{ width: BTN_W, height: BTN_H }} />
-          </UiEntity>
+          />
         </UiEntity>
 
       </UiEntity>

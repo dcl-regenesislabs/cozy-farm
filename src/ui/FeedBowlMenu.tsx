@@ -1,99 +1,184 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
-import { GRAIN_ICON, COINS_IMAGE } from '../data/imagePaths'
-import { PanelShell, C } from './PanelShell'
-import { GRAIN_BUY_PRICE } from '../data/animalData'
-import { depositFoodInBowl } from '../systems/animalSystem'
+import { GRAIN_ICON } from '../data/imagePaths'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_HARVEST_IMAGES } from '../data/imagePaths'
+import { depositFoodInBowl } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { RevampPanelFrame } from './RevampPanel'
+import { MiniTextButton } from './RevampButtons'
+import { SHARED_PAGINATION_HEIGHT_DESKTOP, SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
 
-// ---------------------------------------------------------------------------
-// Food card — one item (grain or crop) displayed as a store-style card
-// ---------------------------------------------------------------------------
-
-const FoodCard = ({
-  label,
-  imgSrc,
-  inInventory,
-  onDepositOne,
-  onDepositAll,
-}: {
-  key?: string | number
+type FeedCardSpec = {
+  key: string
   label: string
   imgSrc: string
-  inInventory: number
-  onDepositOne: () => void
-  onDepositAll: () => void
-}) => {
-  const hasItems = inInventory > 0
+  count: number
+  stockLabel: string
+  note: string
+  addOne: () => void
+  addAll: () => void
+}
+
+const UI_SCALE = 0.8
+const ss = (v: number) => Math.round(v * UI_SCALE)
+
+const CARD_IMG = 'assets/images/revamp/card.png'
+const CARD_TEXT = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const CARD_TEXT_MUTE = { r: 0.55, g: 0.40, b: 0.24, a: 1 }
+const STOCK_COLOR = { r: 0.45, g: 0.27, b: 0.11, a: 1 }
+
+const CARD_W = 248
+const CARD_H = 334
+const CARD_BG_SCALE = 1.14
+const CARD_BG_SCALE_MOBILE = 1.18
+const CARD_CONTENT_SCALE_MOBILE = 1.18
+const CARD_ART_ASPECT = 236 / 326
+const GRID_CARD_SLOT_TRIM = 10
+const CARD_ICON = 96
+const CARD_TITLE_LG = ss(27)
+const CARD_TITLE_SM = ss(22)
+const CARD_BODY = ss(15)
+const CARD_STATUS = ss(22)
+const BUTTON_W = 126
+const BUTTON_FONT = ss(20)
+const ITEMS_PER_PAGE_DESKTOP = 3
+const ITEMS_PER_PAGE_MOBILE = 4
+const CARD_TOP_AIR = ss(12)
+
+const bowlPage = { value: 0 }
+
+function scaleCardContent(value: number): number {
+  return isMobile() ? Math.round(value * CARD_CONTENT_SCALE_MOBILE) : value
+}
+
+function getCardBgScale(): number {
+  return isMobile() ? CARD_BG_SCALE_MOBILE : CARD_BG_SCALE
+}
+
+function getCardTransform() {
+  const width = Math.round(CARD_W * getCardBgScale())
+  const artHeight = Math.round(width / CARD_ART_ASPECT)
+  const height = Math.max(artHeight, Math.round(CARD_H * getCardBgScale()))
+
+  return {
+    width,
+    height,
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'flex-start' as const,
+    padding: {
+      top: isMobile() ? 34 : 28,
+      bottom: isMobile() ? 40 : 34,
+      left: isMobile() ? 12 : 16,
+      right: isMobile() ? 12 : 16,
+    },
+  }
+}
+
+function getCardVisualWidth(): number {
+  return Math.round(CARD_W * getCardBgScale())
+}
+
+function getGridSlotHeight(): number {
+  return getCardTransform().height
+}
+
+function getCardTextWidth(transformWidth: number): number {
+  return transformWidth - (isMobile() ? 26 : 34)
+}
+
+function getCardTitleFont(title: string): number {
+  return title.length <= 12 ? scaleCardContent(CARD_TITLE_LG) : scaleCardContent(CARD_TITLE_SM)
+}
+
+function actionWithSound(cb: () => void): () => void {
+  return () => {
+    playSound('buttonclick')
+    cb()
+  }
+}
+
+const FeedCard = ({ label, imgSrc, count, stockLabel, note, addOne, addAll }: FeedCardSpec) => {
+  const transform = getCardTransform()
+  const buttonWidth = Math.round(BUTTON_W * (isMobile() ? CARD_CONTENT_SCALE_MOBILE : 1))
+  const enabled = count > 0
+  const textWidth = getCardTextWidth(transform.width)
+
   return (
     <UiEntity
-      uiTransform={{
-        flexDirection: 'column',
-        alignItems: 'center',
-        width: 190,
-        height: 250,
-        margin: { right: 12, bottom: 12 },
-        padding: { top: 14, bottom: 14, left: 10, right: 10 },
-      }}
-      uiBackground={{ color: hasItems ? C.rowBg : { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
+      uiTransform={{ ...transform, margin: { right: ss(4), bottom: ss(4) } }}
+      uiBackground={{ texture: { src: CARD_IMG, wrapMode: 'clamp' }, textureMode: 'stretch' }}
     >
-      {/* Icon */}
+      <UiEntity uiTransform={{ height: CARD_TOP_AIR, flexShrink: 0 }} />
+
       <UiEntity
-        uiTransform={{ width: 90, height: 90, margin: { bottom: 10 }, flexShrink: 0 }}
+        uiTransform={{
+          width: scaleCardContent(CARD_ICON),
+          height: scaleCardContent(CARD_ICON),
+          margin: { bottom: ss(12) },
+          flexShrink: 0,
+        }}
         uiBackground={{
           texture: { src: imgSrc, wrapMode: 'clamp' },
           textureMode: 'stretch',
-          color: hasItems ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 },
+          color: enabled ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.45 },
         }}
       />
-      {/* Name */}
-      <Label value={label} fontSize={22} color={hasItems ? C.textMain : C.textMute} textAlign="middle-center" />
-      {/* Count */}
+
       <Label
-        value={`In stock: ${inInventory}`}
-        fontSize={17}
-        color={hasItems ? C.gold : C.textMute}
+        value={`<b>${label}</b>`}
+        fontSize={getCardTitleFont(label)}
+        color={CARD_TEXT}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 4, bottom: 8 } }}
+        uiTransform={{ width: textWidth, height: scaleCardContent(ss(34)) }}
       />
-      {/* Add 1 button */}
+      <Label
+        value={stockLabel}
+        fontSize={scaleCardContent(CARD_STATUS)}
+        color={enabled ? STOCK_COLOR : CARD_TEXT_MUTE}
+        textAlign="middle-center"
+        uiTransform={{ width: textWidth, height: scaleCardContent(ss(28)), margin: { top: ss(8) } }}
+      />
+      <Label
+        value={note}
+        fontSize={scaleCardContent(CARD_BODY)}
+        color={CARD_TEXT_MUTE}
+        textAlign="middle-center"
+        uiTransform={{ width: textWidth, height: scaleCardContent(ss(50)), margin: { top: ss(10) } }}
+      />
+
+      <UiEntity uiTransform={{ flex: 1 }} />
+
+      <MiniTextButton
+        label="ADD ALL"
+        width={buttonWidth}
+        fontSize={scaleCardContent(BUTTON_FONT)}
+        topOffset={-scaleCardContent(4)}
+        disabled={!enabled}
+        onPress={enabled ? actionWithSound(addAll) : undefined}
+      />
+
       <UiEntity
-        uiTransform={{ width: 160, height: 40, margin: { bottom: 6 }, justifyContent: 'center', alignItems: 'center' }}
-        uiBackground={{ color: hasItems ? { r: 0.2, g: 0.55, b: 0.2, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
-        onMouseDown={hasItems ? () => { playSound('buttonclick'); onDepositOne() } : undefined}
-      >
-        <Label value="Add 1" fontSize={19} color={hasItems ? C.textMain : C.textMute} textAlign="middle-center" />
-      </UiEntity>
-      {/* Add All button */}
-      <UiEntity
-        uiTransform={{ width: 160, height: 40, justifyContent: 'center', alignItems: 'center' }}
-        uiBackground={{ color: hasItems ? { r: 0.18, g: 0.35, b: 0.65, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
-        onMouseDown={hasItems ? () => { playSound('buttonclick'); onDepositAll() } : undefined}
-      >
-        <Label
-          value={hasItems ? `Add all (${inInventory})` : 'None'}
-          fontSize={17}
-          color={hasItems ? C.textMain : C.textMute}
-          textAlign="middle-center"
-        />
-      </UiEntity>
+        uiTransform={{
+          positionType: 'absolute',
+          position: { top: 0, left: 0 },
+          width: transform.width,
+          height: transform.height - Math.round(buttonWidth / (196 / 52)) - ss(10),
+        }}
+        onMouseDown={enabled ? actionWithSound(addOne) : undefined}
+      />
     </UiEntity>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Main panel
-// ---------------------------------------------------------------------------
 
 export const FeedBowlMenu = () => {
   const type = playerState.activeFeedBowl
   if (!type) return <UiEntity />
 
   const bowlAmount = type === 'chicken' ? playerState.chickenFoodInBowl : playerState.pigFoodInBowl
-  const title      = type === 'chicken' ? 'Feed Chickens' : 'Feed Pigs'
-  const bowlBarPct = Math.min(100, Math.floor((bowlAmount / 20) * 100))
+  const title = type === 'chicken' ? 'Feed Chickens' : 'Feed Pigs'
 
   const deposit = (grainAmt: number, cropType?: CropType, cropAmt?: number) => {
     const crops = new Map<number, number>()
@@ -101,73 +186,138 @@ export const FeedBowlMenu = () => {
     depositFoodInBowl(type, grainAmt, crops)
   }
 
+  const items: FeedCardSpec[] = [
+    {
+      key: 'grain',
+      label: 'Grain',
+      imgSrc: GRAIN_ICON,
+      count: playerState.grainCount,
+      stockLabel: `x${playerState.grainCount}`,
+      note: 'Tap for 1. Button adds all.',
+      addOne: () => deposit(1),
+      addAll: () => deposit(playerState.grainCount)
+    },
+    ...ALL_CROP_TYPES
+      .map((cropType) => {
+        const count = playerState.harvested.get(cropType) ?? 0
+        if (count <= 0) return null
+        const def = CROP_DATA.get(cropType)!
+        return {
+          key: `crop-${cropType}`,
+          label: def.name,
+          imgSrc: CROP_HARVEST_IMAGES[cropType],
+          count,
+          stockLabel: `x${count}`,
+          note: 'Tap for 1. Button adds all.',
+          addOne: () => deposit(0, cropType, 1),
+          addAll: () => deposit(0, cropType, count)
+        } satisfies FeedCardSpec
+      })
+      .filter((item): item is FeedCardSpec => item !== null)
+  ]
+
+  const itemsPerPage = isMobile() ? ITEMS_PER_PAGE_MOBILE : ITEMS_PER_PAGE_DESKTOP
+  const lastPage = Math.max(0, Math.ceil(items.length / itemsPerPage) - 1)
+  if (bowlPage.value > lastPage) bowlPage.value = lastPage
+  const page = bowlPage.value
+  const pageSlice = items.slice(page * itemsPerPage, (page + 1) * itemsPerPage)
+  const columns = isMobile() ? 2 : 3
+  const paginationHeight = isMobile() ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
+  const slotWidth = Math.max(0, getCardVisualWidth() - GRID_CARD_SLOT_TRIM)
+  const slotHeight = getGridSlotHeight()
+  const offsetX = Math.round((slotWidth - getCardVisualWidth()) / 2)
+  const rows: FeedCardSpec[][] = []
+
+  for (let i = 0; i < pageSlice.length; i += columns) {
+    rows.push(pageSlice.slice(i, i + columns))
+  }
+
   return (
-    <PanelShell title={title} onClose={() => { playerState.activeMenu = 'none' }}>
-      <UiEntity uiTransform={{ flexDirection: 'column', padding: { left: 16, right: 16, top: 8 } }}>
-
-        {/* Bowl status header */}
+    <RevampPanelFrame titleText={title} onClose={() => { playerState.activeMenu = 'none' }}>
+      <UiEntity uiTransform={{ width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center' }}>
         <UiEntity
-          uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 16 } }}
-          uiBackground={{ color: { r: 0.1, g: 0.09, b: 0.06, a: 1 } }}
+          uiTransform={{
+            width: '100%',
+            flexDirection: 'column',
+            alignItems: 'center',
+            flexShrink: 0,
+            margin: { top: ss(18), bottom: ss(14) },
+          }}
         >
-          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', padding: { left: 14, right: 14, top: 10, bottom: 6 } }}>
-            <Label value="Food in bowl:" fontSize={20} color={C.textMute} uiTransform={{ margin: { right: 8 } }} />
-            <Label value={`${bowlAmount} units`} fontSize={22} color={C.gold} />
-          </UiEntity>
-          <UiEntity uiTransform={{ width: '100%', height: 8 }} uiBackground={{ color: { r: 0.18, g: 0.16, b: 0.11, a: 1 } }}>
-            <UiEntity
-              uiTransform={{ width: `${bowlBarPct}%`, height: '100%' }}
-              uiBackground={{ color: bowlAmount > 0 ? C.gold : { r: 0.3, g: 0.3, b: 0.3, a: 1 } }}
-            />
-          </UiEntity>
-        </UiEntity>
-
-        {/* Card grid */}
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
-
-          {/* Grain card */}
-          <FoodCard
-            label="Grain"
-            imgSrc={GRAIN_ICON}
-            inInventory={playerState.grainCount}
-            onDepositOne={() => deposit(1)}
-            onDepositAll={() => deposit(playerState.grainCount)}
+          <Label
+            value={`Bowl loaded: ${bowlAmount} units`}
+            fontSize={isMobile() ? ss(26) : ss(24)}
+            color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
+            textAlign="middle-center"
+            textWrap="nowrap"
+            uiTransform={{ width: '100%', height: isMobile() ? ss(32) : ss(28) }}
           />
-
-          {/* Crop cards — only crops with inventory > 0 */}
-          {ALL_CROP_TYPES.map((cropType) => {
-            const count = playerState.harvested.get(cropType) ?? 0
-            if (count === 0) return null
-            const def    = CROP_DATA.get(cropType)!
-            const imgSrc = CROP_HARVEST_IMAGES[cropType]
-            return (
-              <FoodCard
-                key={cropType}
-                label={def.name}
-                imgSrc={imgSrc}
-                inInventory={count}
-                onDepositOne={() => deposit(0, cropType, 1)}
-                onDepositAll={() => deposit(0, cropType, count)}
-              />
-            )
-          })}
-
+          <Label
+            value="Tap a card to add 1 unit. Use the button to dump the whole stack."
+            fontSize={isMobile() ? ss(21) : ss(17)}
+            color={isMobile() ? { r: 1, g: 1, b: 1, a: 1 } : CARD_TEXT_MUTE}
+            textAlign="middle-center"
+            uiTransform={{
+              width: '88%',
+              height: isMobile() ? ss(48) : ss(24),
+              margin: { top: ss(8) },
+            }}
+          />
         </UiEntity>
 
-        {/* Empty state */}
-        {playerState.grainCount === 0 && ALL_CROP_TYPES.every((c) => (playerState.harvested.get(c) ?? 0) === 0) && (
-          <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 8 } }}>
-            <Label
-              value="No food in inventory. Buy grain from the Shop!"
-              fontSize={18}
-              color={C.textMute}
-            />
-            <UiEntity uiTransform={{ width: 28, height: 28, margin: { left: 8 } }}
-              uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }} />
+        <UiEntity uiTransform={{ flex: 1, width: '100%' }}>
+          <UiEntity
+            uiTransform={{
+              width: '100%',
+              height: '100%',
+              padding: { bottom: lastPage > 0 ? paginationHeight + ss(24) : 0 },
+            }}
+          >
+            <UiEntity uiTransform={{ width: '100%', flexDirection: 'column', alignItems: 'center', margin: { top: ss(8) } }}>
+              {rows.map((row, rowIndex) => (
+                <UiEntity
+                  key={`feed-row-${rowIndex}`}
+                  uiTransform={{
+                    flexDirection: 'row',
+                    width: row.length * slotWidth,
+                    height: slotHeight,
+                    justifyContent: 'center',
+                    margin: { bottom: rowIndex < rows.length - 1 ? ss(12) : 0 },
+                  }}
+                >
+                  {row.map((item) => (
+                    <UiEntity key={item.key} uiTransform={{ width: slotWidth, height: slotHeight }}>
+                      <UiEntity uiTransform={{ positionType: 'absolute', position: { left: offsetX, top: 0 } }}>
+                        <FeedCard {...item} />
+                      </UiEntity>
+                    </UiEntity>
+                  ))}
+                </UiEntity>
+              ))}
+            </UiEntity>
           </UiEntity>
-        )}
 
+          {lastPage > 0 && (
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { left: 0, bottom: 0 },
+                width: '100%',
+                height: paginationHeight,
+              }}
+            >
+              <SharedPaginationBar
+                id={`feed-bowl-${type}`}
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { bowlPage.value-- }}
+                onNext={() => { bowlPage.value++ }}
+                mode={isMobile() ? 'mobile' : 'desktop'}
+              />
+            </UiEntity>
+          )}
+        </UiEntity>
       </UiEntity>
-    </PanelShell>
+    </RevampPanelFrame>
   )
 }

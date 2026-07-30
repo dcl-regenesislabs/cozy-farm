@@ -11,7 +11,8 @@ import { playSound } from '../systems/sfxSystem'
 import { triggerCardShake, isShaking } from './cardShakeSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
-import { RevampCloseButton } from './RevampPanel'
+import { DialogActionButton } from './RevampButtons'
+import { OutlineLabel } from './OutlineLabel'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
 
@@ -20,24 +21,19 @@ const ZOOM_DURATION = 290
 const SHAKE_DURATION = 320
 
 const TEXT_BROWN = { r: 0.28, g: 0.15, b: 0.04, a: 1 }
-const TEXT_BROWN_MUTE = { r: 0.48, g: 0.3, b: 0.1, a: 1 }
-const BTN_BG_PRIMARY = { r: 0.45, g: 0.26, b: 0.06, a: 1 }
-const BTN_BG_SECONDARY = { r: 0.62, g: 0.42, b: 0.16, a: 1 }
-const BTN_BG_DISABLED = { r: 0.3, g: 0.22, b: 0.1, a: 1 }
-const BTN_TEXT = { r: 0.97, g: 0.9, b: 0.68, a: 1 }
-const BTN_TEXT_MUTED = { r: 0.6, g: 0.5, b: 0.35, a: 1 }
+const TEXT_BROWN_MUTE = { r: 0.48, g: 0.30, b: 0.10, a: 1 }
 
 const BASE_W = 740
 const BASE_H = 380
-const BASE_PORT_SIZE = 145
-const BASE_PORT_LEFT = 72
-const BASE_PORT_TOP = 118
+const BASE_ICON_SIZE = 145
+const BASE_ICON_LEFT = 72
+const BASE_ICON_TOP = 118
 const BASE_NAME_TOP = 68
 const BASE_NAME_H = 36
 const BASE_TEXT_RIGHT = 98
 const BASE_BTN_H = 36
-const BASE_BTN_FONT = 14
-const BASE_BTN_W_PAIR = 120
+const BASE_BTN_FONT = 18
+const BASE_BTN_W_PAIR = 140
 const BASE_BTN_BOTTOM = 68
 
 export const ExpansionMenu = () => {
@@ -46,25 +42,24 @@ export const ExpansionMenu = () => {
 
   const pack = playerState.activeMenu === 'expansion1' ? 1 : 2
   const canAfford = playerState.coins >= EXPANSION_COST
+  const buyScale = getZoomScale('expansion_confirm')
 
   const W = d(BASE_W)
   const H = d(BASE_H)
-  const PORT_SIZE = d(BASE_PORT_SIZE)
-  const PORT_LEFT = d(BASE_PORT_LEFT)
-  const PORT_TOP = d(BASE_PORT_TOP)
+  const ICON_SIZE = d(BASE_ICON_SIZE)
+  const ICON_LEFT = d(BASE_ICON_LEFT)
+  const ICON_TOP = d(BASE_ICON_TOP)
   const NAME_TOP = d(BASE_NAME_TOP)
   const NAME_H = d(BASE_NAME_H)
-  const NAME_LEFT = PORT_LEFT + PORT_SIZE + d(14)
-  const TEXT_RIGHT = d(BASE_TEXT_RIGHT)
-  const TEXT_W = W - NAME_LEFT - TEXT_RIGHT
+  const NAME_LEFT = ICON_LEFT + ICON_SIZE + d(14)
+  const TEXT_W = W - NAME_LEFT - d(BASE_TEXT_RIGHT)
   const BTN_H = d(BASE_BTN_H)
   const BTN_FONT = d(BASE_BTN_FONT)
   const BTN_W = d(BASE_BTN_W_PAIR)
   const BTN_BOTTOM = d(BASE_BTN_BOTTOM)
   const BTN_LEFT = Math.round((W - BTN_W * 2 - d(10)) / 2)
-  const TEXT_TOP = NAME_TOP + NAME_H + d(12)
-  const COST_TOP = TEXT_TOP + d(60)
-  const buyScale = getZoomScale('expansion_confirm')
+  const TEXT_TOP = NAME_TOP + NAME_H + d(18)
+  const COST_TOP = TEXT_TOP + d(62)
 
   function doConfirm() {
     playerState.coins -= EXPANSION_COST
@@ -99,28 +94,33 @@ export const ExpansionMenu = () => {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: PORT_TOP, left: PORT_LEFT },
-            width: PORT_SIZE,
-            height: PORT_SIZE,
+            position: { top: ICON_TOP, left: ICON_LEFT },
+            width: ICON_SIZE,
+            height: ICON_SIZE,
           }}
           uiBackground={{ texture: { src: SOIL_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
 
-        <Label
-          value={`Plot Expansion — Pack ${pack}`}
-          fontSize={d(22)}
-          color={TEXT_BROWN}
-          textAlign="middle-left"
+        <UiEntity
           uiTransform={{
             positionType: 'absolute',
             position: { top: NAME_TOP, left: NAME_LEFT },
             width: TEXT_W,
             height: NAME_H,
           }}
-        />
+        >
+          <OutlineLabel
+            value={`Plot Expansion - Pack ${pack}`}
+            fontSize={d(24)}
+            color={{ r: 1, g: 0.88, b: 0.5, a: 1 }}
+            outlineColor={{ r: 0.15, g: 0.07, b: 0.02, a: 1 }}
+            width={TEXT_W}
+            height={NAME_H}
+          />
+        </UiEntity>
 
         <Label
-          value={`Unlock 3 new soil plots for your farm.\nMore land, more crops, more harvest!`}
+          value="Unlock 3 new soil plots for your farm and keep the same revamp progression flow."
           fontSize={d(mobile ? 15 : 18)}
           color={TEXT_BROWN}
           textAlign="top-left"
@@ -148,7 +148,7 @@ export const ExpansionMenu = () => {
           />
           <Label
             value={`${EXPANSION_COST}`}
-            fontSize={d(16)}
+            fontSize={d(18)}
             color={canAfford ? TEXT_BROWN : { r: 0.7, g: 0.15, b: 0.05, a: 1 }}
           />
           <Label
@@ -158,8 +158,6 @@ export const ExpansionMenu = () => {
           />
         </UiEntity>
 
-        <RevampCloseButton onClose={() => { playerState.activeMenu = 'none' }} />
-
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -167,55 +165,36 @@ export const ExpansionMenu = () => {
             flexDirection: 'row',
           }}
         >
-          <UiEntity
-            uiTransform={{
-              width: Math.round(BTN_W * buyScale),
-              height: Math.round(BTN_H * buyScale),
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-              margin: { right: d(10) },
-            }}
-            uiBackground={{ color: canAfford ? BTN_BG_PRIMARY : BTN_BG_DISABLED }}
-            onMouseDown={() => {
+          <DialogActionButton
+            label={`Buy ${EXPANSION_COST}`}
+            primary
+            width={BTN_W}
+            height={BTN_H}
+            fontSize={BTN_FONT}
+            zoomScale={buyScale}
+            disabled={!canAfford}
+            onPress={() => {
               if (!canAfford || isZooming('expansion_confirm')) return
               playSound('buttonclick')
               triggerCardZoom('expansion_confirm')
               setTimeout(doConfirm, ZOOM_DURATION)
             }}
-          >
-            <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-              <Label
-                value={`Buy  ${EXPANSION_COST}`}
-                fontSize={BTN_FONT}
-                color={canAfford ? BTN_TEXT : BTN_TEXT_MUTED}
-                textAlign="middle-center"
-              />
-              <UiEntity
-                uiTransform={{ width: d(14), height: d(14), margin: { left: d(5) }, flexShrink: 0 }}
-                uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-              />
-            </UiEntity>
-          </UiEntity>
+          />
 
-          <UiEntity
-            uiTransform={{
-              width: BTN_W,
-              height: BTN_H,
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: 8,
-            }}
-            uiBackground={{ color: BTN_BG_SECONDARY }}
-            onMouseDown={() => {
+          <UiEntity uiTransform={{ width: d(10), height: 1 }} />
+
+          <DialogActionButton
+            label="Not now"
+            width={BTN_W}
+            height={BTN_H}
+            fontSize={BTN_FONT}
+            onPress={() => {
               if (isShaking('expansion_cancel')) return
               playSound('buttonclick')
               triggerCardShake('expansion_cancel')
               setTimeout(() => { playerState.activeMenu = 'none' }, SHAKE_DURATION)
             }}
-          >
-            <Label value="Not now" fontSize={BTN_FONT} color={BTN_TEXT} textAlign="middle-center" />
-          </UiEntity>
+          />
         </UiEntity>
       </UiEntity>
     </UiEntity>

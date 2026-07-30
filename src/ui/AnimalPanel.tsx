@@ -1,33 +1,112 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { isMobile } from '@dcl/sdk/platform'
 import { playerState } from '../game/gameState'
-import { COINS_IMAGE, CHICKEN_ICON, PIG_ICON, EGG_ICON, GRAIN_ICON, MANURE_ICON } from '../data/imagePaths'
-import { PanelShell, C } from './PanelShell'
 import {
-  EGG_CYCLE_MS, PIG_CYCLE_MS,
-  CHICKEN_COOP_UNLOCK_LEVEL, PIG_PEN_UNLOCK_LEVEL,
-  BUILDING_BUY_PRICE, ANIMAL_BUY_PRICE, MAX_ANIMALS_PER_BUILDING,
-  getPigStage, PIG_BREED_COOLDOWN,
+  COINS_IMAGE,
+  CHICKEN_ICON,
+  PIG_ICON,
+  EGG_ICON,
+  GRAIN_ICON,
+  MANURE_ICON,
+  VEGGIE_SCRAP_ICON,
+} from '../data/imagePaths'
+import {
+  EGG_CYCLE_MS,
+  PIG_CYCLE_MS,
+  CHICKEN_COOP_UNLOCK_LEVEL,
+  PIG_PEN_UNLOCK_LEVEL,
+  BUILDING_BUY_PRICE,
+  MAX_ANIMALS_PER_BUILDING,
+  getPigStage,
+  PIG_BREED_COOLDOWN,
 } from '../data/animalData'
-import { buyAnimal, breedPigs, harvestPig } from '../systems/animalSystem'
+import { buyAnimal, breedPigs, harvestPig, purchaseBuilding } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { RevampPanelFrame } from './RevampPanel'
+import { SHARED_PAGINATION_HEIGHT_DESKTOP, SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
+import { MiniTextButton, MINI_BUTTON_IMG, MINI_BUTTON_NO_COIN_IMG, PillTabButton } from './RevampButtons'
 
-// ---------------------------------------------------------------------------
-// Per-panel tab state
-// ---------------------------------------------------------------------------
+type AnimalTabValue = 'coop' | 'pigPen' | 'stock'
+type AnimalCardSpec = {
+  key: string
+  iconSrc: string
+  title: string
+  meta?: string
+  status: string
+  statusColor: { r: number; g: number; b: number; a: number }
+  note?: string
+  buttonLabel?: string
+  buttonEnabled?: boolean
+  buttonTextureSrc?: string
+  buttonTextColor?: { r: number; g: number; b: number; a: number }
+  onButtonPress?: () => void
+  onCardPress?: () => void
+  locked?: boolean
+}
 
-const pigTab = { value: 'overview' as 'overview' | 'breeding' }
+const UI_SCALE = 0.8
+const ss = (v: number) => Math.round(v * UI_SCALE)
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
+const CARD_IMG = 'assets/images/revamp/card.png'
+const CARD_LOCKED_IMG = 'assets/images/revamp/lockedlevel.png'
+
+const CARD_TEXT = { r: 0.22, g: 0.12, b: 0.04, a: 1 }
+const CARD_TEXT_MUTE = { r: 0.55, g: 0.40, b: 0.24, a: 1 }
+const STATUS_SUCCESS = { r: 0.24, g: 0.66, b: 0.18, a: 1 }
+const STATUS_WARNING = { r: 0.88, g: 0.46, b: 0.14, a: 1 }
+const STATUS_INFO = { r: 0.20, g: 0.46, b: 0.88, a: 1 }
+const STATUS_MUTE = { r: 0.48, g: 0.34, b: 0.18, a: 1 }
+
+const TAB_W = 166
+const TAB_GAP = ss(12)
+const CONTENT_TOP_GAP = ss(8)
+const GRID_TOP_GAP = ss(12)
+const PAGINATION_MARGIN_TOP = ss(24)
+const ITEMS_PER_PAGE = 4
+
+const CARD_W = 208
+const CARD_H = 332
+const CARD_MARGIN = 2
+const CARD_PAD_TOP = 28
+const CARD_PAD_BOTTOM = 34
+const CARD_PAD_SIDE = 16
+const CARD_BG_SCALE = 1.14
+const CARD_BG_SCALE_MOBILE = 1.18
+const CARD_CONTENT_SCALE_MOBILE = 1.22
+const CARD_ART_ASPECT = 236 / 326
+const GRID_CARD_SLOT_TRIM = 10
+const CARD_ICON = 96
+const CARD_ICON_TOP_SPACE = ss(12)
+const CARD_ICON_MARGIN = ss(12)
+const CARD_TITLE_LG = ss(28)
+const CARD_TITLE_SM = ss(24)
+const CARD_META_FONT = ss(18)
+const CARD_STATUS_FONT = ss(24)
+const CARD_NOTE_FONT = ss(16)
+const ACTION_BUTTON_W = 126
+const ACTION_BUTTON_FONT = ss(20)
+const MOBILE_TITLE_BLOCK_H = ss(56)
+const MOBILE_META_BLOCK_H = ss(24)
+const MOBILE_STATUS_BLOCK_H = ss(30)
+const MOBILE_NOTE_BLOCK_H = ss(44)
+
+const animalTab = { value: 'coop' as AnimalTabValue }
+const animalPage: Record<AnimalTabValue, number> = { coop: 0, pigPen: 0, stock: 0 }
+
+const PIG_STAGE_LABELS: Record<string, string> = {
+  piglet: 'Piglet',
+  adolescent: 'Teen',
+  adult: 'Adult',
+  harvestable: 'Ready!'
+}
 
 function formatMs(ms: number): string {
   if (ms <= 0) return 'Ready!'
   const h = Math.floor(ms / 3_600_000)
   const m = Math.floor((ms % 3_600_000) / 60_000)
   const s = Math.floor((ms % 60_000) / 1_000)
-  if (h > 0)  return `${h}h ${m}m`
-  if (m > 0)  return `${m}m ${s}s`
+  if (h > 0) return `${h}h ${m}m`
+  if (m > 0) return `${m}m ${s}s`
   return `${s}s`
 }
 
@@ -41,454 +120,634 @@ function nextManureMs(lastManureAt: number): number {
   return Math.max(0, lastManureAt + PIG_CYCLE_MS - Date.now())
 }
 
-const PIG_STAGE_LABELS: Record<string, string> = {
-  piglet:      'Piglet',
-  adolescent:  'Adolescent',
-  adult:       'Adult',
-  harvestable: 'Ready to harvest',
+function scaleCardContent(value: number): number {
+  return isMobile() ? Math.round(value * CARD_CONTENT_SCALE_MOBILE) : value
 }
 
-// ---------------------------------------------------------------------------
-// Section header with icon
-// ---------------------------------------------------------------------------
+function getCardBgScale(): number {
+  return isMobile() ? CARD_BG_SCALE_MOBILE : CARD_BG_SCALE
+}
 
-const SectionHeader = ({ icon, title }: { icon: string; title: string }) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: 12 } }}>
-    <UiEntity
-      uiTransform={{ width: 36, height: 36, margin: { right: 10 }, flexShrink: 0 }}
-      uiBackground={{ texture: { src: icon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-    />
-    <Label value={title} fontSize={26} color={C.header} />
-  </UiEntity>
-)
+function getCardTitleFont(title: string): number {
+  return title.length <= 12 ? scaleCardContent(CARD_TITLE_LG) : scaleCardContent(CARD_TITLE_SM)
+}
 
-// ---------------------------------------------------------------------------
-// Info row
-// ---------------------------------------------------------------------------
+function getCardStatusFont(status: string): number {
+  if (status.length > 13) return scaleCardContent(CARD_META_FONT + ss(1))
+  if (status.length > 10) return scaleCardContent(CARD_STATUS_FONT - ss(2))
+  return scaleCardContent(CARD_STATUS_FONT)
+}
 
-const InfoRow = ({ label, value }: { key?: string | number; label: string; value: string }) => (
-  <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 4 } }}>
-    <Label value={label} fontSize={18} color={C.textMute} uiTransform={{ width: 160 }} />
-    <Label value={value} fontSize={18} color={C.textMain} />
-  </UiEntity>
-)
+function getCardNoteFont(note: string): number {
+  if (note.length > 34) return scaleCardContent(CARD_NOTE_FONT - ss(1))
+  return scaleCardContent(CARD_NOTE_FONT)
+}
 
-// ---------------------------------------------------------------------------
-// Square action card (replaces the old thin ActionButton)
-// ---------------------------------------------------------------------------
+function getCardTransform(scale = 1) {
+  const bgScale = getCardBgScale()
+  const width = Math.round(CARD_W * scale * bgScale)
+  const artHeight = Math.round(width / CARD_ART_ASPECT)
+  const baseHeightScaled = Math.round(CARD_H * scale * bgScale)
 
-const ActionCard = ({
-  icon, label, sublabel, cost, enabled, onPress,
+  return {
+    flexDirection: 'column' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'flex-start' as const,
+    width,
+    height: Math.max(artHeight, baseHeightScaled),
+    margin: { right: CARD_MARGIN, bottom: CARD_MARGIN },
+    padding: {
+      top: isMobile() ? CARD_PAD_TOP + 8 : CARD_PAD_TOP,
+      bottom: isMobile() ? CARD_PAD_BOTTOM + 8 : CARD_PAD_BOTTOM,
+      left: isMobile() ? 12 : CARD_PAD_SIDE,
+      right: isMobile() ? 12 : CARD_PAD_SIDE,
+    },
+  }
+}
+
+function getCardVisualWidth(scale = 1): number {
+  return Math.round(CARD_W * scale * getCardBgScale())
+}
+
+function getGridSlotWidth(scale = 1): number {
+  return Math.max(0, getCardVisualWidth(scale) - GRID_CARD_SLOT_TRIM)
+}
+
+function getGridSlotHeight(scale = 1): number {
+  return getCardTransform(scale).height
+}
+
+function getGridTopGap(): number {
+  return isMobile() ? 0 : GRID_TOP_GAP
+}
+
+function getMobileTextBlockTransform(height: number) {
+  return isMobile()
+    ? {
+        width: '100%' as const,
+        height: scaleCardContent(height),
+        alignItems: 'center' as const,
+        justifyContent: 'center' as const,
+      }
+    : { width: '100%' as const }
+}
+
+const AnimalCardFrame = ({
+  locked = false,
+  onCardPress,
+  children,
 }: {
-  icon?: string
-  label: string
-  sublabel?: string
-  cost?: number
-  enabled: boolean
-  onPress: () => void
-}) => (
-  <UiEntity
-    uiTransform={{
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: 190,
-      height: 190,
-      margin: { right: 14, bottom: 14 },
-      padding: { top: 14, bottom: 14, left: 10, right: 10 },
-    }}
-    uiBackground={{ color: enabled ? C.rowBg : { r: 0.12, g: 0.1, b: 0.08, a: 1 } }}
-    onMouseDown={enabled ? () => { playSound('buttonclick'); onPress() } : undefined}
-  >
-    {icon && (
+  locked?: boolean
+  onCardPress?: () => void
+  children?: ReactEcs.JSX.ReactNode
+}) => {
+  const transform = getCardTransform(1)
+
+  return (
+    <UiEntity
+      uiTransform={transform}
+      uiBackground={{
+        texture: { src: locked ? CARD_LOCKED_IMG : CARD_IMG, wrapMode: 'clamp' },
+        textureMode: 'stretch',
+      }}
+    >
+      {children}
+      {isMobile() && onCardPress && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: 0, left: 0 },
+            width: transform.width,
+            height: transform.height,
+          }}
+          onMouseDown={onCardPress}
+        />
+      )}
+    </UiEntity>
+  )
+}
+
+const AnimalInfoCard = ({
+  iconSrc,
+  title,
+  meta,
+  status,
+  statusColor,
+  note,
+  buttonLabel,
+  buttonEnabled = true,
+  buttonTextureSrc = MINI_BUTTON_NO_COIN_IMG,
+  buttonTextColor,
+  onButtonPress,
+  onCardPress,
+  locked = false,
+}: AnimalCardSpec) => {
+  const transform = getCardTransform(1)
+  const buttonPress = onButtonPress ?? onCardPress
+
+  return (
+    <AnimalCardFrame locked={locked} onCardPress={buttonPress}>
+      <UiEntity uiTransform={{ height: scaleCardContent(CARD_ICON_TOP_SPACE), flexShrink: 0 }} />
+
       <UiEntity
-        uiTransform={{ width: 60, height: 60, margin: { bottom: 8 }, flexShrink: 0 }}
+        uiTransform={{
+          width: scaleCardContent(CARD_ICON),
+          height: scaleCardContent(CARD_ICON),
+          margin: { bottom: scaleCardContent(CARD_ICON_MARGIN) },
+          flexShrink: 0,
+        }}
         uiBackground={{
-          texture: { src: icon, wrapMode: 'clamp' },
+          texture: { src: iconSrc, wrapMode: 'clamp' },
           textureMode: 'stretch',
-          color: enabled ? { r: 1, g: 1, b: 1, a: 1 } : { r: 1, g: 1, b: 1, a: 0.3 },
+          color: locked ? { r: 1, g: 1, b: 1, a: 0.58 } : { r: 1, g: 1, b: 1, a: 1 },
         }}
       />
-    )}
-    <Label
-      value={label}
-      fontSize={20}
-      color={enabled ? C.textMain : C.textMute}
-      textAlign="middle-center"
-    />
-    {sublabel && (
+
       <Label
-        value={sublabel}
-        fontSize={16}
-        color={C.textMute}
+        value={`<b>${title}</b>`}
+        fontSize={getCardTitleFont(title)}
+        color={locked ? CARD_TEXT_MUTE : CARD_TEXT}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: 4 } }}
+        uiTransform={getMobileTextBlockTransform(MOBILE_TITLE_BLOCK_H)}
       />
-    )}
-    {cost !== undefined && (
-      <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 8 } }}>
-        <Label value={`${cost}`} fontSize={22} color={enabled ? C.gold : C.textMute} uiTransform={{ margin: { right: 6 } }} />
-        <UiEntity
-          uiTransform={{ width: 24, height: 24 }}
-          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-      </UiEntity>
-    )}
-  </UiEntity>
-)
 
-// ---------------------------------------------------------------------------
-// Chicken section
-// ---------------------------------------------------------------------------
-
-const ChickenSection = () => {
-  const now = Date.now()
-  const canBuyMore = playerState.chickens.length < MAX_ANIMALS_PER_BUILDING
-
-  return (
-    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 20 } }}>
-      <SectionHeader icon={CHICKEN_ICON} title="Chicken Coop" />
-
-      <InfoRow label="Chickens" value={`${playerState.chickens.length} / ${MAX_ANIMALS_PER_BUILDING}`} />
-      <InfoRow label="Food in bowl" value={`${playerState.chickenFoodInBowl} units`} />
-      <InfoRow label="Eggs ready" value={`${playerState.eggsCount}`} />
-
-      {playerState.chickens.map((chicken, i) => (
-        <InfoRow
-          key={chicken.id}
-          label={`Chicken ${i + 1}`}
-          value={playerState.chickenFoodInBowl > 0 ? formatMs(nextEggMs(chicken.lastEggAt)) : 'No food'}
-        />
-      ))}
-
-      {/* Dirt warning with poop icon */}
-      {playerState.chickenCoopDirtyAt > 0 && (
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 8, bottom: 6 } }}>
-          <UiEntity
-            uiTransform={{ width: 26, height: 26, margin: { right: 8 }, flexShrink: 0 }}
-            uiBackground={{ texture: { src: MANURE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-          />
-          <Label
-            value="Coop needs cleaning! Click the dirt in the scene."
-            fontSize={17}
-            color={{ r: 1, g: 0.6, b: 0.1, a: 1 }}
-          />
-        </UiEntity>
-      )}
-
-      {/* Action cards */}
-      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', margin: { top: 10 } }}>
-        {canBuyMore && (
-          <ActionCard
-            icon={CHICKEN_ICON}
-            label="Buy Chicken"
-            cost={ANIMAL_BUY_PRICE}
-            enabled={playerState.coins >= ANIMAL_BUY_PRICE}
-            onPress={() => buyAnimal('chicken')}
-          />
-        )}
-        <ActionCard
-          icon={EGG_ICON}
-          label="Feed Chickens"
-          sublabel="Click bowl in scene"
-          enabled={false}
-          onPress={() => {}}
-        />
-      </UiEntity>
-    </UiEntity>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Pig overview
-// ---------------------------------------------------------------------------
-
-const PigOverview = () => {
-  const now = Date.now()
-  const canBuyMore = playerState.pigs.length < MAX_ANIMALS_PER_BUILDING
-
-  const eligibleCount = playerState.pigs.filter((p) => {
-    const stage = getPigStage(p, now)
-    return (stage === 'adult' || stage === 'harvestable') && (now - p.lastBreedAt) >= PIG_BREED_COOLDOWN
-  }).length
-  const canBreed = eligibleCount >= 2 && playerState.pigs.length < MAX_ANIMALS_PER_BUILDING
-
-  return (
-    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-      <InfoRow label="Pigs" value={`${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`} />
-      <InfoRow label="Food in bowl" value={`${playerState.pigFoodInBowl} units`} />
-
-      {playerState.pigs.map((pig, i) => {
-        const stage = getPigStage(pig, now)
-        const stageLabel = PIG_STAGE_LABELS[stage] ?? stage
-        const canHarvest = stage === 'harvestable'
-        const manureTimer = (stage === 'adult' || stage === 'harvestable')
-          ? formatMs(nextManureMs(pig.lastManureAt))
-          : 'Not producing yet'
-        return (
-          <UiEntity key={pig.id} uiTransform={{ flexDirection: 'column', margin: { bottom: 8 }, padding: { left: 8 }, borderWidth: { left: 2 } }}>
-            <InfoRow label={`Pig ${i + 1}`} value={stageLabel} />
-            {(stage === 'adult' || stage === 'harvestable') && (
-              <InfoRow label="Next manure" value={playerState.pigFoodInBowl > 0 ? manureTimer : 'No food'} />
-            )}
-            {canHarvest && (
-              <ActionCard
-                icon={PIG_ICON}
-                label="Harvest for Meat"
-                enabled={true}
-                onPress={() => harvestPig(pig.id)}
-              />
-            )}
-          </UiEntity>
-        )
-      })}
-
-      {/* Dirt warning with poop icon */}
-      {playerState.pigPenDirtyAt > 0 && (
-        <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: 8, bottom: 6 } }}>
-          <UiEntity
-            uiTransform={{ width: 26, height: 26, margin: { right: 8 }, flexShrink: 0 }}
-            uiBackground={{ texture: { src: MANURE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-          />
-          <Label
-            value="Pen needs cleaning! Click the dirt in the scene."
-            fontSize={17}
-            color={{ r: 1, g: 0.6, b: 0.1, a: 1 }}
-          />
-        </UiEntity>
-      )}
-
-      {/* Action cards */}
-      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', margin: { top: 10 } }}>
-        {canBuyMore && (
-          <ActionCard
-            icon={PIG_ICON}
-            label="Buy Pig"
-            cost={ANIMAL_BUY_PRICE}
-            enabled={playerState.coins >= ANIMAL_BUY_PRICE}
-            onPress={() => buyAnimal('pig')}
-          />
-        )}
-        <ActionCard
-          icon={GRAIN_ICON}
-          label="Feed Pigs"
-          sublabel="Click bowl in scene"
-          enabled={false}
-          onPress={() => {}}
-        />
-      </UiEntity>
-    </UiEntity>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Pig breeding tab
-// ---------------------------------------------------------------------------
-
-const PigBreeding = () => {
-  const now = Date.now()
-  const eligibleCount = playerState.pigs.filter((p) => {
-    const stage = getPigStage(p, now)
-    return (stage === 'adult' || stage === 'harvestable') && (now - p.lastBreedAt) >= PIG_BREED_COOLDOWN
-  }).length
-  const canBreed = eligibleCount >= 2 && playerState.pigs.length < MAX_ANIMALS_PER_BUILDING
-
-  return (
-    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
-      <InfoRow label="Adult pigs ready" value={`${eligibleCount}`} />
-      <InfoRow label="Capacity" value={`${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`} />
-
-      {playerState.pigs.length >= MAX_ANIMALS_PER_BUILDING && (
+      {meta && (
         <Label
-          value="Pen is full — harvest a pig to make room."
-          fontSize={18}
-          color={{ r: 0.9, g: 0.3, b: 0.3, a: 1 }}
-          uiTransform={{ margin: { top: 8, bottom: 8 } }}
+          value={meta}
+          fontSize={scaleCardContent(CARD_META_FONT)}
+          color={CARD_TEXT_MUTE}
+          textAlign="middle-center"
+          textWrap="nowrap"
+          uiTransform={{
+            ...getMobileTextBlockTransform(MOBILE_META_BLOCK_H),
+            margin: { top: ss(4) }
+          }}
         />
       )}
-
-      {eligibleCount < 2 && playerState.pigs.length < MAX_ANIMALS_PER_BUILDING && (
-        <Label
-          value="Need 2 adult pigs off cooldown to breed."
-          fontSize={18}
-          color={C.textMute}
-          uiTransform={{ margin: { top: 8, bottom: 8 } }}
-        />
-      )}
-
-      <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', margin: { top: 10 } }}>
-        <ActionCard
-          icon={PIG_ICON}
-          label="Breed Pigs"
-          sublabel={canBreed ? `${eligibleCount} pigs ready` : `${eligibleCount} / 2 ready`}
-          enabled={canBreed}
-          onPress={() => breedPigs()}
-        />
-      </UiEntity>
 
       <Label
-        value="Breeding produces a piglet that grows over 3 days. Piglets inherit feed bonuses."
-        fontSize={17}
-        color={C.textMute}
-        uiTransform={{ margin: { top: 12 } }}
+        value={`<b>${status}</b>`}
+        fontSize={getCardStatusFont(status)}
+        color={locked ? CARD_TEXT_MUTE : statusColor}
+        textAlign="middle-center"
+        textWrap="nowrap"
+        uiTransform={{
+          ...getMobileTextBlockTransform(MOBILE_STATUS_BLOCK_H),
+          margin: { top: ss(10) }
+        }}
       />
-    </UiEntity>
+
+      {note && (
+        <Label
+          value={note}
+          fontSize={getCardNoteFont(note)}
+          color={CARD_TEXT_MUTE}
+          textAlign="middle-center"
+          uiTransform={{
+            ...getMobileTextBlockTransform(MOBILE_NOTE_BLOCK_H),
+            margin: { top: ss(8) }
+          }}
+        />
+      )}
+
+      <UiEntity uiTransform={{ flex: 1 }} />
+
+      {buttonLabel && (
+        <MiniTextButton
+          label={buttonLabel}
+          width={Math.round(ACTION_BUTTON_W * (isMobile() ? CARD_CONTENT_SCALE_MOBILE : 1))}
+          fontSize={scaleCardContent(ACTION_BUTTON_FONT)}
+          topOffset={-scaleCardContent(4)}
+          textureSrc={buttonTextureSrc}
+          textColor={buttonTextColor}
+          disabled={!buttonEnabled}
+          onPress={buttonPress}
+        />
+      )}
+
+      {!buttonLabel && onCardPress && !isMobile() && (
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: 0, left: 0 },
+            width: transform.width,
+            height: transform.height,
+          }}
+          onMouseDown={onCardPress}
+        />
+      )}
+    </AnimalCardFrame>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Pig section with Overview / Breeding tabs
-// ---------------------------------------------------------------------------
+const AnimalCardGrid = ({ items }: { items: AnimalCardSpec[] }) => {
+  const columns = isMobile() ? 2 : 4
+  const slotWidth = getGridSlotWidth()
+  const slotHeight = getGridSlotHeight()
+  const visualWidth = getCardVisualWidth()
+  const offsetX = Math.round((slotWidth - visualWidth) / 2)
+  const rows: AnimalCardSpec[][] = []
 
-const PigSection = () => {
-  const tab = pigTab.value
+  for (let i = 0; i < items.length; i += columns) {
+    rows.push(items.slice(i, i + columns))
+  }
 
-  return (
-    <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 20 } }}>
-      <SectionHeader icon={PIG_ICON} title="Pig Pen" />
-
-      {/* Sub-tabs */}
-      <UiEntity uiTransform={{ flexDirection: 'row', margin: { bottom: 16 } }}>
-        <UiEntity
-          uiTransform={{ width: 160, height: 48, margin: { right: 10 }, alignItems: 'center', justifyContent: 'center' }}
-          uiBackground={{ color: tab === 'overview' ? { r: 0.6, g: 0.35, b: 0.05, a: 1 } : { r: 0.18, g: 0.14, b: 0.08, a: 1 } }}
-          onMouseDown={() => { playSound('buttonclick'); pigTab.value = 'overview' }}
-        >
-          <Label value="Overview" fontSize={21} color={tab === 'overview' ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
-        <UiEntity
-          uiTransform={{ width: 160, height: 48, alignItems: 'center', justifyContent: 'center' }}
-          uiBackground={{ color: tab === 'breeding' ? { r: 0.6, g: 0.35, b: 0.05, a: 1 } : { r: 0.18, g: 0.14, b: 0.08, a: 1 } }}
-          onMouseDown={() => { playSound('buttonclick'); pigTab.value = 'breeding' }}
-        >
-          <Label value="Breeding" fontSize={21} color={tab === 'breeding' ? C.textMain : C.textMute} textAlign="middle-center" />
-        </UiEntity>
-      </UiEntity>
-
-      {tab === 'overview' && <PigOverview />}
-      {tab === 'breeding' && <PigBreeding />}
-    </UiEntity>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Locked / available sections
-// ---------------------------------------------------------------------------
-
-const LockedSection = ({ icon, label, level }: { icon: string; label: string; level: number }) => (
-  <UiEntity
-    uiTransform={{
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      width: '100%',
-      padding: { top: 24, bottom: 24 },
-      margin: { bottom: 16 },
-    }}
-    uiBackground={{ color: { r: 0.08, g: 0.06, b: 0.04, a: 1 } }}
-  >
-    <UiEntity
-      uiTransform={{ width: 52, height: 52, margin: { bottom: 10 }, flexShrink: 0 }}
-      uiBackground={{ texture: { src: icon, wrapMode: 'clamp' }, textureMode: 'stretch', color: { r: 1, g: 1, b: 1, a: 0.25 } }}
-    />
-    <Label value={label} fontSize={24} color={C.textMute} textAlign="middle-center" />
-    <Label value={`Unlocks at Level ${level}`} fontSize={19} color={C.textMute} textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
-  </UiEntity>
-)
-
-const AvailableSection = ({ icon, label, price, onBuy }: { icon: string; label: string; price: number; onBuy: () => void }) => {
-  const canAfford = playerState.coins >= price
   return (
     <UiEntity
       uiTransform={{
+        width: '100%',
         flexDirection: 'column',
         alignItems: 'center',
-        width: '100%',
-        padding: { top: 28, bottom: 28 },
-        margin: { bottom: 16 },
+        margin: { top: getGridTopGap() },
       }}
-      uiBackground={{ color: C.rowBg }}
     >
-      <UiEntity
-        uiTransform={{ width: 80, height: 80, margin: { bottom: 12 }, flexShrink: 0 }}
-        uiBackground={{ texture: { src: icon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-      />
-      <Label value={`${label} available!`} fontSize={26} color={C.header} textAlign="middle-center" uiTransform={{ margin: { bottom: 10 } }} />
-      {!canAfford && (
-        <Label
-          value={`Need ${price - playerState.coins} more coins`}
-          fontSize={18}
-          color={{ r: 0.9, g: 0.3, b: 0.3, a: 1 }}
-          textAlign="middle-center"
-          uiTransform={{ margin: { bottom: 6 } }}
-        />
-      )}
-      <UiEntity
-        uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: 240, height: 60 }}
-        uiBackground={{ color: canAfford ? { r: 0.2, g: 0.55, b: 0.2, a: 1 } : { r: 0.25, g: 0.25, b: 0.25, a: 1 } }}
-        onMouseDown={canAfford ? () => { playSound('buttonclick'); onBuy() } : undefined}
-      >
-        <Label value={`${price}`} fontSize={24} color={canAfford ? C.textMain : C.textMute} uiTransform={{ margin: { right: 8 } }} />
+      {rows.map((row, rowIndex) => (
         <UiEntity
-          uiTransform={{ width: 30, height: 30 }}
-          uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
-        />
-      </UiEntity>
+          key={`animal-row-${rowIndex}`}
+          uiTransform={{
+            flexDirection: 'row',
+            width: row.length * slotWidth,
+            height: slotHeight,
+            justifyContent: 'center',
+            margin: { bottom: rowIndex < rows.length - 1 ? ss(10) : 0 },
+          }}
+        >
+          {row.map((item) => (
+            <UiEntity key={item.key} uiTransform={{ width: slotWidth, height: slotHeight }}>
+              <UiEntity uiTransform={{ positionType: 'absolute', position: { left: offsetX, top: 0 } }}>
+                <AnimalInfoCard {...item} />
+              </UiEntity>
+            </UiEntity>
+          ))}
+        </UiEntity>
+      ))}
     </UiEntity>
   )
 }
 
-// ---------------------------------------------------------------------------
-// Main panel
-// ---------------------------------------------------------------------------
+function withSound(action: () => void): () => void {
+  return () => {
+    playSound('buttonclick')
+    action()
+  }
+}
+
+function buildCoopCards(): AnimalCardSpec[] {
+  if (!playerState.chickenCoopOwned) {
+    if (playerState.level < CHICKEN_COOP_UNLOCK_LEVEL) {
+      return [
+        {
+          key: 'coop-locked',
+          iconSrc: CHICKEN_ICON,
+          title: 'Chicken Coop',
+          status: `Level ${CHICKEN_COOP_UNLOCK_LEVEL}`,
+          statusColor: STATUS_MUTE,
+          note: 'Unlocks later in the Pets tab.',
+          locked: true
+        }
+      ]
+    }
+
+    return [
+      {
+        key: 'coop-buy',
+        iconSrc: CHICKEN_ICON,
+        title: 'Chicken Coop',
+        meta: 'Building available',
+        status: `${BUILDING_BUY_PRICE} coins`,
+        statusColor: STATUS_WARNING,
+        note: 'Unlock your first coop and start producing eggs.',
+        buttonLabel: 'BUY',
+        buttonTextureSrc: MINI_BUTTON_IMG,
+        buttonEnabled: playerState.coins >= BUILDING_BUY_PRICE,
+        onButtonPress: withSound(() => purchaseBuilding('chicken'))
+      }
+    ]
+  }
+
+  const cards: AnimalCardSpec[] = [
+    {
+      key: 'coop-summary',
+      iconSrc: CHICKEN_ICON,
+      title: 'Chicken Coop',
+      meta: `Food ${playerState.chickenFoodInBowl} units`,
+      status: `${playerState.chickens.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      statusColor: STATUS_SUCCESS,
+      note: 'Chickens currently living in the coop.'
+    },
+    {
+      key: 'egg-stock',
+      iconSrc: EGG_ICON,
+      title: 'Egg Stock',
+      meta: 'Current inventory',
+      status: `${playerState.eggsCount}`,
+      statusColor: STATUS_WARNING,
+      note: 'Sell them later from the market UI.'
+    },
+    {
+      key: 'coop-clean',
+      iconSrc: MANURE_ICON,
+      title: 'Coop Status',
+      meta: playerState.chickenCoopDirtyAt > 0 ? 'Dirty' : 'Clean',
+      status: playerState.chickenCoopDirtyAt > 0 ? 'Needs cleaning' : 'All good',
+      statusColor: playerState.chickenCoopDirtyAt > 0 ? STATUS_WARNING : STATUS_SUCCESS,
+      note: playerState.chickenCoopDirtyAt > 0 ? 'Clean the dirt pile in-scene.' : 'No cleanup needed right now.'
+    }
+  ]
+
+  playerState.chickens.forEach((chicken, index) => {
+    const timer = playerState.chickenFoodInBowl > 0 ? formatMs(nextEggMs(chicken.lastEggAt)) : 'No food'
+    const ready = timer === 'Ready!'
+    cards.push({
+      key: chicken.id,
+      iconSrc: CHICKEN_ICON,
+      title: `Chicken ${index + 1}`,
+      meta: 'Next egg',
+      status: timer,
+      statusColor: ready ? STATUS_SUCCESS : playerState.chickenFoodInBowl > 0 ? STATUS_INFO : STATUS_WARNING,
+      note: ready ? 'Egg cycle complete.' : playerState.chickenFoodInBowl > 0 ? 'Production running.' : 'Add food to resume.'
+    })
+  })
+
+  if (playerState.chickens.length < MAX_ANIMALS_PER_BUILDING) {
+    cards.push({
+      key: 'buy-chicken',
+      iconSrc: CHICKEN_ICON,
+      title: 'Buy Chicken',
+      meta: `Space ${playerState.chickens.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      status: '500 coins',
+      statusColor: STATUS_WARNING,
+      note: 'Add another chicken to boost egg output.',
+      buttonLabel: 'BUY',
+      buttonTextureSrc: MINI_BUTTON_IMG,
+      buttonEnabled: playerState.coins >= 500,
+      onButtonPress: withSound(() => buyAnimal('chicken'))
+    })
+  }
+
+  return cards
+}
+
+function buildPigCards(): AnimalCardSpec[] {
+  if (!playerState.pigPenOwned) {
+    if (playerState.level < PIG_PEN_UNLOCK_LEVEL) {
+      return [
+        {
+          key: 'pig-locked',
+          iconSrc: PIG_ICON,
+          title: 'Pig Pen',
+          status: `Level ${PIG_PEN_UNLOCK_LEVEL}`,
+          statusColor: STATUS_MUTE,
+          note: 'Unlocks later in the Pets tab.',
+          locked: true
+        }
+      ]
+    }
+
+    return [
+      {
+        key: 'pig-buy',
+        iconSrc: PIG_ICON,
+        title: 'Pig Pen',
+        meta: 'Building available',
+        status: `${BUILDING_BUY_PRICE} coins`,
+        statusColor: STATUS_WARNING,
+        note: 'Raise pigs for manure, breeding, and meat.',
+        buttonLabel: 'BUY',
+        buttonTextureSrc: MINI_BUTTON_IMG,
+        buttonEnabled: playerState.coins >= BUILDING_BUY_PRICE,
+        onButtonPress: withSound(() => purchaseBuilding('pig'))
+      }
+    ]
+  }
+
+  const now = Date.now()
+  const readyBreeders = playerState.pigs.filter((pig) => {
+    const stage = getPigStage(pig, now)
+    return (stage === 'adult' || stage === 'harvestable') && now - pig.lastBreedAt >= PIG_BREED_COOLDOWN
+  }).length
+  const canBreed = readyBreeders >= 2 && playerState.pigs.length < MAX_ANIMALS_PER_BUILDING
+
+  const cards: AnimalCardSpec[] = [
+    {
+      key: 'pig-summary',
+      iconSrc: PIG_ICON,
+      title: 'Pig Pen',
+      meta: `Food ${playerState.pigFoodInBowl} units`,
+      status: `${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      statusColor: STATUS_SUCCESS,
+      note: 'Pigs currently living in the pen.'
+    },
+    {
+      key: 'pig-breed',
+      iconSrc: PIG_ICON,
+      title: 'Breeding',
+      meta: 'Adults off cooldown',
+      status: `${readyBreeders} ready`,
+      statusColor: canBreed ? STATUS_SUCCESS : STATUS_WARNING,
+      note: canBreed ? 'You can breed now.' : playerState.pigs.length >= MAX_ANIMALS_PER_BUILDING ? 'Pen is full.' : 'Need 2 ready adults.',
+      buttonLabel: 'BREED',
+      buttonEnabled: canBreed,
+      onButtonPress: withSound(() => breedPigs())
+    },
+    {
+      key: 'pig-clean',
+      iconSrc: MANURE_ICON,
+      title: 'Pen Status',
+      meta: playerState.pigPenDirtyAt > 0 ? 'Dirty' : 'Clean',
+      status: playerState.pigPenDirtyAt > 0 ? 'Needs cleaning' : 'All good',
+      statusColor: playerState.pigPenDirtyAt > 0 ? STATUS_WARNING : STATUS_SUCCESS,
+      note: playerState.pigPenDirtyAt > 0 ? 'Clean the dirt pile in-scene.' : 'No cleanup needed right now.'
+    },
+    {
+      key: 'pig-meat',
+      iconSrc: PIG_ICON,
+      title: 'Pig Meat',
+      meta: 'Current inventory',
+      status: `${playerState.pigMeatCount}`,
+      statusColor: STATUS_WARNING,
+      note: 'Harvestable pigs turn into sellable meat.'
+    }
+  ]
+
+  playerState.pigs.forEach((pig, index) => {
+    const stage = getPigStage(pig, now)
+    const manure = playerState.pigFoodInBowl > 0 && (stage === 'adult' || stage === 'harvestable')
+      ? formatMs(nextManureMs(pig.lastManureAt))
+      : stage === 'piglet' || stage === 'adolescent'
+        ? 'Growing'
+        : 'No food'
+    const canHarvest = stage === 'harvestable'
+
+    cards.push({
+      key: pig.id,
+      iconSrc: PIG_ICON,
+      title: `Pig ${index + 1}`,
+      meta: stage === 'harvestable' ? 'Harvest now' : 'Next manure',
+      status: PIG_STAGE_LABELS[stage] ?? stage,
+      statusColor: canHarvest ? STATUS_SUCCESS : stage === 'adult' ? STATUS_INFO : STATUS_WARNING,
+      note: canHarvest ? 'Ready for meat harvest.' : manure,
+      buttonLabel: canHarvest ? 'HARVEST' : undefined,
+      onButtonPress: canHarvest ? withSound(() => harvestPig(pig.id)) : undefined
+    })
+  })
+
+  if (playerState.pigs.length < MAX_ANIMALS_PER_BUILDING) {
+    cards.push({
+      key: 'buy-pig',
+      iconSrc: PIG_ICON,
+      title: 'Buy Pig',
+      meta: `Space ${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      status: '500 coins',
+      statusColor: STATUS_WARNING,
+      note: 'Add another pig to increase output.',
+      buttonLabel: 'BUY',
+      buttonTextureSrc: MINI_BUTTON_IMG,
+      buttonEnabled: playerState.coins >= 500,
+      onButtonPress: withSound(() => buyAnimal('pig'))
+    })
+  }
+
+  return cards
+}
+
+function buildStockCards(): AnimalCardSpec[] {
+  return [
+    {
+      key: 'stock-grain',
+      iconSrc: GRAIN_ICON,
+      title: 'Grain',
+      meta: 'Feed inventory',
+      status: `${playerState.grainCount}`,
+      statusColor: STATUS_WARNING,
+      note: 'Used in bowls for chickens and pigs.'
+    },
+    {
+      key: 'stock-scraps',
+      iconSrc: VEGGIE_SCRAP_ICON,
+      title: 'Veggie Scraps',
+      meta: 'Feed inventory',
+      status: `${playerState.veggieScrapCount}`,
+      statusColor: STATUS_INFO,
+      note: 'Handy extra food for the pig bowl.'
+    },
+    {
+      key: 'stock-eggs',
+      iconSrc: EGG_ICON,
+      title: 'Eggs',
+      meta: 'Product inventory',
+      status: `${playerState.eggsCount}`,
+      statusColor: STATUS_SUCCESS,
+      note: 'Produced by fed chickens.'
+    },
+    {
+      key: 'stock-meat',
+      iconSrc: PIG_ICON,
+      title: 'Pig Meat',
+      meta: 'Product inventory',
+      status: `${playerState.pigMeatCount}`,
+      statusColor: STATUS_WARNING,
+      note: 'Harvested from mature pigs.'
+    },
+    {
+      key: 'stock-coop-food',
+      iconSrc: CHICKEN_ICON,
+      title: 'Coop Bowl',
+      meta: 'Chicken food loaded',
+      status: `${playerState.chickenFoodInBowl} units`,
+      statusColor: STATUS_INFO,
+      note: 'Keeps egg production running.'
+    },
+    {
+      key: 'stock-pen-food',
+      iconSrc: PIG_ICON,
+      title: 'Pig Bowl',
+      meta: 'Pig food loaded',
+      status: `${playerState.pigFoodInBowl} units`,
+      statusColor: STATUS_INFO,
+      note: 'Keeps manure and breeding running.'
+    },
+  ]
+}
+
+function buildCardsForTab(tab: AnimalTabValue): AnimalCardSpec[] {
+  if (tab === 'coop') return buildCoopCards()
+  if (tab === 'pigPen') return buildPigCards()
+  return buildStockCards()
+}
 
 export const AnimalPanel = () => {
-  const chickenOwned    = playerState.chickenCoopOwned
-  const pigOwned        = playerState.pigPenOwned
-  const chickenAvail    = !chickenOwned && playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL
-  const pigAvail        = !pigOwned && playerState.level >= PIG_PEN_UNLOCK_LEVEL
+  const tab = animalTab.value
+  const cards = buildCardsForTab(tab)
+  const lastPage = Math.max(0, Math.ceil(cards.length / ITEMS_PER_PAGE) - 1)
+  const paginationHeight = isMobile() ? SHARED_PAGINATION_HEIGHT_MOBILE : SHARED_PAGINATION_HEIGHT_DESKTOP
+  if (animalPage[tab] > lastPage) animalPage[tab] = lastPage
+  const page = animalPage[tab]
+  const pageSlice = cards.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE)
 
   return (
-    <PanelShell title="Animals" onClose={() => { playerState.activeMenu = 'none' }}>
-      <UiEntity uiTransform={{ flexDirection: 'column', padding: { left: 16, right: 16, top: 8 } }}>
+    <RevampPanelFrame titleText="Animals" onClose={() => { playerState.activeMenu = 'none' }}>
+      <UiEntity uiTransform={{ width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center' }}>
+        <UiEntity
+          uiTransform={{
+            flexDirection: 'row',
+            justifyContent: 'center',
+            width: '100%',
+            margin: { top: CONTENT_TOP_GAP, bottom: ss(8) },
+          }}
+        >
+          {([
+            ['coop', 'Chicken Coop'],
+            ['pigPen', 'Pig Pen'],
+            ['stock', 'Stock'],
+          ] as const).map(([key, label], index) => (
+            <UiEntity key={key} uiTransform={{ margin: { right: index < 2 ? TAB_GAP : 0 } }}>
+              <PillTabButton
+                label={label}
+                selected={tab === key}
+                width={TAB_W}
+                fontSize={isMobile() ? ss(22) : ss(17)}
+                onPress={() => {
+                  playSound('menu')
+                  animalTab.value = key
+                }}
+              />
+            </UiEntity>
+          ))}
+        </UiEntity>
 
-        {/* Chicken Coop */}
-        {chickenOwned ? (
-          <ChickenSection />
-        ) : chickenAvail ? (
-          <AvailableSection
-            icon={CHICKEN_ICON}
-            label="Chicken Coop"
-            price={BUILDING_BUY_PRICE}
-            onBuy={() => { /* purchaseBuilding called from store or scene */ }}
-          />
-        ) : (
-          <LockedSection icon={CHICKEN_ICON} label="Chicken Coop" level={CHICKEN_COOP_UNLOCK_LEVEL} />
-        )}
-
-        {/* Pig Pen */}
-        {pigOwned ? (
-          <PigSection />
-        ) : pigAvail ? (
-          <AvailableSection
-            icon={PIG_ICON}
-            label="Pig Pen"
-            price={BUILDING_BUY_PRICE}
-            onBuy={() => { /* purchaseBuilding called from store or scene */ }}
-          />
-        ) : (
-          <LockedSection icon={PIG_ICON} label="Pig Pen" level={PIG_PEN_UNLOCK_LEVEL} />
-        )}
-
-        {/* Pig Meat inventory */}
-        {playerState.pigMeatCount > 0 && (
-          <UiEntity uiTransform={{ flexDirection: 'column', margin: { bottom: 16 } }}>
-            <SectionHeader icon={PIG_ICON} title="Pig Meat" />
-            <InfoRow label="In inventory" value={`${playerState.pigMeatCount} (sell in market)`} />
+        <UiEntity uiTransform={{ flex: 1, width: '100%' }}>
+          <UiEntity
+            uiTransform={{
+              width: '100%',
+              height: '100%',
+              padding: { bottom: lastPage > 0 ? paginationHeight + PAGINATION_MARGIN_TOP : 0 },
+            }}
+          >
+            <AnimalCardGrid items={pageSlice} />
           </UiEntity>
-        )}
 
+          {lastPage > 0 && (
+            <UiEntity
+              uiTransform={{
+                positionType: 'absolute',
+                position: { left: 0, bottom: 0 },
+                width: '100%',
+                height: paginationHeight,
+              }}
+            >
+              <SharedPaginationBar
+                id={`animals-${tab}`}
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { animalPage[tab]-- }}
+                onNext={() => { animalPage[tab]++ }}
+                mode={isMobile() ? 'mobile' : 'desktop'}
+              />
+            </UiEntity>
+          )}
+        </UiEntity>
       </UiEntity>
-    </PanelShell>
+    </RevampPanelFrame>
   )
 }
