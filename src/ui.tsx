@@ -1,6 +1,4 @@
 import ReactEcs, { ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
-import { isMobile } from '@dcl/sdk/platform'
-import { getExplorerInformation } from '~system/Runtime'
 import { playerState } from './game/gameState'
 import { TopHud } from './ui/TopHud'
 import { BottomNav } from './ui/BottomNav'
@@ -28,18 +26,8 @@ import { VisitHud } from './ui/VisitHud'
 import { LoadingOverlay } from './ui/LoadingOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
-function applyUiRenderer(): void {
-  ReactEcsRenderer.setUiRenderer(MainUi, {
-    virtualWidth: isMobile() ? 1600 : 1920,
-    virtualHeight: isMobile() ? 720 : 1080,
-  })
-}
-
 export function setupUi() {
-  applyUiRenderer()
-  void getExplorerInformation({})
-    .then(() => applyUiRenderer())
-    .catch(() => {})
+  ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
 }
 
 const MainUi = () => {
