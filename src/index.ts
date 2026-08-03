@@ -68,7 +68,7 @@ export function main() {
   initSocialService()
   initVisitorWaterFeedback()
 
-  // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,
+  // Tutorial arrow is a shared resource for all tutorials (main, fertilizer,,
   // animal). Init unconditionally on boot so any tutorial can summon it.
   initTutorialArrow()
 
