@@ -3,6 +3,7 @@ import { isServer } from '@dcl/sdk/network'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
+import { preloadUiAssets } from './systems/uiAssetPreloadSystem'
 import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible, unlockPlotGroupByName } from './systems/interactionSetup'
 import { setupLandscape } from './systems/landscapeSystem'
 import './systems/growthSystem'
@@ -57,6 +58,7 @@ export function main() {
   SkyboxTime.createOrReplace(engine.RootEntity, { fixedTime: 43200 })
 
   setupUi()
+  preloadUiAssets()
 
   setupEntities()
   setupLandscape()
