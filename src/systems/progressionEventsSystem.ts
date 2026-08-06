@@ -324,6 +324,8 @@ function resumeProgressionEvent(): void {
   progressionEventState.active = true
   const step = playerState.progressionEventStep as ProgressionEventStep
 
+  departAllActiveNpcs()
+
   initNpcSystem(MAYOR_DEF, () => {
     progressionEventState.active = false
     onEventCompleteCb?.()

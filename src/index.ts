@@ -254,15 +254,20 @@ export function main() {
       // Dev reset: re-spawn Mayor and restart tutorial from welcome step
       tutorialCallbacks.onResetComplete = () => initNpcSystem(MAYOR_DEF, startRegularNpcRotation)
 
-      if (tutorialState.active) {
-        // Tutorial in progress — spawn Mayor as guide; rotation starts after he departs
-        initNpcSystem(MAYOR_DEF, startRegularNpcRotation)
+      // Checked in this order because initAnimalTutorialSystem() (called above) may
+      // have already spawned Mayor via its own resume/trigger path — if a save ever
+      // ends up with tutorialState.active AND an animal tutorial both mid-flow (e.g.
+      // a player who leveled past 8/12 while ignoring the welcome tutorial dialogs),
+      // that spawn must take priority so this block doesn't spawn a second Mayor.
+      if (animalTutorialState.chickenActive || animalTutorialState.pigActive) {
+        // Animal tutorial in progress — Mayor spawned by initAnimalTutorialSystem (resume path)
+        // Rotation starts when Mayor departs via setOnChickenTutorialComplete / setOnPigTutorialComplete
       } else if (progressionEventState.active) {
         // Progression event in progress — Mayor already spawned by initProgressionEventsSystem
         // Rotation will start when Mayor departs (wired via the onDespawned callback inside that system)
-      } else if (animalTutorialState.chickenActive || animalTutorialState.pigActive) {
-        // Animal tutorial in progress — Mayor spawned by initAnimalTutorialSystem (resume path)
-        // Rotation starts when Mayor departs via setOnChickenTutorialComplete / setOnPigTutorialComplete
+      } else if (tutorialState.active) {
+        // Tutorial in progress — spawn Mayor as guide; rotation starts after he departs
+        initNpcSystem(MAYOR_DEF, startRegularNpcRotation)
       } else {
         startRegularNpcRotation()
       }
