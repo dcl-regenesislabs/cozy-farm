@@ -160,17 +160,14 @@ function buildGuideItems(): GuideItem[] {
     ? TUTORIAL_MILESTONES.map((m) => ({ label: m.label, status: getTutorialMilestoneStatus(m) }))
     : buildSampleChecklist(TUTORIAL_MILESTONES.map((m) => m.label), 4)
 
-  const progressionEntries = progressionEventState.active
-    ? PROGRESSION_MILESTONES.map((m) => ({ label: m.label, status: getProgressionMilestoneStatus(m) }))
-    : buildSampleChecklist(PROGRESSION_MILESTONES.map((m) => m.label), 1)
-
-  const chickenEntries = animalTutorialState.chickenActive
-    ? CHICKEN_MILESTONES.map((m) => ({ label: m.label, status: getChickenMilestoneStatus(m) }))
-    : buildSampleChecklist(CHICKEN_MILESTONES.map((m) => m.label), 2)
-
-  const pigEntries = animalTutorialState.pigActive
-    ? PIG_MILESTONES.map((m) => ({ label: m.label, status: getPigMilestoneStatus(m) }))
-    : buildSampleChecklist(PIG_MILESTONES.map((m) => m.label), 2)
+  // These three guides are only ever rendered once the player has actually
+  // started or finished the flow (see the `xxxOwned` / `rotSystemUnlocked`
+  // OR-conditions below), so the real per-step status is always meaningful —
+  // no need for a fake placeholder once `active` (mid-session-resume only)
+  // goes back to false on a later reconnect.
+  const progressionEntries = PROGRESSION_MILESTONES.map((m) => ({ label: m.label, status: getProgressionMilestoneStatus(m) }))
+  const chickenEntries = CHICKEN_MILESTONES.map((m) => ({ label: m.label, status: getChickenMilestoneStatus(m) }))
+  const pigEntries = PIG_MILESTONES.map((m) => ({ label: m.label, status: getPigMilestoneStatus(m) }))
 
   if (tutorialState.active || QUEST_DEBUG) {
     items.push(makeGuideItem(

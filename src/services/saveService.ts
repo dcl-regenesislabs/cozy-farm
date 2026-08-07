@@ -31,6 +31,7 @@ import { spawnFarmer } from '../systems/farmerSystem'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
+import { progressionEventState } from '../game/progressionEventState'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval
@@ -279,6 +280,12 @@ function applyPayload(payload: FarmStatePayload): void {
   const pStep = playerState.pigTutorialStep
   animalTutorialState.pigStep   = pStep as any
   animalTutorialState.pigActive = pStep !== '' && pStep !== 'complete'
+
+  // Restore progression event state — was previously never rehydrated, so
+  // progressionEventState.step stayed '' for any returning player who had
+  // already finished it, making the Quest Panel show a fake sample checklist.
+  progressionEventState.step   = playerState.progressionEventStep as any
+  progressionEventState.active = playerState.progressionEventStep !== '' && playerState.progressionEventStep !== 'complete'
 
   playerState.lastNpcVisitAt       = (payload as any).lastNpcVisitAt ?? 0
   playerState.npcScheduleIndex     = (payload as any).npcScheduleIndex ?? 0

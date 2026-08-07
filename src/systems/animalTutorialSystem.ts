@@ -53,6 +53,10 @@ function setChickenStep(step: ChickenTutorialStep): void {
 }
 
 function goToChickenBuyCoop(): void {
+  // Player may already own the coop (e.g. bought it before this tutorial step
+  // ever registered its watch callback) — skip ahead instead of waiting on a
+  // purchase event that will never fire again.
+  if (playerState.chickenCoopOwned) { goToChickenBuyChicken(); return }
   setChickenStep('buy_coop')
 
   const coopEntity = getCoopAreaEntity()
@@ -79,6 +83,10 @@ function goToChickenBuyCoop(): void {
 }
 
 function goToChickenBuyChicken(): void {
+  // Player may already own chickens (up to the 5-per-coop cap) — the watch
+  // callback only fires on the 0→1 transition, so if they're already past
+  // that point (or capped out) it can never fire again. Skip ahead.
+  if (playerState.chickens.length > 0) { goToChickenFeed(); return }
   setChickenStep('buy_chicken')
 
   const computer = engine.getEntityOrNullByName('Computer.glb')
@@ -98,6 +106,8 @@ function goToChickenBuyChicken(): void {
 }
 
 function goToChickenFeed(): void {
+  // Bowl may already have food in it — same "already satisfied" guard.
+  if (playerState.chickenFoodInBowl > 0) { goToChickenCleanIntro(); return }
   setChickenStep('feed_chicken')
 
   const foodEntity = getCoopFoodEntity()
@@ -194,6 +204,11 @@ function resumeChickenTutorial(onComplete: () => void): void {
   onChickenTutorialCompleteCb      = onComplete
   animalTutorialState.chickenActive = true
 
+  // Same guard as triggerChickenTutorial — without it, any NPC left over from
+  // another code path (e.g. the regular quest rotation) sits alongside the
+  // freshly spawned Mayor instead of being evicted first.
+  departAllActiveNpcs()
+
   initNpcSystem(MAYOR_DEF, () => {
     animalTutorialState.chickenActive = false
     onComplete()
@@ -223,6 +238,8 @@ function setPigStep(step: PigTutorialStep): void {
 }
 
 function goToPigBuyPen(): void {
+  // Same "already satisfied" guard as the chicken coop step.
+  if (playerState.pigPenOwned) { goToPigBuyPig(); return }
   setPigStep('buy_pen')
 
   const penEntity = getPenAreaEntity()
@@ -247,6 +264,10 @@ function goToPigBuyPen(): void {
 }
 
 function goToPigBuyPig(): void {
+  // Same "already satisfied" guard as the chicken step — the watch callback
+  // only fires on the 0→1 transition, so a player already past it (or capped
+  // out at 5 pigs) would otherwise be stuck here forever.
+  if (playerState.pigs.length > 0) { goToPigFeed(); return }
   setPigStep('buy_pig')
 
   const computer = engine.getEntityOrNullByName('Computer.glb')
@@ -269,6 +290,7 @@ function goToPigBuyPig(): void {
 }
 
 function goToPigFeed(): void {
+  if (playerState.pigFoodInBowl > 0) { goToPigCleanIntro(); return }
   setPigStep('feed_pig')
 
   const foodEntity = getPenFoodEntity()
@@ -414,6 +436,8 @@ function triggerPigTutorial(onComplete: () => void): void {
 function resumePigTutorial(onComplete: () => void): void {
   onPigTutorialCompleteCb      = onComplete
   animalTutorialState.pigActive = true
+
+  departAllActiveNpcs()
 
   initNpcSystem(MAYOR_DEF, () => {
     animalTutorialState.pigActive = false

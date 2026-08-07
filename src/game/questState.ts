@@ -230,10 +230,13 @@ export function resetQuestProgress(): void {
   }
 }
 
-/** Unlock the Mayor fertilizer quest after the rot system is enabled. */
+/** Unlock the Mayor fertilizer quest after the rot system is enabled.
+ *  Only migrates the quest out of its hidden default state (current === 0) —
+ *  a genuinely claimed quest also has status 'completed' but current === target,
+ *  so it's left alone instead of being restarted every session. */
 export function unlockFertilizerQuest(): void {
   const qp = questProgressMap.get('mayorchen_fertilizer')
-  if (qp && qp.status === 'completed') {
+  if (qp && qp.status === 'completed' && qp.current === 0) {
     qp.status  = 'active'
     qp.current = 0
   }
