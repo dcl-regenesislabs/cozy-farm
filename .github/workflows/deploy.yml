@@ -3,11 +3,15 @@ name: Deploy
 on:
   release:
     types: [published]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 env:
   DCL_PRIVATE_KEY: ${{ secrets.DCL_WORLDS_PRIVATE_KEY }}
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+  DEPLOY_ENV: ${{ github.event_name == 'pull_request' && 'testing' || 'production' }}
 
 jobs:
   deploy:
@@ -32,4 +36,4 @@ jobs:
     - name: Build scene
       run: npm run build
     - name: Deploy scene
-      run: npm run deploy:production
+      run: npm run deploy:${{ env.DEPLOY_ENV }}
