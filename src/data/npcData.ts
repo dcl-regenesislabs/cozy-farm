@@ -3,7 +3,7 @@ export type NpcDefinition = {
   name:            string
   model:           string
   headImage:       string
-  greeting:        string
+  greeting:        string   // i18n key — resolve with t() at render time
   spawnPrefix:     string   // used by the waypoint-based spawn system
   sceneEntityName: string   // name of the placed GLB entity in the scene editor
 }
@@ -14,37 +14,37 @@ export const NPC_ROSTER: NpcDefinition[] = [
     id: 'rosa', name: 'Rosa',
     model: 'assets/scene/Models/NPCRosa/NPCRosa.glb', sceneEntityName: 'NPCRosa.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/RosaHead.png',
-    greeting: "Oh hello, dear! Lovely little farm you have here.\nI was just admiring your crops. Do you need any help?",
+    greeting: 'npc.rosa.greeting',
   },
   {
     id: 'gerald', name: 'Gerald',
     model: 'assets/scene/Models/NPCGerald/NPCGerald.glb', sceneEntityName: 'NPCGerald.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/GeraldHead.png',
-    greeting: "Oh, it's you. I suppose your dog was in my garden again.\nYou might want to keep a closer eye on things around here.",
+    greeting: 'npc.gerald.greeting',
   },
   {
     id: 'marco', name: 'Marco',
     model: 'assets/scene/Models/NPCMarco/NPCMarco.glb', sceneEntityName: 'NPCMarco.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/MarcoHead.png',
-    greeting: "Ha! My farm is twice the size of yours.\nBut I'll admit... your crops don't look half bad.",
+    greeting: 'npc.marco.greeting',
   },
   {
     id: 'lily', name: 'Lily',
     model: 'assets/scene/Models/NPCLily/NPCLily.glb', sceneEntityName: 'NPCLily.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/LilyHead.png',
-    greeting: "Perfect timing! I need fresh produce for tonight's special.\nCould you help me out? I pay well.",
+    greeting: 'npc.lily.greeting',
   },
   {
     id: 'dave', name: 'Dave',
     model: 'assets/scene/Models/NPCDave/NPCDave.glb', sceneEntityName: 'NPCDave.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/DaveHead.png',
-    greeting: "Oh thank goodness you're here. I accidentally flooded my cellar again.\nAnyway, lovely day, right?",
+    greeting: 'npc.dave.greeting',
   },
   {
     id: 'mayorchen', name: 'Mayor Chen',
     model: 'assets/scene/Models/NPCMayor/NPCMayor.glb', sceneEntityName: 'NPCMayor.glb', spawnPrefix: 'NPC',
     headImage: 'assets/scene/Images/MayorHead.png',
-    greeting: "Ah, good day. The town council has been keeping an eye on your progress.\nWe have a proposal that may interest you.",
+    greeting: 'npc.mayorchen.greeting',
   },
 ]
 

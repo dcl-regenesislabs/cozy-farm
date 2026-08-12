@@ -1,16 +1,31 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { playSound } from '../systems/sfxSystem'
+import { getLanguage } from '../i18n'
+import type { Lang } from '../i18n'
 
 // ─── Shared "revamp" panel frame ───────────────────────────────────────────────
 // One wooden background (no baked-in title) + one atlas of pre-rendered title
 // graphics ("names.png") composited at render time, instead of a separate full
 // *_atlas.png per panel that only differed by its baked title text.
+//
+// The names atlas has baked-in English lettering, so it's swapped per language —
+// see REVAMP_NAMES_IMG_BY_LANG below. Only the `en` file ships today; `es`/`pt`
+// are placeholders for localized exports (until they land, those two languages
+// will show a blank tile for these titles — everything else in the game is
+// still fully translated).
 
 export const REVAMP_BG_IMG    = 'assets/images/revamp/background.png'
-export const REVAMP_NAMES_IMG = 'assets/images/revamp/names.png'
 export const REVAMP_CLOSE_IMG = 'assets/images/ui_loading/closebutton.png'
 const NAMES_ATLAS_SIZE = 1024
+
+// Per-language atlas source. Add the real es/pt files at these exact paths —
+// no code changes needed once they exist.
+const REVAMP_NAMES_IMG_BY_LANG: Record<Lang, string> = {
+  en: 'assets/images/revamp/names.png',
+  es: 'assets/images/revamp/names_es.png',
+  pt: 'assets/images/revamp/names_pt.png',
+}
 
 export const REVAMP_PANEL_W        = 1032
 export const REVAMP_PANEL_H        = 648
@@ -48,7 +63,10 @@ export type RevampPanelName =
   | 'sellCrops'
 
 // Rects measured directly off assets/images/revamp/names.png (1024x1024).
-const NAME_RECTS: Record<RevampPanelName, Rect> = {
+// `es`/`pt` are cloned from `en` as a starting point — once the localized atlas
+// files exist, re-measure these per language, since translated labels are
+// often a different width/height than the English lettering they replace.
+const EN_NAME_RECTS: Record<RevampPanelName, Rect> = {
   shop:        { x: 506, y: 134, w: 503, h: 85  }, // reads "El Amazonas"
   inventory:   { x: 71,  y: 69,  w: 396, h: 100 },
   pigPen:      { x: 74,  y: 164, w: 367, h: 97  },
@@ -60,6 +78,12 @@ const NAME_RECTS: Record<RevampPanelName, Rect> = {
   compostBin:  { x: 458, y: 490, w: 479, h: 97  },
   farm:        { x: 465, y: 596, w: 198, h: 81  },
   sellCrops:   { x: 463, y: 703, w: 382, h: 97  },
+}
+
+const NAME_RECTS_BY_LANG: Record<Lang, Record<RevampPanelName, Rect>> = {
+  en: EN_NAME_RECTS,
+  es: EN_NAME_RECTS,
+  pt: EN_NAME_RECTS,
 }
 
 // Plaque box (tile + centered name) that straddles the top edge of the background frame.
@@ -80,7 +104,9 @@ function atlasUvs(rect: Rect, atlasSize: number): number[] {
 // border. Exported on its own so custom panel frames (e.g. StatsPanel's mobile-scaled
 // variant) can drop it into a differently-sized frame instead of the fixed RevampPanelFrame.
 export const RevampTitlePlaque = ({ name, panelWidth, scale = 1 }: { name: RevampPanelName; panelWidth: number; scale?: number }) => {
-  const nameRect  = NAME_RECTS[name]
+  const lang      = getLanguage()
+  const namesImg  = REVAMP_NAMES_IMG_BY_LANG[lang]
+  const nameRect  = NAME_RECTS_BY_LANG[lang][name]
   const plaqueW   = Math.round(PLAQUE_W * scale)
   const plaqueH   = Math.round(PLAQUE_H * scale)
   const plaqueTop = Math.round(PLAQUE_TOP * scale)
@@ -98,7 +124,7 @@ export const RevampTitlePlaque = ({ name, panelWidth, scale = 1 }: { name: Revam
         justifyContent: 'center',
       }}
       uiBackground={{
-        texture: { src: REVAMP_NAMES_IMG, wrapMode: 'clamp', filterMode: 'tri-linear' },
+        texture: { src: namesImg, wrapMode: 'clamp', filterMode: 'tri-linear' },
         textureMode: 'stretch',
         uvs: atlasUvs(TILE_RECT, NAMES_ATLAS_SIZE),
       }}
@@ -106,7 +132,7 @@ export const RevampTitlePlaque = ({ name, panelWidth, scale = 1 }: { name: Revam
       <UiEntity
         uiTransform={{ width: nameW, height: nameH }}
         uiBackground={{
-          texture: { src: REVAMP_NAMES_IMG, wrapMode: 'clamp', filterMode: 'tri-linear' },
+          texture: { src: namesImg, wrapMode: 'clamp', filterMode: 'tri-linear' },
           textureMode: 'stretch',
           uvs: atlasUvs(nameRect, NAMES_ATLAS_SIZE),
         }}
@@ -142,7 +168,7 @@ export const RevampTextPlaque = ({
         justifyContent: 'center',
       }}
       uiBackground={{
-        texture: { src: REVAMP_NAMES_IMG, wrapMode: 'clamp', filterMode: 'tri-linear' },
+        texture: { src: REVAMP_NAMES_IMG_BY_LANG[getLanguage()], wrapMode: 'clamp', filterMode: 'tri-linear' },
         textureMode: 'stretch',
         uvs: atlasUvs(TILE_RECT, NAMES_ATLAS_SIZE),
       }}

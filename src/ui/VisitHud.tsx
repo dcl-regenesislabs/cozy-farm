@@ -1,4 +1,5 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { requestLikeFarm, socialUiCallbacks } from '../services/socialService'
 import { exitVisitMode, getVisitedPayload } from '../services/visitService'
@@ -38,27 +39,27 @@ export const VisitHud = () => {
 
     if (data.success) {
       likeUiState.liked  = true
-      likeUiState.status = `Liked farm. +${data.rewardCoins} coins queued in mailbox`
+      likeUiState.status = t('hud.visit.likedFarmReward', { amount: data.rewardCoins })
       return
     }
 
     likeUiState.liked = data.reason === 'already_liked_today'
     likeUiState.status =
-      data.reason === 'already_liked_today' ? 'You already liked this farm today'
-      : data.reason === 'cannot_like_own_farm' ? 'You cannot like your own farm'
-      : 'Could not register like'
+      data.reason === 'already_liked_today' ? t('hud.visit.alreadyLikedToday')
+      : data.reason === 'cannot_like_own_farm' ? t('hud.visit.cannotLikeOwnFarm')
+      : t('hud.visit.likeFailed')
   }
 
   const payload      = getVisitedPayload()
   const likeCount    = payload?.wallet === targetFarm ? payload.totalLikesReceived : 0
   const farmLabel    = formatPlayerLabel(playerState.viewingFarmDisplayName, targetFarm)
-  const likeLabel    = likeUiState.pending ? 'Liking...' : likeUiState.liked ? 'Liked Today' : 'Like Farm'
+  const likeLabel    = likeUiState.pending ? t('hud.visit.liking') : likeUiState.liked ? t('hud.visit.likedToday') : t('hud.visit.likeFarm')
   const likeBg       = likeUiState.liked
     ? { r: 0.35, g: 0.18, b: 0.18, a: 1 }
     : { r: 0.58, g: 0.22, b: 0.22, a: 1 }
   const waterCount   = playerState.visitorSessionWaterCount
   const waterLeft    = VISITOR_WATER_LIMIT - waterCount
-  const waterLabel   = `Water ${waterCount}/${VISITOR_WATER_LIMIT}`
+  const waterLabel   = t('hud.visit.waterCount', { count: waterCount, limit: VISITOR_WATER_LIMIT })
   const waterBg      = waterLeft > 0
     ? { r: 0.12, g: 0.35, b: 0.55, a: 1 }
     : { r: 0.2, g: 0.2, b: 0.2, a: 1 }
@@ -94,14 +95,14 @@ export const VisitHud = () => {
           }}
         >
           <Label
-            value={`Visiting ${farmLabel}`}
+            value={t('hud.visit.visiting', { farm: farmLabel })}
             fontSize={20}
             color={C.header}
             textAlign="middle-left"
             uiTransform={{ width: VISIT_INFO_W, height: 24 }}
           />
           <Label
-            value={`Likes ${likeCount}`}
+            value={t('hud.visit.likes', { count: likeCount })}
             fontSize={17}
             color={C.textMute}
             textAlign="middle-left"
@@ -146,7 +147,7 @@ export const VisitHud = () => {
             }, 290)
           }}
         >
-          <Label value="Return Home" fontSize={20} color={C.textMain} textAlign="middle-center" />
+          <Label value={t('hud.visit.returnHome')} fontSize={20} color={C.textMain} textAlign="middle-center" />
         </UiEntity>
       </UiEntity>
 

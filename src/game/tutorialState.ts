@@ -43,15 +43,16 @@ const STEP_ORDER: TutorialStep[] = [
 
 export type TutorialMilestone = { label: string; doneAt: TutorialStep }
 
+// `label` fields are i18n keys — resolve with t() at render time (QuestPanel.tsx)
 export const TUTORIAL_MILESTONES: TutorialMilestone[] = [
-  { label: 'Buy 5 Onion seeds',          doneAt: 'plant_first'  },
-  { label: 'Plant your first seed',       doneAt: 'water_first'  },
-  { label: 'Water your crop',             doneAt: 'wait_grow'    },
-  { label: 'Harvest your first crop',     doneAt: 'harvest_more' },
-  { label: 'Harvest 3 more crops',        doneAt: 'open_quests'  },
-  { label: 'Open the Quests panel',       doneAt: 'talk_mayor'   },
-  { label: 'Talk to Mayor Chen',          doneAt: 'sell_quest'   },
-  { label: 'Sell 5 crops at the farm stand', doneAt: 'complete'  },
+  { label: 'tutorial.milestone.buySeeds',    doneAt: 'plant_first'  },
+  { label: 'tutorial.milestone.plantFirst',  doneAt: 'water_first'  },
+  { label: 'tutorial.milestone.waterCrop',   doneAt: 'wait_grow'    },
+  { label: 'tutorial.milestone.harvestFirst', doneAt: 'harvest_more' },
+  { label: 'tutorial.milestone.harvestMore', doneAt: 'open_quests'  },
+  { label: 'tutorial.milestone.openQuests',  doneAt: 'talk_mayor'   },
+  { label: 'tutorial.milestone.talkMayor',   doneAt: 'sell_quest'   },
+  { label: 'tutorial.milestone.sellCrops',   doneAt: 'complete'  },
 ]
 
 /** Returns 'done' | 'current' | 'todo' for a milestone relative to the current step. */

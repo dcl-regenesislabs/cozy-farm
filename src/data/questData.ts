@@ -6,8 +6,8 @@ export interface QuestDefinition {
   id:          string       // unique quest id (may differ from npcId for multi-quest NPCs)
   npcId?:      string       // which NPC owns this quest; defaults to id if absent
   npcName:     string
-  title:       string
-  description: string
+  title:       string       // i18n key — resolve with t() at render time
+  description: string       // i18n key — resolve with t() at render time
   type:        QuestType
   cropType:    CropType | null  // null for type-agnostic quests
   target:      number
@@ -19,54 +19,54 @@ export interface QuestDefinition {
 
 export const QUEST_DEFINITIONS: QuestDefinition[] = [
   {
-    id: 'rosa', npcName: 'Rosa', title: 'Harvest 5 Onions',
-    description: "Could you harvest 5 onions for me, dear?\nI'm making a big pot of soup and I'll make it worth your while!",
+    id: 'rosa', npcName: 'Rosa', title: 'quest.rosa.title',
+    description: 'quest.rosa.description',
     type: 'harvest_crop', cropType: CropType.Onion, target: 5,
     rewardCoins: 50, rewardXp: 50,
   },
   {
-    id: 'gerald', npcName: 'Gerald', title: 'Water crops 10 times',
-    description: "Hmph.\nIf you can water your crops 10 times without making a mess, I'll admit you know what you're doing.",
+    id: 'gerald', npcName: 'Gerald', title: 'quest.gerald.title',
+    description: 'quest.gerald.description',
     type: 'water_total', cropType: null, target: 10,
     rewardCoins: 40, rewardXp: 50,
     prerequisite: { minLevel: 3 },
   },
   {
-    id: 'marco', npcName: 'Marco', title: 'Harvest 10 crops total',
-    description: "Let's see if you can match my output. Harvest 10 crops — any kind.\nShouldn't take long... for me at least.",
+    id: 'marco', npcName: 'Marco', title: 'quest.marco.title',
+    description: 'quest.marco.description',
     type: 'harvest_total', cropType: null, target: 10,
     rewardCoins: 75, rewardXp: 75,
   },
   {
-    id: 'lily', npcName: 'Lily', title: 'Harvest 3 Tomatoes',
-    description: "I need fresh tomatoes for tonight's restaurant special. Can you bring me 3? I'll pay generously!",
+    id: 'lily', npcName: 'Lily', title: 'quest.lily.title',
+    description: 'quest.lily.description',
     type: 'harvest_crop', cropType: CropType.Tomato, target: 3,
     rewardCoins: 100, rewardXp: 75,
     prerequisite: { minLevel: 5 },
   },
   {
-    id: 'dave', npcName: 'Dave', title: 'Plant 8 seeds',
-    description: "You know what would cheer me up after the whole cellar flood situation? Watching you plant 8 seeds.\nGo on, it'll be great.",
+    id: 'dave', npcName: 'Dave', title: 'quest.dave.title',
+    description: 'quest.dave.description',
     type: 'plant_total', cropType: null, target: 8,
     rewardCoins: 60, rewardXp: 50,
   },
   {
-    id: 'mayorchen', npcName: 'Mayor Chen', title: 'Sell 5 crops',
-    description: "The town market needs your active participation.\nSell 5 crops to prove your commitment to our local economy.",
+    id: 'mayorchen', npcName: 'Mayor Chen', title: 'quest.mayorchen.title',
+    description: 'quest.mayorchen.description',
     type: 'sell_total', cropType: null, target: 5,
     rewardCoins: 200, rewardXp: 100,
   },
   {
     id: 'mayorchen_farmer', npcId: 'mayorchen', npcName: 'Mayor Chen',
-    title: 'Sell 50 crops',
-    description: "I've been reviewing the town's expansion plans. If you can sell 50 crops to the market, I'll authorize the new farming zone adjacent to your land. The town council is counting on you!",
+    title: 'quest.mayorchen_farmer.title',
+    description: 'quest.mayorchen_farmer.description',
     type: 'sell_total', cropType: null, target: 50,
     rewardCoins: 500, rewardXp: 200,
   },
   {
     id: 'mayorchen_fertilizer', npcId: 'mayorchen', npcName: 'Mayor Chen',
-    title: 'Generate 5 Fertilizers',
-    description: "Practice makes perfect! Add organic waste to your compost bin and collect 5 fertilizers. Your crops will thank you!",
+    title: 'quest.mayorchen_fertilizer.title',
+    description: 'quest.mayorchen_fertilizer.description',
     type: 'collect_fertilizer', cropType: null, target: 5,
     rewardCoins: 150, rewardXp: 100,
     requiresRotSystem: true,

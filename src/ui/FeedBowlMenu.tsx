@@ -6,6 +6,7 @@ import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
 import { CROP_HARVEST_IMAGES } from '../data/imagePaths'
 import { depositFoodInBowl } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { t } from '../i18n'
 import { RevampPanelFrame } from './RevampPanel'
 import { MiniTextButton } from './RevampButtons'
 import { SHARED_PAGINATION_HEIGHT_DESKTOP, SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
@@ -152,7 +153,7 @@ const FeedCard = ({ label, imgSrc, count, stockLabel, note, addOne, addAll }: Fe
       <UiEntity uiTransform={{ flex: 1 }} />
 
       <MiniTextButton
-        label="ADD ALL"
+        label={t('animals.addAllButton')}
         width={buttonWidth}
         fontSize={scaleCardContent(BUTTON_FONT)}
         topOffset={-scaleCardContent(4)}
@@ -178,7 +179,7 @@ export const FeedBowlMenu = () => {
   if (!type) return <UiEntity />
 
   const bowlAmount = type === 'chicken' ? playerState.chickenFoodInBowl : playerState.pigFoodInBowl
-  const title = type === 'chicken' ? 'Feed Chickens' : 'Feed Pigs'
+  const title = type === 'chicken' ? t('animals.hover.feedChickens') : t('animals.hover.feedPigs')
 
   const deposit = (grainAmt: number, cropType?: CropType, cropAmt?: number) => {
     const crops = new Map<number, number>()
@@ -189,11 +190,11 @@ export const FeedBowlMenu = () => {
   const items: FeedCardSpec[] = [
     {
       key: 'grain',
-      label: 'Grain',
+      label: t('animals.grainTitle'),
       imgSrc: GRAIN_ICON,
       count: playerState.grainCount,
       stockLabel: `x${playerState.grainCount}`,
-      note: 'Tap for 1. Button adds all.',
+      note: t('animals.tapForOneNote'),
       addOne: () => deposit(1),
       addAll: () => deposit(playerState.grainCount)
     },
@@ -204,11 +205,11 @@ export const FeedBowlMenu = () => {
         const def = CROP_DATA.get(cropType)!
         return {
           key: `crop-${cropType}`,
-          label: def.name,
+          label: t(def.name),
           imgSrc: CROP_HARVEST_IMAGES[cropType],
           count,
           stockLabel: `x${count}`,
-          note: 'Tap for 1. Button adds all.',
+          note: t('animals.tapForOneNote'),
           addOne: () => deposit(0, cropType, 1),
           addAll: () => deposit(0, cropType, count)
         } satisfies FeedCardSpec
@@ -245,7 +246,7 @@ export const FeedBowlMenu = () => {
           }}
         >
           <Label
-            value={`Bowl loaded: ${bowlAmount} units`}
+            value={t('animals.bowlLoaded', { count: bowlAmount })}
             fontSize={isMobile() ? ss(26) : ss(24)}
             color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
             textAlign="middle-center"
@@ -253,7 +254,7 @@ export const FeedBowlMenu = () => {
             uiTransform={{ width: '100%', height: isMobile() ? ss(32) : ss(28) }}
           />
           <Label
-            value="Tap a card to add 1 unit. Use the button to dump the whole stack."
+            value={t('animals.tapCardHint')}
             fontSize={isMobile() ? ss(21) : ss(17)}
             color={isMobile() ? { r: 1, g: 1, b: 1, a: 1 } : CARD_TEXT_MUTE}
             textAlign="middle-center"

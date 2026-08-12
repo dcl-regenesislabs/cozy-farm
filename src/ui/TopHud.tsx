@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { BTN_PROFILE } from '../data/imagePaths'
@@ -224,8 +225,8 @@ export const TopHud = () => {
   const topRowPrimaryWidth = mobile ? s(300) : s(334)
   const topRowSecondaryWidth = mobile ? s(220) : s(176)
   const topRowGap = mobile ? s(6) : s(10)
-  const xpText = isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`
-  const mobileXpText = isMaxLvl ? 'MAX XP' : `${xp.current}/${xp.needed} XP`
+  const xpText = isMaxLvl ? t('hud.maxXp') : t('hud.xpProgress', { current: xp.current, needed: xp.needed })
+  const mobileXpText = isMaxLvl ? t('hud.maxXp') : t('hud.xpProgressMobile', { current: xp.current, needed: xp.needed })
   const mobileCoinsText = formatMobileHudCoins(displayCoins)
   const mobileCoinsFontSize = getMobileHudCoinFontSize(mobileCoinsText)
   const mobileXpFontSize = getMobileHudXpFontSize(mobileXpText)
@@ -307,8 +308,8 @@ export const TopHud = () => {
           <Label
             value={
               playerState.workerUnpaidDays >= 2
-                ? `Worker unpaid: ${playerState.workerOutstandingWages} coins due (${workerDebtDays} days).`
-                : `Worker wages due: ${playerState.workerOutstandingWages} coins.`
+                ? t('hud.workerUnpaidDays', { wages: playerState.workerOutstandingWages, days: workerDebtDays })
+                : t('hud.workerWagesDue', { wages: playerState.workerOutstandingWages })
             }
             fontSize={18}
             color={{ r: 1, g: 0.86, b: 0.78, a: 1 }}
@@ -576,7 +577,7 @@ export const TopHud = () => {
                         uiBackground={{ color: { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.35 } }}
                       />
                       <Label
-                        value="Connecting..."
+                        value={t('hud.connecting')}
                         fontSize={s(14)}
                         color={{ ...HUD_BROWN, a: connectingBlinkOn ? 1 : 0.7 }}
                         textAlign="middle-right"

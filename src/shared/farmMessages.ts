@@ -144,6 +144,9 @@ const FarmStateSchema = Schemas.Map({
   musicMuted:  Schemas.Boolean,
   musicVolume: Schemas.Number,
 
+  // Localization — '' = not chosen yet (client falls back to English)
+  preferredLanguage: Schemas.String,
+
   // Fertilizer system
   organicWaste:            Schemas.Int,
   fertilizers:             Schemas.Array(FertilizerCountSchema),
@@ -469,6 +472,7 @@ export type FarmStatePayload = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  preferredLanguage: string
   organicWaste:            number
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number

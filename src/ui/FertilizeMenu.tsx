@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { applyFertilizer } from '../game/actions'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType } from '../data/fertilizerData'
@@ -90,6 +91,8 @@ function getPaginationGap(): number {
 
 const FertCard = ({ fertType, count }: { fertType: FertilizerType; count: number }) => {
   const def = FERTILIZER_DATA.get(fertType)!
+  const name = t(def.name)
+  const description = t(def.description)
   const zoomKey = `fert_${fertType}`
   const transform = getCardTransform()
   const textWidth = transform.width - (isMobile() ? 24 : 32)
@@ -128,21 +131,21 @@ const FertCard = ({ fertType, count }: { fertType: FertilizerType; count: number
       />
 
       <Label
-        value={`<b>${def.name}</b>`}
-        fontSize={getCardTitleFont(def.name)}
+        value={`<b>${name}</b>`}
+        fontSize={getCardTitleFont(name)}
         color={CARD_TEXT}
         textAlign="middle-center"
         uiTransform={{ width: textWidth, height: scaleCardContent(CARD_TITLE_BLOCK_H) }}
       />
       <Label
-        value={`x${count}`}
+        value={t('common.count', { count })}
         fontSize={scaleCardContent(CARD_TITLE_SM)}
         color={COUNT_COLOR}
         textAlign="middle-center"
         uiTransform={{ width: textWidth, height: scaleCardContent(CARD_COUNT_BLOCK_H), margin: { top: ss(4) } }}
       />
       <Label
-        value={def.description}
+        value={description}
         fontSize={scaleCardContent(CARD_BODY)}
         color={CARD_TEXT_MUTE}
         textAlign="middle-center"
@@ -152,7 +155,7 @@ const FertCard = ({ fertType, count }: { fertType: FertilizerType; count: number
       <UiEntity uiTransform={{ flex: 1 }} />
 
       <MiniTextButton
-        label="APPLY"
+        label={t('fertilize.apply')}
         width={buttonWidth}
         fontSize={scaleCardContent(CARD_BUTTON_FONT)}
         topOffset={-scaleCardContent(4)}
@@ -192,13 +195,13 @@ export const FertilizeMenu = () => {
   }
 
   return (
-    <RevampPanelFrame titleText="Fertilizers" onClose={() => {
+    <RevampPanelFrame titleText={t('fertilize.title')} onClose={() => {
       playerState.activeMenu = 'none'
       playerState.activePlotEntity = null
     }}>
       <UiEntity uiTransform={{ width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center' }}>
         <Label
-          value="Pick a fertilizer to apply to this crop"
+          value={t('fertilize.subtitle')}
           fontSize={isMobile() ? ss(26) : ss(24)}
           color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
           textAlign="middle-center"

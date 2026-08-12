@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { ALL_CROP_TYPES, CROP_NAMES } from '../data/cropData'
 import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA } from '../data/fertilizerData'
 import { CROP_HARVEST_IMAGES, CROP_SEED_IMAGES, ORGANIC_WASTE_ICON } from '../data/imagePaths'
@@ -164,7 +165,7 @@ const InventoryCard = ({ title, imageSrc, count }: InventoryCardItem) => {
         }}
       >
         <Label
-          value={`<b>x${count}</b>`}
+          value={`<b>${t('common.count', { count })}</b>`}
           fontSize={mobile ? 20 : 18}
           color={INVENTORY_COUNT_TEXT}
           textAlign="middle-center"
@@ -263,20 +264,20 @@ const TabBar = ({ hasOther }: { hasOther: boolean }) => (
   >
     <InventoryTabChip
       tabKey="seeds"
-      label="Seeds"
+      label={t('inventory.tab.seeds')}
       selected={inventoryTab.value === 'seeds'}
       onClick={() => { inventoryTab.value = 'seeds' }}
     />
     <InventoryTabChip
       tabKey="harvested"
-      label="Harvested"
+      label={t('inventory.tab.harvested')}
       selected={inventoryTab.value === 'harvested'}
       onClick={() => { inventoryTab.value = 'harvested' }}
     />
     {hasOther && (
       <InventoryTabChip
         tabKey="other"
-        label="Other"
+        label={t('inventory.tab.other')}
         selected={inventoryTab.value === 'other'}
         onClick={() => { inventoryTab.value = 'other' }}
       />
@@ -338,7 +339,7 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
       .filter((crop) => (playerState.seeds.get(crop) ?? 0) > 0)
       .map((crop) => ({
         key: `seed-${crop}`,
-        title: CROP_NAMES[crop],
+        title: t(CROP_NAMES[crop]),
         imageSrc: CROP_SEED_IMAGES[crop],
         count: playerState.seeds.get(crop) ?? 0,
       }))
@@ -349,7 +350,7 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
       .filter((crop) => (playerState.harvested.get(crop) ?? 0) > 0)
       .map((crop) => ({
         key: `harvest-${crop}`,
-        title: CROP_NAMES[crop],
+        title: t(CROP_NAMES[crop]),
         imageSrc: CROP_HARVEST_IMAGES[crop],
         count: playerState.harvested.get(crop) ?? 0,
       }))
@@ -359,7 +360,7 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
   if (playerState.organicWaste > 0) {
     otherItems.push({
       key: 'organic-waste',
-      title: 'Organic Waste',
+      title: t('inventory.item.organicWaste'),
       imageSrc: ORGANIC_WASTE_ICON,
       count: playerState.organicWaste,
     })
@@ -370,7 +371,7 @@ function getInventoryItems(tab: InventoryTabValue): InventoryCardItem[] {
     const def = FERTILIZER_DATA.get(fertilizer)!
     otherItems.push({
       key: `fert-${fertilizer}`,
-      title: def.name,
+      title: t(def.name),
       imageSrc: def.iconSrc,
       count,
     })
@@ -412,10 +413,10 @@ export const InventoryPanel = () => {
         <EmptyState
           message={
             tab === 'seeds'
-              ? 'No seeds in stock'
+              ? t('inventory.empty.seeds')
               : tab === 'harvested'
-                ? 'Nothing harvested yet'
-                : 'No extra items stored'
+                ? t('inventory.empty.harvested')
+                : t('inventory.empty.other')
           }
         />
       ) : (

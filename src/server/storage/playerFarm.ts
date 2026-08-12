@@ -95,6 +95,7 @@ export type FarmSaveV1 = {
   musicSongId:    string
   musicMuted:     boolean
   musicVolume:    number
+  preferredLanguage: string
   organicWaste:            number
   fertilizers:             FertilizerCount[]
   compostWasteCount:       number
@@ -168,6 +169,7 @@ export function emptyFarm(wallet: string): FarmSaveV1 {
     musicSongId:    'a_la_fresca',
     musicMuted:     false,
     musicVolume:    0.42,
+    preferredLanguage: '',
     organicWaste:            0,
     fertilizers:             [],
     compostWasteCount:       0,
@@ -277,6 +279,7 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     musicSongId:         safeStr(maybe.musicSongId, 'a_la_fresca'),
     musicMuted:          safeBool(maybe.musicMuted),
     musicVolume:         typeof maybe.musicVolume === 'number' ? maybe.musicVolume : 0.42,
+    preferredLanguage:   safeStr((maybe as any).preferredLanguage, ''),
     organicWaste:            safeInt((maybe as any).organicWaste, 0),
     fertilizers:             safeArray<FertilizerCount>((maybe as any).fertilizers),
     compostWasteCount:       safeInt((maybe as any).compostWasteCount, 0),
@@ -360,6 +363,7 @@ export function farmSaveToPayload(save: FarmSaveV1): FarmStatePayload {
     musicSongId:         save.musicSongId,
     musicMuted:          save.musicMuted,
     musicVolume:         save.musicVolume,
+    preferredLanguage:   save.preferredLanguage,
     organicWaste:            save.organicWaste,
     fertilizers:             save.fertilizers,
     compostWasteCount:       save.compostWasteCount,
@@ -839,6 +843,7 @@ export class FarmProgressStore {
       musicSongId:         payload.musicSongId,
       musicMuted:          payload.musicMuted,
       musicVolume:         payload.musicVolume,
+      preferredLanguage:   payload.preferredLanguage ?? existing.preferredLanguage ?? '',
       organicWaste:            payload.organicWaste ?? 0,
       fertilizers:             payload.fertilizers ?? [],
       compostWasteCount:       payload.compostWasteCount ?? 0,

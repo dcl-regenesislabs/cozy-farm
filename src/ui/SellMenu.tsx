@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { sellCrop } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA } from '../data/cropData'
@@ -310,7 +311,7 @@ const SellCard = ({ icon, name, count, unitPrice, zoomKey, onSell }: SellCardDat
       />
       <Label value={`<b>${name}</b>`} fontSize={getSellTitleFont(name)} color={SELL_CARD_TEXT} textAlign="middle-center" />
       <Label
-        value={`x${count}`}
+        value={t('common.count', { count })}
         fontSize={scaleSellCardContent(SELL_CARD_COUNT_FONT)}
         color={SELL_CARD_TEXT_MUTE}
         textAlign="middle-center"
@@ -429,7 +430,7 @@ export const SellMenu = () => {
           <SellCard
             key={`${ct}`}
             icon={CROP_HARVEST_IMAGES[ct]}
-            name={def.name}
+            name={t(def.name)}
             count={playerState.harvested.get(ct)!}
             unitPrice={def.sellPrice}
             zoomKey={`sell_${ct}`}
@@ -444,7 +445,7 @@ export const SellMenu = () => {
         <SellCard
           key="eggs"
           icon={EGG_ICON}
-          name="Eggs"
+          name={t('sell.item.eggs')}
           count={playerState.eggsCount}
           unitPrice={EGG_SELL_PRICE}
           zoomKey="sell_eggs"
@@ -458,7 +459,7 @@ export const SellMenu = () => {
         <SellCard
           key="meat"
           icon={PIG_ICON}
-          name="Pig Meat"
+          name={t('sell.item.pigMeat')}
           count={playerState.pigMeatCount}
           unitPrice={PIG_MEAT_SELL_PRICE}
           zoomKey="sell_meat"
@@ -510,7 +511,7 @@ export const SellMenu = () => {
         }}
       >
         <Label
-          value={hasAnything ? '<b>Tap a card to sell</b>' : '<b>No crops ready to sell</b>'}
+          value={hasAnything ? `<b>${t('sell.subtitle.tap')}</b>` : `<b>${t('sell.subtitle.empty')}</b>`}
           fontSize={subtitleFont}
           color={SELL_HEADER_TEXT}
           textAlign="middle-center"
@@ -532,9 +533,9 @@ export const SellMenu = () => {
           }}
           uiBackground={{ color: SELL_SCROLL_BG }}
         >
-          <Label value="Nothing to sell." fontSize={emptyTitleFont} color={SELL_EMPTY_TEXT} textAlign="middle-center" />
+          <Label value={t('sell.emptyTitle')} fontSize={emptyTitleFont} color={SELL_EMPTY_TEXT} textAlign="middle-center" />
           <Label
-            value="Harvest crops or collect eggs first."
+            value={t('sell.emptyBody')}
             fontSize={emptyBodyFont}
             color={{ r: SELL_EMPTY_TEXT.r, g: SELL_EMPTY_TEXT.g, b: SELL_EMPTY_TEXT.b, a: 0.78 }}
             textAlign="middle-center"

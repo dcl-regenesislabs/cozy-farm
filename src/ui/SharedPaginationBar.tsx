@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playSound } from '../systems/sfxSystem'
 import { getZoomScale, isZooming, triggerCardZoom } from './cardZoomSystem'
 
@@ -137,7 +138,7 @@ export const SharedPaginationBar = ({
           }}
         >
           <Label
-            value="<b>Prev</b>"
+            value={`<b>${t('common.prev')}</b>`}
             fontSize={labelFont}
             color={canPrev ? buttonLabelColor : buttonLabelDisabledColor}
             textAlign="middle-center"
@@ -165,7 +166,7 @@ export const SharedPaginationBar = ({
         uiBackground={{ color: pageChipBgColor }}
       >
         <Label
-          value={`<b>${page + 1}</b> / ${lastPage + 1}`}
+          value={`<b>${t('common.pageOf', { page: page + 1, last: lastPage + 1 })}</b>`}
           fontSize={pageFont}
           color={pageChipTextColor}
           textAlign="middle-center"
@@ -203,7 +204,7 @@ export const SharedPaginationBar = ({
           }}
         >
           <Label
-            value="<b>Next</b>"
+            value={`<b>${t('common.next')}</b>`}
             fontSize={labelFont}
             color={canNext ? buttonLabelColor : buttonLabelDisabledColor}
             textAlign="middle-center"

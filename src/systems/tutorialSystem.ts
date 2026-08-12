@@ -18,6 +18,7 @@ import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
 import { getEntityWorldPosition } from './farmInstances'
 import { saveFarm } from '../services/saveService'
 import { trackEvent } from '../analytics/analytics'
+import { t, tList } from '../i18n'
 
 const STARTER_COINS         = 15   // exactly 5 onion seeds × 3 coins each
 const SEEDS_TO_BUY          = 5
@@ -26,7 +27,7 @@ const HARVEST_MORE_TARGET   = 3
 // ---------------------------------------------------------------------------
 // Dialog helper — opens Mayor Chen's tutorial dialog panel
 // ---------------------------------------------------------------------------
-function showTutorialDialog(text: string | string[], buttonLabel: string, onButton: () => void) {
+function showTutorialDialog(text: string | string[], buttonLabel: string, onButton: () => void, isWelcome = false) {
   const pages = Array.isArray(text) ? text : [text]
   npcDialogState.npcName             = MAYOR_DEF.name
   npcDialogState.npcId               = MAYOR_DEF.id
@@ -36,7 +37,8 @@ function showTutorialDialog(text: string | string[], buttonLabel: string, onButt
   npcDialogState.tutorialFinalButtonLabel = buttonLabel
   npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? t('tutorial.nextButton') : buttonLabel
+  npcDialogState.isMayorWelcome      = isWelcome
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -65,11 +67,8 @@ function goToPlantFirst() {
   walkMayorToSoil(0, -1.2)
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
-    [
-      "Excellent! Now come here to this soil plot and try to plant your first seed...",
-      "Click the soil to open the planting menu, then select Onion.",
-    ],
-    "On my way!",
+    tList('tutorial.plantFirst.pages'),
+    t('tutorial.plantFirst.button'),
     () => {},
   )
 }
@@ -78,8 +77,8 @@ function goToWaterFirst() {
   tutorialState.step = 'water_first'
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
-    "Once you plant a seed, you'll need to water it.\nAny plant needs water to grow — go ahead and use your watering can on it!",
-    "On it!",
+    t('tutorial.waterFirst.text'),
+    t('tutorial.waterFirst.button'),
     () => {},
   )
 }
@@ -89,11 +88,8 @@ function goToWaitGrow() {
   tutorialCallbacks.unlockSoilsPhase1()
   setArrowTarget(null)   // just waiting — no arrow needed
   showTutorialDialog(
-    [
-      "Good — now it's time to wait for the plant to grow!...",
-      "I'll apply a quick Fertilizer to this soil so it goes faster. I've also unlocked two more plots for you — practice planting while you wait!",
-    ],
-    "Nice, let's go!",
+    tList('tutorial.waitGrow.pages'),
+    t('tutorial.waitGrow.button'),
     () => {},
   )
 }
@@ -103,8 +99,8 @@ function goToHarvestFirst() {
   walkMayorToSoil(0, -1.2)
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
-    "Your first Onion is ready! Come and harvest it!\n\nClick the soil plot with the glowing hand icon.",
-    "Let's harvest!",
+    t('tutorial.harvestFirst.text'),
+    t('tutorial.harvestFirst.button'),
     () => {},
   )
 }
@@ -114,8 +110,8 @@ function goToHarvestMore() {
   tutorialState.harvestMoreCount = 0
   setArrowTarget((tutorialCallbacks.getFirstSoilEntity() as import('@dcl/sdk/ecs').Entity | null))
   showTutorialDialog(
-    "Amazing! You're a real farmer now, these are the basics of farming!\n\nLet's keep practicing — harvest 3 more onions!",
-    "I'm on fire!",
+    t('tutorial.harvestMore.text'),
+    t('tutorial.harvestMore.button'),
     () => {},
   )
 }
@@ -125,11 +121,8 @@ function goToOpenQuests() {
   setArrowTarget(null)                      // quests button is 2D UI — no 3D arrow
   tutorialNavState.highlightQuests = true   // dim other nav buttons, bounce quests
   showTutorialDialog(
-    [
-      "On your farm you'll get a lot of nearby visitors and neighbours with requests!...",
-      "Open the Quests panel using the button at the bottom of the screen to see what awaits you.",
-    ],
-    "Show me!",
+    tList('tutorial.openQuests.pages'),
+    t('tutorial.openQuests.button'),
     () => {},
   )
 }
@@ -160,12 +153,8 @@ function goToTalkMayor() {
     trackEvent('tutorial completed')
     // Mayor is already walking away (departure was triggered by closeDialog)
     showTutorialDialog(
-      [
-        "You've done it — you're a true farmer now! 🌱\n\nI've unlocked three more soil plots for you.",
-        "Also, head to your shop computer — Onion, Potato and Garlic seeds are all available now! Tier 2 & 3 crops unlock later as you grow.",
-        "The town of CozyFarm is proud of you. Good luck!",
-      ],
-      "Thanks, Mayor!",
+      tList('tutorial.questComplete.pages'),
+      t('tutorial.questComplete.button'),
       () => {
         // If Mayor is somehow still idle, make sure he departs
         requestNpcDeparture()
@@ -174,8 +163,8 @@ function goToTalkMayor() {
   })
 
   showTutorialDialog(
-    "The town market needs your participation!\n\nNow come and talk to me — I have an official quest for you.",
-    "Coming!",
+    t('tutorial.talkMayor.text'),
+    t('tutorial.talkMayor.button'),
     () => {},
   )
 }
@@ -328,13 +317,14 @@ export function initTutorialSystem() {
   switch (tutorialState.step) {
     case 'welcome':
       showTutorialDialog(
-        "Welcome to CozyFarm! I'm Mayor Chen, and I'll guide you through the basics.\n\nHere are 15 coins to get you started — go inside your house and log into your computer to buy 5 Onion seeds on El Amazonas!",
-        "Thanks, Mayor!",
+        t('tutorial.welcome.text'),
+        t('tutorial.welcome.button'),
         () => {
           playerState.coins += STARTER_COINS
           tutorialState.step = 'buy_seeds'
           setArrowTarget((tutorialCallbacks.getComputerEntity() as import('@dcl/sdk/ecs').Entity | null))
         },
+        true,
       )
       break
 

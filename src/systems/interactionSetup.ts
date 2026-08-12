@@ -39,6 +39,7 @@ import {
   setCurrentFarmSlot,
   getCurrentFarmSlotId,
 } from './farmInstances'
+import { t, registerHoverText } from '../i18n'
 
 const SOIL_MODEL             = 'assets/scene/Models/Soil01/Soil01.glb'
 const SOIL_TRANSPARENT_MODEL = 'assets/scene/Models/Soil01Trasnparent/Soil01Trasnparent.glb'
@@ -168,9 +169,10 @@ function wireLocalFarmInteractives(): void {
     spawnVisualIcon(computerEntity, COMPUTER_ICON_Y, COMPUTER_ICON_SIZE, SHOPINGCART_ICON)
     enablePointerOnGltf(computerEntity)
     pointerEventsSystem.onPointerDown(
-      { entity: computerEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Shop', maxDistance: 8 } },
+      { entity: computerEntity, opts: { button: InputAction.IA_POINTER, hoverText: t('shop.hover.openShop'), maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'shop' },
     )
+    registerHoverText(computerEntity, 'shop.hover.openShop')
   }
 
   truckEntity = getCurrentFarmEntity('Market01.glb') ?? getCurrentFarmEntity('Truck01.glb')
@@ -178,35 +180,39 @@ function wireLocalFarmInteractives(): void {
     spawnVisualIcon(truckEntity, TRUCK_ICON_Y, TRUCK_ICON_SIZE, COINS_ICON)
     enablePointerOnGltf(truckEntity)
     pointerEventsSystem.onPointerDown(
-      { entity: truckEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Sell Crops', maxDistance: 10 } },
+      { entity: truckEntity, opts: { button: InputAction.IA_POINTER, hoverText: t('sell.hover.sellCrops'), maxDistance: 10 } },
       () => { if (isVisiting()) return; playSound('truck'); playerState.activeMenu = 'sell' },
     )
+    registerHoverText(truckEntity, 'sell.hover.sellCrops')
   }
 
   forSaleSignEntity = getCurrentFarmEntity('For Sale Sign')
   if (forSaleSignEntity) {
     pointerEventsSystem.onPointerDown(
-      { entity: forSaleSignEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Expand Farm (10000 coins)', maxDistance: 8 } },
+      { entity: forSaleSignEntity, opts: { button: InputAction.IA_POINTER, hoverText: t('unlock.hover.expandFarm', { cost: 10000 }), maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'unlock' },
     )
+    registerHoverText(forSaleSignEntity, 'unlock.hover.expandFarm', { cost: 10000 })
   }
 
   const boombox = getCurrentFarmEntity('Boombox')
   if (boombox) {
     enablePointerOnGltf(boombox)
     pointerEventsSystem.onPointerDown(
-      { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: 'Change Music', maxDistance: 8 } },
+      { entity: boombox, opts: { button: InputAction.IA_POINTER, hoverText: t('jukebox.hover.changeMusic'), maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'jukebox' },
     )
+    registerHoverText(boombox, 'jukebox.hover.changeMusic')
   }
 
   const mailbox = getCurrentFarmEntity('Mailbox')
   if (mailbox && MAILBOX_FEATURE_ENABLED) {
     enablePointerOnGltf(mailbox)
     pointerEventsSystem.onPointerDown(
-      { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: 'Mailbox & Neighbours', maxDistance: 8 } },
+      { entity: mailbox, opts: { button: InputAction.IA_POINTER, hoverText: t('mailbox.hover.mailboxNeighbours'), maxDistance: 8 } },
       () => { if (isVisiting()) return; playSound('menu'); playerState.activeMenu = 'mailbox' },
     )
+    registerHoverText(mailbox, 'mailbox.hover.mailboxNeighbours')
   }
 
   compostBinEntity = getCurrentFarmEntity('CompostBin01.glb') ?? getCurrentFarmEntity('CompostBin.glb')
@@ -215,7 +221,7 @@ function wireLocalFarmInteractives(): void {
     compostBinOriginalScale = { x: scale.x, y: scale.y, z: scale.z }
     enablePointerOnGltf(compostBinEntity)
     pointerEventsSystem.onPointerDown(
-      { entity: compostBinEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Compost Bin', maxDistance: 8 } },
+      { entity: compostBinEntity, opts: { button: InputAction.IA_POINTER, hoverText: t('compost.hover.compostBin'), maxDistance: 8 } },
       () => {
         if (isVisiting()) return
         if (!playerState.compostBinUnlocked) return
@@ -223,6 +229,7 @@ function wireLocalFarmInteractives(): void {
         playerState.activeMenu = 'compost'
       },
     )
+    registerHoverText(compostBinEntity, 'compost.hover.compostBin')
   }
 
   wirePlotGroupSigns()
@@ -355,26 +362,26 @@ export function registerPlotPointerEvent(entity: Entity): void {
   const plot = PlotState.get(entity)
   const visiting = isVisiting()
 
-  let hoverText = 'Plant'
+  let hoverText = t('farm.hover.plant')
 
   if (visiting) {
-    if (!plot.isUnlocked) hoverText = 'Locked'
+    if (!plot.isUnlocked) hoverText = t('common.locked')
     else if (plot.cropType !== -1 && !plot.isReady) {
-      hoverText = visitSessionWateredPlots.has(plot.plotIndex) ? 'Watered' : 'Water Crop'
+      hoverText = visitSessionWateredPlots.has(plot.plotIndex) ? t('farm.hover.watered') : t('farm.hover.waterCrop')
     } else {
-      hoverText = 'Visiting'
+      hoverText = t('farm.hover.visiting')
     }
   } else if (!plot.isUnlocked) {
-    hoverText = 'Locked'
+    hoverText = t('common.locked')
   } else if (plot.cropType !== -1) {
     if (plot.isReady) {
-      hoverText = plot.isRotten ? 'Harvest (Rotten — Organic Waste)' : 'Harvest'
+      hoverText = plot.isRotten ? t('farm.hover.harvestRotten') : t('farm.hover.harvest')
     } else {
       const { canWater } = getWateringStatus(plot, Date.now())
       if (canWater) {
-        hoverText = 'Water'
+        hoverText = t('farm.hover.water')
       } else {
-        const cropName = CROP_NAMES[plot.cropType as CropType] ?? 'Crop'
+        const cropName = t(CROP_NAMES[plot.cropType as CropType] ?? 'data.crop.onion')
         if (plot.growthStarted) {
           const def = CROP_DATA.get(plot.cropType as CropType)!
           const tutorialOnionGrowMs = 30_000
@@ -386,8 +393,8 @@ export function registerPlotPointerEvent(entity: Entity): void {
           const hasFerts = plot.fertilizerType === -1 &&
             ALL_FERTILIZER_TYPES.some((fertilizer) => (playerState.fertilizers.get(fertilizer) ?? 0) > 0)
           hoverText = hasFerts
-            ? `${cropName} - ${formatTime(remaining)} (Click to Fertilize)`
-            : `${cropName} - ${formatTime(remaining)}`
+            ? t('farm.hover.growingFertilize', { crop: cropName, time: formatTime(remaining) })
+            : t('farm.hover.growing', { crop: cropName, time: formatTime(remaining) })
         } else {
           hoverText = cropName
         }

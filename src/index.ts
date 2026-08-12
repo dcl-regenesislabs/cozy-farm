@@ -38,6 +38,7 @@ import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
 import { setAnalyticsWallet, trackEvent } from './analytics/analytics'
+import { t, refreshAllHoverTexts } from './i18n'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -114,6 +115,11 @@ export function main() {
     // Tutorial and NPC systems start inside onLoaded so they see the
     // restored state (tutorialComplete, tutorialStep, etc.) before firing.
     initSaveService(() => {
+      // Re-resolve native pointerEventsSystem hover prompts now that a returning
+      // player's saved language (or the 'en' fallback) is known — they were first
+      // registered during setupEntities(), before the save loaded.
+      refreshAllHoverTexts()
+
       setAnalyticsWallet(playerState.wallet)
       trackEvent('session started', {
         is_new_user:       playerState.level === 1 && playerState.totalCropsHarvested === 0,
@@ -136,7 +142,7 @@ export function main() {
       const TRACKED_LEVELS = new Set([2, 5, 10, 15, 20])
       onLevelUp((newLevel) => {
         console.log('CozyFarm: Level up toast →', newLevel)
-        playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
+        playerState.levelUpToastText      = t('hud.levelUpToast', { level: newLevel })
         if (TRACKED_LEVELS.has(newLevel)) trackEvent('level reached', { level: newLevel })
         playerState.levelUpToastExpiresAt = Date.now() + 4000
 

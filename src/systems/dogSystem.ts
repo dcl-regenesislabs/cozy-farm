@@ -16,6 +16,7 @@ import {
 import { Vector3, Quaternion } from '@dcl/sdk/math'
 import { getActiveNpcPositions } from './npcSystem'
 import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
+import { t, registerHoverText } from '../i18n'
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -310,9 +311,10 @@ export function spawnDog() {
   MeshCollider.setBox(colliderEntity, ColliderLayer.CL_POINTER)
 
   pointerEventsSystem.onPointerDown(
-    { entity: colliderEntity, opts: { button: InputAction.IA_POINTER, hoverText: 'Pet the dog', maxDistance: 6 } },
+    { entity: colliderEntity, opts: { button: InputAction.IA_POINTER, hoverText: t('common.hover.petDog'), maxDistance: 6 } },
     onDogClick,
   )
+  registerHoverText(colliderEntity, 'common.hover.petDog')
 
   dog = {
     entity,

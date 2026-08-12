@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { spawnFarmer } from '../systems/farmerSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
@@ -90,7 +91,7 @@ export const UnlockMenu = () => {
           }}
         >
           <OutlineLabel
-            value="Land Expansion"
+            value={t('unlock.landExpansion.title')}
             fontSize={d(24)}
             color={{ r: 1, g: 0.88, b: 0.5, a: 1 }}
             outlineColor={{ r: 0.15, g: 0.07, b: 0.02, a: 1 }}
@@ -100,7 +101,7 @@ export const UnlockMenu = () => {
         </UiEntity>
 
         <Label
-          value="Unlock Tier 2 and Tier 3 crops, plus the farmer zone with 24 extra plots for automated work."
+          value={t('unlock.landExpansion.description')}
           fontSize={d(mobile ? 15 : 18)}
           color={TEXT_BROWN}
           textAlign="top-left"
@@ -121,7 +122,7 @@ export const UnlockMenu = () => {
             height: d(28),
           }}
         >
-          <Label value="Cost: " fontSize={d(15)} color={TEXT_BROWN_MUTE} />
+          <Label value={t('unlock.costLabel')} fontSize={d(15)} color={TEXT_BROWN_MUTE} uiTransform={{ margin: { right: d(4) } }} />
           <UiEntity
             uiTransform={{ width: d(18), height: d(18), margin: { left: 4, right: 4 }, flexShrink: 0 }}
             uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
@@ -132,9 +133,10 @@ export const UnlockMenu = () => {
             color={canAfford ? TEXT_BROWN : { r: 0.7, g: 0.15, b: 0.05, a: 1 }}
           />
           <Label
-            value={`  (you have: ${playerState.coins})`}
+            value={t('unlock.youHave', { coins: playerState.coins })}
             fontSize={d(13)}
             color={TEXT_BROWN_MUTE}
+            uiTransform={{ margin: { left: d(8) } }}
           />
         </UiEntity>
 
@@ -146,7 +148,7 @@ export const UnlockMenu = () => {
           }}
         >
           <DialogActionButton
-            label="Buy"
+            label={t('unlock.buy')}
             primary
             width={BTN_W}
             height={BTN_H}
@@ -171,7 +173,7 @@ export const UnlockMenu = () => {
           <UiEntity uiTransform={{ width: d(10), height: 1 }} />
 
           <DialogActionButton
-            label="Not now"
+            label={t('common.notNow')}
             width={BTN_W}
             height={BTN_H}
             fontSize={BTN_FONT}

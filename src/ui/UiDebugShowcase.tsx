@@ -182,6 +182,7 @@ function buildVisitedPayload(now: number): FarmStatePayload {
     musicSongId: 'cozy-morning',
     musicMuted: false,
     musicVolume: 0.8,
+    preferredLanguage: 'en',
     organicWaste: 240,
     fertilizers: Array.from(fertilizers.entries()).map(([fertilizerType, count]) => ({ fertilizerType, count })),
     compostWasteCount: 120,

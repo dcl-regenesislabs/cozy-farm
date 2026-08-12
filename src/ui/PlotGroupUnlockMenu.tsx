@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { getPlotGroupDef } from '../data/plotGroupData'
 import { unlockPlotGroupByName, hidePlotGroupSign } from '../systems/interactionSetup'
@@ -118,7 +119,7 @@ export const PlotGroupUnlockMenu = () => {
           }}
         >
           <OutlineLabel
-            value="Plot Expansion"
+            value={t('unlock.plotExpansion.title')}
             fontSize={d(24)}
             color={{ r: 1, g: 0.88, b: 0.5, a: 1 }}
             outlineColor={{ r: 0.15, g: 0.07, b: 0.02, a: 1 }}
@@ -129,7 +130,7 @@ export const PlotGroupUnlockMenu = () => {
 
         {/* Description */}
         <Label
-          value="Unlock 3 new soil plots and expand your farm."
+          value={t('unlock.plotGroup.description')}
           fontSize={d(mobile ? 15 : 18)}
           color={TEXT_BROWN}
           textAlign="top-left"
@@ -151,7 +152,7 @@ export const PlotGroupUnlockMenu = () => {
             height: d(28),
           }}
         >
-          <Label value="Cost: " fontSize={d(15)} color={TEXT_BROWN_MUTE} />
+          <Label value={t('unlock.costLabel')} fontSize={d(15)} color={TEXT_BROWN_MUTE} uiTransform={{ margin: { right: d(4) } }} />
           <UiEntity
             uiTransform={{ width: d(18), height: d(18), margin: { left: 4, right: 4 }, flexShrink: 0 }}
             uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
@@ -162,9 +163,10 @@ export const PlotGroupUnlockMenu = () => {
             color={canAfford ? TEXT_BROWN : { r: 0.7, g: 0.15, b: 0.05, a: 1 }}
           />
           <Label
-            value={`  (you have: ${playerState.coins})`}
+            value={t('unlock.youHave', { coins: playerState.coins })}
             fontSize={d(13)}
             color={TEXT_BROWN_MUTE}
+            uiTransform={{ margin: { left: d(8) } }}
           />
           {minLevel > 0 && (
             <UiEntity
@@ -178,7 +180,7 @@ export const PlotGroupUnlockMenu = () => {
               uiBackground={{ color: levelBadgeColor }}
             >
               <Label
-                value={meetsLevel ? `Lv ${minLevel} ✓` : `Lv ${minLevel} required`}
+                value={meetsLevel ? t('unlock.levelMet', { level: minLevel }) : t('unlock.levelRequired', { level: minLevel })}
                 fontSize={d(12)}
                 color={BTN_TEXT}
                 textAlign="middle-center"
@@ -196,7 +198,7 @@ export const PlotGroupUnlockMenu = () => {
           }}
         >
           <DialogActionButton
-            label={`Buy ${cost}`}
+            label={t('common.buyFor', { cost })}
             primary
             width={BTN_W}
             height={BTN_H}
@@ -214,7 +216,7 @@ export const PlotGroupUnlockMenu = () => {
           <UiEntity uiTransform={{ width: d(10), height: 1 }} />
 
           <DialogActionButton
-            label="Not now"
+            label={t('common.notNow')}
             width={BTN_W}
             height={BTN_H}
             fontSize={BTN_FONT}

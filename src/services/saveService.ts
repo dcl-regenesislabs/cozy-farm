@@ -28,6 +28,7 @@ import { playSong, setMuted, setMusicVolume } from '../systems/musicSystem'
 import { initAnimalBuildings, initAnimalSystem } from '../systems/animalSystem'
 import { removeForSaleSign, unlockFarmerPlots } from '../systems/interactionSetup'
 import { spawnFarmer } from '../systems/farmerSystem'
+import { isSupportedLanguage } from '../i18n'
 import { initBeautySpotSystem } from '../systems/beautySpotSystem'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
@@ -139,6 +140,7 @@ export function buildSavePayload(): FarmStatePayload {
     musicSongId:         musicState.currentSongId,
     musicMuted:          musicState.muted,
     musicVolume:         musicState.volume,
+    preferredLanguage:   playerState.preferredLanguage,
     organicWaste:            playerState.organicWaste,
     fertilizers:             fertMapToArray(playerState.fertilizers),
     compostWasteCount:       playerState.compostWasteCount,
@@ -260,6 +262,10 @@ function applyPayload(payload: FarmStatePayload): void {
   if (payload.musicSongId) playSong(payload.musicSongId as typeof musicState.currentSongId)
   setMuted(payload.musicMuted ?? false)
   setMusicVolume(payload.musicVolume ?? 0.42)
+
+  // ── Localization ───────────────────────────────────────────────────────────
+  const savedLang = payload.preferredLanguage ?? ''
+  playerState.preferredLanguage = isSupportedLanguage(savedLang) ? savedLang : ''
 
   // ── Fertilizer system ─────────────────────────────────────────────────────
   playerState.organicWaste        = payload.organicWaste ?? 0

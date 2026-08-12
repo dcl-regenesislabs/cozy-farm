@@ -9,6 +9,7 @@ import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
 import { saveFarm } from '../services/saveService'
 import { trackEvent } from '../analytics/analytics'
+import { t } from '../i18n'
 import { SharedPaginationBar } from './SharedPaginationBar'
 
 // 4 cards per row, 1 row per page
@@ -56,16 +57,16 @@ const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps)
         uiTransform={{ width: 108, height: 108, margin: { bottom: 10 }, flexShrink: 0 }}
         uiBackground={{ texture: { src: CROP_SEED_IMAGES[cropType], wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={CROP_NAMES[cropType]} fontSize={24} color={C.textMain} textAlign="middle-center" />
+      <Label value={t(CROP_NAMES[cropType])} fontSize={24} color={C.textMain} textAlign="middle-center" />
       <Label
-        value={`You: x${playerCount}`}
+        value={t('farmer.youCount', { count: playerCount })}
         fontSize={20}
         color={{ r: 0.55, g: 1, b: 0.35, a: 1 }}
         textAlign="middle-center"
         uiTransform={{ margin: { top: 4 } }}
       />
       <Label
-        value={`Farmer: x${farmerCount}`}
+        value={t('farmer.farmerCount', { count: farmerCount })}
         fontSize={20}
         color={C.gold}
         textAlign="middle-center"
@@ -73,14 +74,14 @@ const SeedGiveCard = ({ cropType, playerCount, farmerCount }: SeedGiveCardProps)
       />
       <UiEntity uiTransform={{ flexDirection: 'row', margin: { top: 12 } }}>
         <Button
-          value="+1"
+          value={t('farmer.plusOne')}
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58, margin: { right: 10 } }}
           onMouseDown={() => { playSound('buttonclick'); triggerCardZoom(zoomKey); giveSeeds(cropType, 1) }}
         />
         <Button
-          value="All"
+          value={t('farmer.allButton')}
           variant="primary"
           fontSize={22}
           uiTransform={{ width: 100, height: 58 }}
@@ -109,8 +110,8 @@ const CollectCard = ({ cropType, count }: CollectCardProps) => (
       uiTransform={{ width: 60, height: 60, margin: { right: 15 }, flexShrink: 0 }}
       uiBackground={{ texture: { src: CROP_HARVEST_IMAGES[cropType], wrapMode: 'clamp' }, textureMode: 'stretch' }}
     />
-    <Label value={CROP_NAMES[cropType]} fontSize={26} color={C.textMain} uiTransform={{ flex: 1 }} />
-    <Label value={`x${count}`} fontSize={28} color={C.gold} textAlign="middle-right" />
+    <Label value={t(CROP_NAMES[cropType])} fontSize={26} color={C.textMain} uiTransform={{ flex: 1 }} />
+    <Label value={t('common.count', { count })} fontSize={28} color={C.gold} textAlign="middle-right" />
   </UiEntity>
 )
 
@@ -130,21 +131,21 @@ export const FarmerMenu = () => {
   const seedSlice = availableToGive.slice(seedPage * FARMER_SEED_PAGE_SIZE, (seedPage + 1) * FARMER_SEED_PAGE_SIZE)
 
   return (
-    <PanelShell title="Farmer" onClose={() => { playerState.activeMenu = 'none' }}>
+    <PanelShell title={t('farmer.panelTitle')} onClose={() => { playerState.activeMenu = 'none' }}>
 
       {!playerState.farmerHired ? (
 
         /* ── Hire screen ── */
         <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <Label
-            value="I can work these fields for you."
+            value={t('farmer.hireIntro')}
             fontSize={32}
             color={C.textMain}
             textAlign="middle-center"
             uiTransform={{ margin: { bottom: 10 } }}
           />
           <Label
-            value={`Pay me ${WORKER_HIRE_COST} coins and give me seeds to get started.`}
+            value={t('farmer.hirePrompt', { cost: WORKER_HIRE_COST })}
             fontSize={26}
             color={C.textMute}
             textAlign="middle-center"
@@ -156,14 +157,14 @@ export const FarmerMenu = () => {
               uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
             />
             <Label
-              value={`${playerState.coins} / ${WORKER_HIRE_COST} coins`}
+              value={t('farmer.coinsProgress', { coins: playerState.coins, cost: WORKER_HIRE_COST })}
               fontSize={30}
               color={playerState.coins >= WORKER_HIRE_COST ? C.gold : { r: 1, g: 0.4, b: 0.4, a: 1 }}
               textAlign="middle-left"
             />
           </UiEntity>
           <Button
-            value={`Hire for ${WORKER_HIRE_COST} coins`}
+            value={t('farmer.hireButton', { cost: WORKER_HIRE_COST })}
             variant={playerState.coins >= WORKER_HIRE_COST ? 'primary' : 'secondary'}
             disabled={playerState.coins < WORKER_HIRE_COST}
             fontSize={28}
@@ -205,24 +206,24 @@ export const FarmerMenu = () => {
             <Label
               value={
                 workerState === 'idle_unpaid'
-                  ? `Worker unpaid: ${playerState.workerOutstandingWages} coins due (${outstandingDays} day${outstandingDays === 1 ? '' : 's'}). Use the computer to clear wages.`
+                  ? t('farmer.workerUnpaidStatus', { wages: playerState.workerOutstandingWages, count: outstandingDays })
                   : workerState === 'idle_no_seeds'
-                    ? `Worker idle: no seeds loaded. Daily wage is ${WORKER_DAILY_WAGE} coins.`
-                    : `Worker active. Daily wage: ${WORKER_DAILY_WAGE} coins.`
+                    ? t('farmer.workerIdleNoSeeds', { wage: WORKER_DAILY_WAGE })
+                    : t('farmer.workerActive', { wage: WORKER_DAILY_WAGE })
               }
               fontSize={22}
               color={workerState === 'idle_unpaid' ? { r: 1, g: 0.72, b: 0.62, a: 1 } : C.textMain}
               textAlign="middle-left"
             />
           </UiEntity>
-          <Label value="Collected Harvest" fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
+          <Label value={t('farmer.collectedHarvestTitle')} fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
           {hasCollected ? (
             <UiEntity uiTransform={{ flexDirection: 'column', width: '100%', margin: { bottom: 10 } }}>
               {collectedEntries.map((ct) => (
                 <CollectCard key={ct} cropType={ct} count={playerState.farmerInventory.get(ct) ?? 0} />
               ))}
               <Button
-                value="Collect All"
+                value={t('farmer.collectAllButton')}
                 variant="primary"
                 fontSize={24}
                 uiTransform={{ width: 240, height: 62, margin: { top: 8 } }}
@@ -230,17 +231,17 @@ export const FarmerMenu = () => {
               />
             </UiEntity>
           ) : (
-            <Label value="Nothing collected yet." fontSize={22} color={C.textMute} textAlign="top-left" uiTransform={{ margin: { bottom: 16 } }} />
+            <Label value={t('farmer.nothingCollectedYet')} fontSize={22} color={C.textMute} textAlign="top-left" uiTransform={{ margin: { bottom: 16 } }} />
           )}
 
           {/* ─ Divider ─ */}
           <UiEntity uiTransform={{ width: '100%', height: 2, margin: { bottom: 16 } }} uiBackground={{ color: { r: 1, g: 1, b: 1, a: 0.08 } }} />
 
           {/* ─ Give Seeds ─ */}
-          <Label value="Give Seeds to Farmer" fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
+          <Label value={t('farmer.giveSeedsTitle')} fontSize={26} color={C.textMain} textAlign="top-left" uiTransform={{ margin: { bottom: 10 } }} />
 
           {availableToGive.length === 0 ? (
-            <Label value="You have no seeds to give." fontSize={22} color={C.textMute} textAlign="top-left" />
+            <Label value={t('farmer.noSeedsToGive')} fontSize={22} color={C.textMute} textAlign="top-left" />
           ) : (
             <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
               <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
