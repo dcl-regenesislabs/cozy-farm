@@ -9,6 +9,7 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { formatTime } from '../systems/growthSystem'
 import { fireCompostWasteAdded, fireCompostCollected } from '../systems/progressionEventsSystem'
 import { onCollectFertilizer } from '../game/questState'
+import { t } from '../i18n'
 import { RevampPanelFrame } from './RevampPanel'
 
 const COMPOST_CYCLE_MS          = 300_000  // 5 minutes per waste unit
@@ -110,9 +111,9 @@ const FertCard = ({ fertType }: FertCardProps) => {
         uiTransform={{ width: ss(88), height: ss(88), margin: { bottom: ss(8) } }}
         uiBackground={{ texture: { src: def.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={def.name} fontSize={ss(24)} color={C.textMain} textAlign="middle-center" />
-      <Label value={def.description} fontSize={ss(19)} color={C.textMute} textAlign="middle-center" />
-      <Label value={`x${count}`} fontSize={ss(26)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: ss(6) } }} />
+      <Label value={t(def.name)} fontSize={ss(24)} color={C.textMain} textAlign="middle-center" />
+      <Label value={t(def.description)} fontSize={ss(19)} color={C.textMute} textAlign="middle-center" />
+      <Label value={t('common.count', { count })} fontSize={ss(26)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: ss(6) } }} />
     </UiEntity>
   )
 }
@@ -129,36 +130,36 @@ export const CompostBinMenu = () => {
       <UiEntity uiTransform={{ flexDirection: 'column', width: ss(400), margin: { right: ss(70) } }}>
 
         {/* Organic waste in hand — header + subordinate value, same step-down as fertilizer cards */}
-        <Label value="Organic Waste" fontSize={ss(28)} color={C.header} uiTransform={{ margin: { bottom: ss(14) } }} />
+        <Label value={t('compost.organicWasteTitle')} fontSize={ss(28)} color={C.header} uiTransform={{ margin: { bottom: ss(14) } }} />
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(22) } }}>
           <UiEntity
             uiTransform={{ width: ss(64), height: ss(64), margin: { right: ss(12) } }}
             uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
           />
-          <Label value={`In hand: ${playerState.organicWaste}`} fontSize={ss(24)} color={C.orange} />
+          <Label value={t('compost.inHand', { count: playerState.organicWaste })} fontSize={ss(24)} color={C.orange} />
         </UiEntity>
 
         <SectionRule width={ss(300)} />
         <UiEntity uiTransform={{ height: ss(18) }} />
 
         {/* Compost Bin — separate header, its own subordinate status lines */}
-        <Label value="Compost Bin" fontSize={ss(28)} color={C.header} uiTransform={{ margin: { bottom: ss(14) } }} />
-        <Label value={`In bin: ${wasteInBin} units`} fontSize={ss(24)} color={C.textMain} uiTransform={{ margin: { bottom: ss(8) } }} />
+        <Label value={t('compost.title')} fontSize={ss(28)} color={C.header} uiTransform={{ margin: { bottom: ss(14) } }} />
+        <Label value={t('compost.inBin', { count: wasteInBin })} fontSize={ss(24)} color={C.textMain} uiTransform={{ margin: { bottom: ss(8) } }} />
 
         {/* Timer */}
         {nextCycleMs !== null && (
           <Label
-            value={`Next fertilizer: ${formatTime(nextCycleMs)}`}
+            value={t('compost.nextFertilizer', { time: formatTime(nextCycleMs) })}
             fontSize={ss(22)}
             color={C.green}
             uiTransform={{ margin: { bottom: ss(8) } }}
           />
         )}
         {wasteInBin === 0 && (
-          <Label value="Add waste to start composting" fontSize={ss(20)} color={C.textMute} uiTransform={{ margin: { bottom: ss(8) } }} />
+          <Label value={t('compost.addWasteNote')} fontSize={ss(20)} color={C.textMute} uiTransform={{ margin: { bottom: ss(8) } }} />
         )}
         {canCollect && (
-          <Label value={`${cyclesDone} fertilizer${cyclesDone > 1 ? 's' : ''} ready!`} fontSize={ss(22)} color={C.gold} uiTransform={{ margin: { bottom: ss(16) } }} />
+          <Label value={t('compost.fertilizersReady', { count: cyclesDone })} fontSize={ss(22)} color={C.gold} uiTransform={{ margin: { bottom: ss(16) } }} />
         )}
 
         {/* Add Waste button */}
@@ -173,7 +174,7 @@ export const CompostBinMenu = () => {
           onMouseDown={canAddWaste ? () => { if (isZooming('cbin_add')) return; triggerCardZoom('cbin_add'); setTimeout(addWaste, 290) } : undefined}
         >
           <Label
-            value="Add Waste"
+            value={t('compost.addWasteButton')}
             fontSize={ss(28)}
             color={canAddWaste ? C.textMain : C.textMute}
             textAlign="middle-center"
@@ -191,7 +192,7 @@ export const CompostBinMenu = () => {
           onMouseDown={canCollect ? () => { if (isZooming('cbin_collect')) return; triggerCardZoom('cbin_collect'); setTimeout(collectReady, 290) } : undefined}
         >
           <Label
-            value={canCollect ? `Collect (${cyclesDone})` : 'Nothing ready'}
+            value={canCollect ? t('compost.collectCount', { count: cyclesDone }) : t('compost.nothingReady')}
             fontSize={ss(28)}
             color={canCollect ? C.textMain : C.textMute}
             textAlign="middle-center"
@@ -202,7 +203,7 @@ export const CompostBinMenu = () => {
       {/* Right — fertilizer inventory */}
       <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
         <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { bottom: ss(18) } }}>
-          <Label value="Your Fertilizers" fontSize={ss(28)} color={C.header} uiTransform={{ margin: { right: ss(14) } }} />
+          <Label value={t('compost.yourFertilizers')} fontSize={ss(28)} color={C.header} uiTransform={{ margin: { right: ss(14) } }} />
           <SectionRule width={ss(160)} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap' }}>

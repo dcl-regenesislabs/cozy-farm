@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { buySeed, buyDog, buyOrnament, buyCompostBin, COMPOST_BIN_PRICE } from '../game/actions'
 import { ALL_CROP_TYPES, CROP_DATA, CropType } from '../data/cropData'
@@ -441,13 +442,13 @@ let fertilizerTabSeen = false
 
 // 5 cards per row × 2 rows = 10 per page
 const SHOP_TABS: Array<{ key: ShopTabValue; label: string; show: () => boolean; onSelect?: () => void }> = [
-  { key: 'seeds', label: 'Seeds', show: () => true },
-  { key: 'pets', label: 'Pets', show: () => true },
-  { key: 'ornaments', label: 'Ornaments', show: () => true },
-  { key: 'workers', label: 'Workers', show: () => true },
+  { key: 'seeds', label: 'shop.tab.seeds', show: () => true },
+  { key: 'pets', label: 'shop.tab.pets', show: () => true },
+  { key: 'ornaments', label: 'shop.tab.ornaments', show: () => true },
+  { key: 'workers', label: 'shop.tab.workers', show: () => true },
   {
     key: 'fertilizers',
-    label: 'Fertilizers',
+    label: 'shop.tab.fertilizers',
     show: () => true,
     onSelect: () => { fertilizerTabSeen = true },
   },
@@ -636,7 +637,7 @@ const ShopPanelFrame = ({
             <ShopTabChip
               key={tabDef.key}
               tabKey={tabDef.key}
-              label={tabDef.label}
+              label={t(tabDef.label)}
               selected={shopTab.value === tabDef.key}
               showBadge={tabDef.key === 'fertilizers' && isShopRotSystemUnlocked() && !fertilizerTabSeen}
               onClick={() => {
@@ -774,7 +775,8 @@ const ShopCard = ({ cropType, unlocked, unlockLevel }: ShopCardProps) => {
   const imgSrc    = CROP_SEED_IMAGES[cropType]
   const zoomKey   = `shop_${cropType}`
   const scale     = getZoomScale(zoomKey)
-  const title     = getShopCardTitleValue(def.name)
+  const cropName  = t(def.name)
+  const title     = getShopCardTitleValue(cropName)
 
   return (
     <ShopCardFrame
@@ -793,7 +795,7 @@ const ShopCard = ({ cropType, unlocked, unlockLevel }: ShopCardProps) => {
       />
       <Label
         value={title}
-        fontSize={getShopCardTitleFont(def.name)}
+        fontSize={getShopCardTitleFont(cropName)}
         color={unlocked ? SHOP_CARD_TEXT : SHOP_CARD_TEXT_MUTE}
         textAlign="middle-center"
       />
@@ -814,6 +816,7 @@ const ShopCard = ({ cropType, unlocked, unlockLevel }: ShopCardProps) => {
 const DogCard = () => {
   const canAfford = getShopCoins() >= 500
   const scale     = getZoomScale('shop_dog')
+  const dogName   = t('shop.item.dog')
 
   return (
     <ShopCardFrame
@@ -825,10 +828,10 @@ const DogCard = () => {
         uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: DOG01_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={getShopCardTitleValue('Dog')} fontSize={getShopCardTitleFont('Dog')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={getShopCardTitleValue(dogName)} fontSize={getShopCardTitleFont(dogName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
       <PetsCardButtonSpacer />
       {getShopDogOwned() ? (
-        <Label value="Owned" fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(SHOP_BUTTON_TOP_MARGIN) } }} />
+        <Label value={t('common.owned')} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(SHOP_BUTTON_TOP_MARGIN) } }} />
       ) : (
         <BuyButton
           cost={500}
@@ -848,6 +851,7 @@ const ChickenCoopCard = () => {
   const canAffordAnimal   = getShopCoins() >= ANIMAL_BUY_PRICE
   const atMax   = getShopChickenCount() >= MAX_ANIMALS_PER_BUILDING
   const scale   = getZoomScale('shop_chicken')
+  const chickenName = t('shop.item.chickenCoop')
 
   return (
     <ShopCardFrame
@@ -867,14 +871,14 @@ const ChickenCoopCard = () => {
         uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={getShopCardTitleValue('Chicken Coop')} fontSize={getShopCardTitleFont('Chicken Coop')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={getShopCardTitleValue(chickenName)} fontSize={getShopCardTitleFont(chickenName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
       <PetsCardButtonSpacer />
       {locked ? (
-        <Label value={`Locked — Level ${CHICKEN_COOP_UNLOCK_LEVEL}`} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('common.lockedLevel', { level: CHICKEN_COOP_UNLOCK_LEVEL })} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : !owned ? (
         <BuyButton cost={BUILDING_BUY_PRICE} canAfford={canAffordBuilding} floatKey="shop_chicken" onPress={() => { triggerCardZoom('shop_chicken'); return runShopAction(() => purchaseBuilding('chicken')) }} />
       ) : atMax ? (
-        <Label value={`Full (${MAX_ANIMALS_PER_BUILDING}/${MAX_ANIMALS_PER_BUILDING})`} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('shop.full', { current: MAX_ANIMALS_PER_BUILDING, max: MAX_ANIMALS_PER_BUILDING })} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : (
         <BuyButton cost={ANIMAL_BUY_PRICE} canAfford={canAffordAnimal} floatKey="shop_chicken" onPress={() => { triggerCardZoom('shop_chicken'); return runShopAction(() => buyAnimal('chicken')) }} />
       )}
@@ -889,6 +893,7 @@ const PigPenCard = () => {
   const canAffordAnimal   = getShopCoins() >= ANIMAL_BUY_PRICE
   const atMax   = getShopPigCount() >= MAX_ANIMALS_PER_BUILDING
   const scale   = getZoomScale('shop_pig')
+  const pigName = t('shop.item.pigPen')
 
   return (
     <ShopCardFrame
@@ -908,14 +913,14 @@ const PigPenCard = () => {
         uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: PIG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={getShopCardTitleValue('Pig Pen')} fontSize={getShopCardTitleFont('Pig Pen')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={getShopCardTitleValue(pigName)} fontSize={getShopCardTitleFont(pigName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
       <PetsCardButtonSpacer />
       {locked ? (
-        <Label value={`Locked — Level ${PIG_PEN_UNLOCK_LEVEL}`} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('common.lockedLevel', { level: PIG_PEN_UNLOCK_LEVEL })} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : !owned ? (
         <BuyButton cost={BUILDING_BUY_PRICE} canAfford={canAffordBuilding} floatKey="shop_pig" onPress={() => { triggerCardZoom('shop_pig'); return runShopAction(() => purchaseBuilding('pig')) }} />
       ) : atMax ? (
-        <Label value={`Full (${MAX_ANIMALS_PER_BUILDING}/${MAX_ANIMALS_PER_BUILDING})`} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('shop.full', { current: MAX_ANIMALS_PER_BUILDING, max: MAX_ANIMALS_PER_BUILDING })} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : (
         <BuyButton cost={ANIMAL_BUY_PRICE} canAfford={canAffordAnimal} floatKey="shop_pig" onPress={() => { triggerCardZoom('shop_pig'); return runShopAction(() => buyAnimal('pig')) }} />
       )}
@@ -926,6 +931,7 @@ const PigPenCard = () => {
 const GrainCard = () => {
   const canAfford = getShopCoins() >= GRAIN_BUY_PRICE
   const scale     = getZoomScale('shop_grain_1')
+  const grainName = t('shop.item.grain')
   return (
     <ShopCardFrame
       baseHeight={SHOP_CARD_H_PETS}
@@ -936,8 +942,8 @@ const GrainCard = () => {
         uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={getShopCardTitleValue('Grain')} fontSize={getShopCardTitleFont('Grain')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
-      <Label value="1 unit" fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(2), bottom: ss(4) } }} />
+      <Label value={getShopCardTitleValue(grainName)} fontSize={getShopCardTitleFont(grainName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('shop.units', { count: 1 })} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(2), bottom: ss(4) } }} />
       <BuyButton cost={GRAIN_BUY_PRICE} canAfford={canAfford} floatKey="shop_grain_1" onPress={() => { triggerCardZoom('shop_grain_1'); return runShopAction(() => buyGrain(1, GRAIN_BUY_PRICE)) }} />
     </ShopCardFrame>
   )
@@ -946,6 +952,7 @@ const GrainCard = () => {
 const GrainBulkCard = () => {
   const canAfford = getShopCoins() >= GRAIN_BULK_PRICE
   const scale     = getZoomScale('shop_grain_bulk')
+  const grainBulkName = t('shop.item.grainBulk')
   return (
     <ShopCardFrame
       baseHeight={SHOP_CARD_H_PETS}
@@ -956,8 +963,8 @@ const GrainBulkCard = () => {
         uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: GRAIN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={getShopCardTitleValue('Grain (Bulk)')} fontSize={getShopCardTitleFont('Grain (Bulk)')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`${GRAIN_BULK_COUNT} units`} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(2), bottom: ss(4) } }} />
+      <Label value={getShopCardTitleValue(grainBulkName)} fontSize={getShopCardTitleFont(grainBulkName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('shop.units', { count: GRAIN_BULK_COUNT })} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(2), bottom: ss(4) } }} />
       <BuyButton cost={GRAIN_BULK_PRICE} canAfford={canAfford} floatKey="shop_grain_bulk" onPress={() => { triggerCardZoom('shop_grain_bulk'); return runShopAction(() => buyGrain(GRAIN_BULK_COUNT, GRAIN_BULK_PRICE)) }} />
     </ShopCardFrame>
   )
@@ -972,6 +979,7 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
   const scale     = getZoomScale(zoomKey)
   const rarityCol = RARITY_COLOR[def.rarity]
   const rarityTextCol = getShopOrnamentRarityTextColor(def.rarity)
+  const ornamentName = t(def.name)
 
   return (
     <ShopCardFrame
@@ -987,18 +995,18 @@ const OrnamentCard = ({ objectId }: { objectId: number }) => {
         <Label value="✦" fontSize={scaleShopCardContent(42)} color={{ r: 1, g: 1, b: 1, a: 0.9 }} textAlign="middle-center" />
       </UiEntity>
 
-      <Label value={getShopCardTitleValue(def.name)} fontSize={getShopCardTitleFont(def.name)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+      <Label value={getShopCardTitleValue(ornamentName)} fontSize={getShopCardTitleFont(ornamentName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
 
       {/* Rarity + beauty row */}
       <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center', margin: { top: scaleShopCardContent(ss(4)) } }}>
-        <Label value={RARITY_LABEL[def.rarity]} fontSize={scaleShopCardContent(16)} color={rarityTextCol} uiTransform={{ margin: { right: scaleShopCardContent(ss(8)) } }} />
+        <Label value={t(RARITY_LABEL[def.rarity])} fontSize={scaleShopCardContent(16)} color={rarityTextCol} uiTransform={{ margin: { right: scaleShopCardContent(ss(8)) } }} />
         <Label value={`✦ ${def.beautyValue}`} fontSize={scaleShopCardContent(16)} color={SHOP_ORNAMENT_BEAUTY_COLOR} />
       </UiEntity>
 
       {placed ? (
-        <Label value="Placed ✓" fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('shop.placed')} fontSize={scaleShopCardContent(SHOP_CARD_BODY)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : full ? (
-        <Label value="Slots Full" fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
+        <Label value={t('shop.slotsFull')} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: scaleShopCardContent(ss(10)) } }} />
       ) : (
         <BuyButton
           cost={def.price}
@@ -1053,55 +1061,58 @@ const WorkerPayrollCard = ({
   balance: number
   outstanding: number
   canPay: boolean
-}) => (
-  <ShopCardFrame baseHeight={SHOP_CARD_H_WORKER} scale={1}>
-    <Label value={getShopCardTitleValue('Payroll')} fontSize={getShopCardTitleFont('Payroll')} color={SHOP_WORKER_LABEL_COLOR} textAlign="middle-center" />
-    <Label
-      value={`<b>${balance}</b>`}
-      fontSize={scaleShopCardContent(SHOP_WORKER_VALUE_FONT)}
-      color={SHOP_WORKER_GOLD_COLOR}
-      textAlign="middle-center"
-      uiTransform={{ margin: { top: ss(14) } }}
-    />
-    <Label
-      value="balance"
-      fontSize={scaleShopCardContent(SHOP_WORKER_NOTE_FONT)}
-      color={SHOP_WORKER_NOTE_COLOR}
-      textAlign="middle-center"
-      uiTransform={{ margin: { top: ss(8) } }}
-    />
-    {outstanding > 0 ? (
-      <UiEntity uiTransform={{ alignItems: 'center' }}>
-        {!canPay && (
-          <Label
-            value="Not enough coins"
-            fontSize={scaleShopCardContent(SHOP_WORKER_NOTE_FONT)}
-            color={SHOP_WORKER_WARNING_COLOR}
-            textAlign="middle-center"
-            uiTransform={{ margin: { top: ss(10) } }}
-          />
-        )}
-        <BuyButton
-          cost={outstanding}
-          canAfford={canPay}
-          onPress={() => {
-            if (!canPay) return false
-            requestPayWorkerWages()
-            return true
-          }}
-        />
-      </UiEntity>
-    ) : (
+}) => {
+  const payrollTitle = t('shop.worker.payrollTitle')
+  return (
+    <ShopCardFrame baseHeight={SHOP_CARD_H_WORKER} scale={1}>
+      <Label value={getShopCardTitleValue(payrollTitle)} fontSize={getShopCardTitleFont(payrollTitle)} color={SHOP_WORKER_LABEL_COLOR} textAlign="middle-center" />
       <Label
-        value="<b>No wages due</b>"
-        fontSize={scaleShopCardContent(SHOP_CARD_BODY)}
-        color={SHOP_WORKER_SUCCESS_COLOR}
+        value={`<b>${balance}</b>`}
+        fontSize={scaleShopCardContent(SHOP_WORKER_VALUE_FONT)}
+        color={SHOP_WORKER_GOLD_COLOR}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: ss(18) } }}
+        uiTransform={{ margin: { top: ss(14) } }}
       />
-    )}
-  </ShopCardFrame>
-)
+      <Label
+        value={t('shop.worker.balanceLabel')}
+        fontSize={scaleShopCardContent(SHOP_WORKER_NOTE_FONT)}
+        color={SHOP_WORKER_NOTE_COLOR}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: ss(8) } }}
+      />
+      {outstanding > 0 ? (
+        <UiEntity uiTransform={{ alignItems: 'center' }}>
+          {!canPay && (
+            <Label
+              value={t('shop.notEnoughCoins')}
+              fontSize={scaleShopCardContent(SHOP_WORKER_NOTE_FONT)}
+              color={SHOP_WORKER_WARNING_COLOR}
+              textAlign="middle-center"
+              uiTransform={{ margin: { top: ss(10) } }}
+            />
+          )}
+          <BuyButton
+            cost={outstanding}
+            canAfford={canPay}
+            onPress={() => {
+              if (!canPay) return false
+              requestPayWorkerWages()
+              return true
+            }}
+          />
+        </UiEntity>
+      ) : (
+        <Label
+          value={`<b>${t('shop.worker.noWagesDue')}</b>`}
+          fontSize={scaleShopCardContent(SHOP_CARD_BODY)}
+          color={SHOP_WORKER_SUCCESS_COLOR}
+          textAlign="middle-center"
+          uiTransform={{ margin: { top: ss(18) } }}
+        />
+      )}
+    </ShopCardFrame>
+  )
+}
 
 
 const WorkerPanel = () => {
@@ -1109,9 +1120,9 @@ const WorkerPanel = () => {
     return (
       <UiEntity uiTransform={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
         <WorkerMetricCard
-          title="Workers"
-          value="Locked"
-          note="Unlock the worker area first"
+          title={t('shop.tab.workers')}
+          value={t('common.locked')}
+          note={t('shop.worker.lockedNote')}
           valueColor={SHOP_WORKER_WARNING_COLOR}
           noteColor={SHOP_WORKER_NOTE_COLOR}
         />
@@ -1123,9 +1134,9 @@ const WorkerPanel = () => {
     return (
       <UiEntity uiTransform={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
         <WorkerMetricCard
-          title="Workers"
-          value="No hire"
-          note="Hire the farm worker in the expansion"
+          title={t('shop.tab.workers')}
+          value={t('shop.worker.noHireValue')}
+          note={t('shop.worker.noHireNote')}
           valueColor={SHOP_WORKER_WARNING_COLOR}
           noteColor={SHOP_WORKER_NOTE_COLOR}
         />
@@ -1143,28 +1154,28 @@ const WorkerPanel = () => {
   const canPay = outstanding > 0 && getShopCoins() >= outstanding
   const statusLabel =
     workerState === 'idle_unpaid'
-      ? 'Idle (unpaid)'
+      ? t('shop.worker.status.idleUnpaid')
       : workerState === 'idle_no_seeds'
-        ? 'Idle (no seeds)'
-        : 'Active'
+        ? t('shop.worker.status.idleNoSeeds')
+        : t('shop.worker.status.active')
   const statusValue =
     workerState === 'idle_unpaid'
-      ? 'Idle'
+      ? t('shop.worker.status.idle')
       : workerState === 'idle_no_seeds'
-        ? 'Idle'
-        : 'Active'
+        ? t('shop.worker.status.idle')
+        : t('shop.worker.status.active')
   const statusNote =
     workerState === 'idle_unpaid'
-      ? 'Back-pay due'
+      ? t('shop.worker.note.backPayDue')
       : workerState === 'idle_no_seeds'
-        ? 'No seeds loaded'
-        : 'Worker running'
+        ? t('shop.worker.note.noSeedsLoaded')
+        : t('shop.worker.note.running')
   const workerCards: ShopGridItem[] = [
     {
       key: 'worker-status',
       node: (
         <WorkerMetricCard
-          title="Status"
+          title={t('shop.worker.statusTitle')}
           value={statusValue}
           note={statusNote}
           valueColor={workerState === 'idle_unpaid' ? SHOP_WORKER_WARNING_COLOR : SHOP_CARD_TEXT}
@@ -1174,15 +1185,15 @@ const WorkerPanel = () => {
     },
     {
       key: 'worker-daily-wage',
-      node: <WorkerMetricCard title="Daily Wage" value={`${WORKER_DAILY_WAGE}`} note="coins / day" />,
+      node: <WorkerMetricCard title={t('shop.worker.dailyWageTitle')} value={`${WORKER_DAILY_WAGE}`} note={t('shop.worker.perDay')} />,
     },
     {
       key: 'worker-outstanding',
       node: (
         <WorkerMetricCard
-          title="Outstanding"
+          title={t('shop.worker.outstandingTitle')}
           value={`${outstanding}`}
-          note={outstanding === 1 ? 'coin due' : 'coins due'}
+          note={t('shop.worker.coinDue', { count: outstanding })}
           valueColor={outstanding > 0 ? SHOP_WORKER_WARNING_COLOR : SHOP_WORKER_SUCCESS_COLOR}
           noteColor={outstanding > 0 ? SHOP_WORKER_WARNING_COLOR : SHOP_WORKER_NOTE_COLOR}
         />
@@ -1192,9 +1203,9 @@ const WorkerPanel = () => {
       key: 'worker-missed-days',
       node: (
         <WorkerMetricCard
-          title="Missed Days"
+          title={t('shop.worker.missedDaysTitle')}
           value={`${getShopWorkerUnpaidDays()}`}
-          note={getShopWorkerUnpaidDays() === 1 ? 'day missed' : 'days missed'}
+          note={t('shop.worker.dayMissed', { count: getShopWorkerUnpaidDays() })}
           valueColor={getShopWorkerUnpaidDays() >= 2 ? SHOP_WORKER_WARNING_COLOR : SHOP_CARD_TEXT}
           noteColor={getShopWorkerUnpaidDays() >= 2 ? SHOP_WORKER_WARNING_COLOR : SHOP_WORKER_NOTE_COLOR}
         />
@@ -1214,9 +1225,9 @@ const WorkerPanel = () => {
           value={
             outstanding > 0
               ? getShopWorkerUnpaidDays() >= 2
-                ? `Worker stopped after ${outstandingDays} unpaid day${outstandingDays === 1 ? '' : 's'}. Clear all back-pay to reactivate them.`
-                : `Back-pay accrued for ${outstandingDays} day${outstandingDays === 1 ? '' : 's'}.`
-              : `Worker state: ${statusLabel}`
+                ? t('shop.worker.stoppedAfterDays', { count: outstandingDays })
+                : t('shop.worker.backPayAccrued', { count: outstandingDays })
+              : t('shop.worker.stateLabel', { state: statusLabel })
           }
           fontSize={scaleShopCardContent(SHOP_CARD_META)}
           color={outstanding > 0 ? SHOP_WORKER_WARNING_COLOR : C.header}
@@ -1236,6 +1247,7 @@ const FertilizersPanel = () => {
   const zoomKey   = 'shop_compostbin'
   const scale     = getZoomScale(zoomKey)
   const fertilizerLeftInset = 0
+  const compostBinName = t('shop.item.compostBin')
 
   return (
     <UiEntity uiTransform={{ flexDirection: 'column', width: '100%' }}>
@@ -1248,13 +1260,13 @@ const FertilizersPanel = () => {
         }}
       >
         <Label
-          value="Composting & Fertilizers"
+          value={t('shop.fertilizers.heading')}
           fontSize={28}
           color={C.header}
           uiTransform={{ margin: { bottom: 16 } }}
         />
         <Label
-          value="Unlock the Compost Bin to turn rotten crops into powerful fertilizers."
+          value={t('shop.fertilizers.subheading')}
           fontSize={21}
           color={C.textMute}
           uiTransform={{ margin: { bottom: 20 } }}
@@ -1270,16 +1282,16 @@ const FertilizersPanel = () => {
           uiTransform={{ width: scaleShopCardContent(SHOP_CARD_ICON), height: scaleShopCardContent(SHOP_CARD_ICON), margin: { bottom: scaleShopCardContent(SHOP_CARD_ICON_MARGIN) }, flexShrink: 0 }}
           uiBackground={{ texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
         />
-        <Label value={getShopCardTitleValue('Compost Bin')} fontSize={getShopCardTitleFont('Compost Bin')} color={SHOP_CARD_TEXT} textAlign="middle-center" />
+        <Label value={getShopCardTitleValue(compostBinName)} fontSize={getShopCardTitleFont(compostBinName)} color={SHOP_CARD_TEXT} textAlign="middle-center" />
         <Label
-          value="Turn rotten crops into fertilizers"
+          value={t('shop.fertilizers.compostBinDescription')}
           fontSize={scaleShopCardContent(SHOP_CARD_SMALL)}
           color={SHOP_CARD_TEXT_MUTE}
           textAlign="middle-center"
           uiTransform={{ margin: { top: ss(4), bottom: ss(6) } }}
         />
         {owned ? (
-          <Label value="Owned ✓" fontSize={scaleShopCardContent(21)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
+          <Label value={t('shop.fertilizers.ownedCheck')} fontSize={scaleShopCardContent(21)} color={C.green} textAlign="middle-center" uiTransform={{ margin: { top: 8 } }} />
         ) : binEnabled ? (
           <BuyButton
             cost={COMPOST_BIN_PRICE}
@@ -1288,7 +1300,7 @@ const FertilizersPanel = () => {
             onPress={() => { triggerCardZoom(zoomKey); return runShopAction(() => buyCompostBin()) }}
           />
         ) : (
-          <Label value="Unlocks at Level 5" fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
+          <Label value={t('shop.fertilizers.unlocksAtLevel', { level: 5 })} fontSize={scaleShopCardContent(SHOP_CARD_META)} color={SHOP_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
         )}
         </ShopCardFrame>
 
@@ -1297,7 +1309,7 @@ const FertilizersPanel = () => {
           uiTransform={{ width: Math.min(520, getShopContentWidth() - fertilizerLeftInset), margin: { top: 16 } }}
         >
           <Label
-            value="Compost Bin unlocked — visit it on your farm to start composting rotten crops."
+            value={t('shop.fertilizers.unlockedNotice')}
             fontSize={20}
             color={C.green}
             textAlign="middle-left"
@@ -1373,7 +1385,7 @@ export const ShopMenu = () => {
               uiTransform={{ width: '100%', justifyContent: 'center', alignItems: 'center', padding: { top: 10, bottom: 10, left: 18, right: 18 }, margin: { top: 8 } }}
             >
               <Label
-                value="All 3 decoration slots are full — future update will let you swap ornaments"
+                value={t('shop.slotsFullNotice')}
                 fontSize={20}
                 color={{ r: 0.8, g: 0.65, b: 0.3, a: 1 }}
                 textAlign="middle-center"

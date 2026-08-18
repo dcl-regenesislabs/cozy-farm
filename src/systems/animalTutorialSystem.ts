@@ -11,6 +11,7 @@ import { saveFarm } from '../services/saveService'
 import { CHICKEN_COOP_UNLOCK_LEVEL, PIG_PEN_UNLOCK_LEVEL } from '../data/animalData'
 import { progressionEventState } from '../game/progressionEventState'
 import { tutorialState } from '../game/tutorialState'
+import { t, tList } from '../i18n'
 
 // ---------------------------------------------------------------------------
 // Called when the animal tutorial fully completes and Mayor departs.
@@ -35,7 +36,7 @@ function showDialog(text: string | string[], buttonLabel: string, onButton: () =
   npcDialogState.tutorialFinalButtonLabel = buttonLabel
   npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? t('tutorial.nextButton') : buttonLabel
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -63,11 +64,8 @@ function goToChickenBuyCoop(): void {
   setArrowTarget(coopEntity)
 
   showDialog(
-    [
-      "Congratulations on reaching Level 8! You've unlocked the Chicken Coop!...",
-      "Head over to the coop plot and buy it — chickens will provide eggs and keep your farm buzzing with life!",
-    ],
-    "Let's go!",
+    tList('animalTutorial.chickenBuyCoop.pages'),
+    t('animalTutorial.chickenBuyCoop.button'),
     () => {
       playerState.activeMenu = 'none'
       // Arrow already pointing — just wait for the purchase hook
@@ -93,8 +91,8 @@ function goToChickenBuyChicken(): void {
   setArrowTarget(computer)
 
   showDialog(
-    "Excellent! The coop is built!\n\nNow head to the shop and buy your first chicken. You can have up to 5 chickens in one coop!",
-    "To the shop!",
+    t('animalTutorial.chickenBuyChicken.text'),
+    t('animalTutorial.chickenBuyChicken.button'),
     () => { playerState.activeMenu = 'none' }
   )
 
@@ -114,11 +112,8 @@ function goToChickenFeed(): void {
   setArrowTarget(foodEntity)
 
   showDialog(
-    [
-      "Welcome to the flock! Your chickens need grain to produce eggs — they lay 1-2 eggs every 6 hours while there's food in the bowl...",
-      "Fill up the food bowl to get them started!",
-    ],
-    "Fill the bowl!",
+    tList('animalTutorial.chickenFeed.pages'),
+    t('animalTutorial.chickenFeed.button'),
     () => { playerState.activeMenu = 'none' }
   )
 
@@ -134,12 +129,8 @@ function goToChickenCleanIntro(): void {
   setArrowTarget(null)
 
   showDialog(
-    [
-      "Great! The chickens are eating!",
-      "One more thing — the coop gets dirty every 12 hours.\n\nWhen you see dirt appear, click it to clean up.",
-      "You'll earn organic waste for your compost bin as a bonus!\n\nEnjoy your new flock!",
-    ],
-    "Thanks, Mayor!",
+    tList('animalTutorial.chickenCleanIntro.pages'),
+    t('animalTutorial.chickenCleanIntro.button'),
     () => {
       playerState.activeMenu = 'none'
       completeChickenTutorial()
@@ -160,20 +151,20 @@ export function getChickenTutorialMayorClickHandler(): () => void {
     const step = animalTutorialState.chickenStep
     if (step === 'buy_coop') {
       showDialog(
-        "Head to the coop plot and tap to buy the Chicken Coop!",
-        "Got it!",
+        t('animalTutorial.chickenMayorClick.buyCoop'),
+        t('animalTutorial.chickenMayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'buy_chicken') {
       showDialog(
-        "Open the shop (the computer) and buy your first chicken!",
-        "On it!",
+        t('animalTutorial.chickenMayorClick.buyChicken'),
+        t('animalTutorial.chickenMayorClick.onItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'feed_chicken') {
       showDialog(
-        "Tap the food bowl near the coop to deposit grain for your chickens!",
-        "Got it!",
+        t('animalTutorial.chickenMayorClick.feedChicken'),
+        t('animalTutorial.chickenMayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     }
@@ -246,11 +237,8 @@ function goToPigBuyPen(): void {
   setArrowTarget(penEntity)
 
   showDialog(
-    [
-      "Level 12 — you've truly become a seasoned farmer! You've unlocked the Pig Pen!...",
-      "Head over to the pig pen plot and buy it. Pigs are a rewarding long-term investment!",
-    ],
-    "Let's go!",
+    tList('animalTutorial.pigBuyPen.pages'),
+    t('animalTutorial.pigBuyPen.button'),
     () => {
       playerState.activeMenu = 'none'
     }
@@ -274,11 +262,8 @@ function goToPigBuyPig(): void {
   setArrowTarget(computer)
 
   showDialog(
-    [
-      "The pen is ready!...",
-      "Now head to the shop and buy your first pig. You can have up to 5 pigs. They start as adults — the shop sells grown pigs!",
-    ],
-    "To the shop!",
+    tList('animalTutorial.pigBuyPig.pages'),
+    t('animalTutorial.pigBuyPig.button'),
     () => { playerState.activeMenu = 'none' }
   )
 
@@ -297,11 +282,8 @@ function goToPigFeed(): void {
   setArrowTarget(foodEntity)
 
   showDialog(
-    [
-      "There's your pig!\n\nPigs eat grain, veggie scraps, and harvested crops...",
-      "Feeding them harvested crops also raises their feed score — a higher score means bigger pigs and more meat at harvest time. Fill the bowl!",
-    ],
-    "Fill the bowl!",
+    tList('animalTutorial.pigFeed.pages'),
+    t('animalTutorial.pigFeed.button'),
     () => { playerState.activeMenu = 'none' }
   )
 
@@ -317,12 +299,8 @@ function goToPigCleanIntro(): void {
   setArrowTarget(null)
 
   showDialog(
-    [
-      "Great job! The pigs are eating!",
-      "Keep the pen clean — dirt appears over time, and clicking it earns you organic waste for your compost bin.",
-      "Adult pigs also produce manure every 8 hours automatically.",
-    ],
-    "Good to know!",
+    tList('animalTutorial.pigCleanIntro.pages'),
+    t('animalTutorial.pigCleanIntro.button'),
     () => {
       playerState.activeMenu = 'none'
       goToPigGrowthExplained()
@@ -335,12 +313,8 @@ function goToPigGrowthExplained(): void {
   setArrowTarget(null)
 
   showDialog(
-    [
-      "Here's how pigs grow — shop-bought pigs start as adults.",
-      "But if you breed them, piglets grow in stages:\n\n• Piglet → Adolescent in 24 hours\n• Adolescent → Adult in 72 hours",
-      "Feed them well and watch them grow bigger as their feed score rises!",
-    ],
-    "Fascinating!",
+    tList('animalTutorial.pigGrowthExplained.pages'),
+    t('animalTutorial.pigGrowthExplained.button'),
     () => {
       playerState.activeMenu = 'none'
       goToPigBreedExplained()
@@ -353,12 +327,8 @@ function goToPigBreedExplained(): void {
   setArrowTarget(null)
 
   showDialog(
-    [
-      "Once you have two adult pigs, you can breed them to get a free piglet — no coins needed.",
-      "There's a cooldown between breeds, so plan ahead.",
-      "Open the animal panel and tap a pig to see breeding options.",
-    ],
-    "Got it!",
+    tList('animalTutorial.pigBreedExplained.pages'),
+    t('animalTutorial.pigBreedExplained.button'),
     () => {
       playerState.activeMenu = 'none'
       goToPigHarvestExplained()
@@ -371,8 +341,8 @@ function goToPigHarvestExplained(): void {
   setArrowTarget(null)
 
   showDialog(
-    "Last thing — after 7 days as an adult, a pig becomes ready to harvest for pig meat. Meat sells for a very good price!\n\nTap a harvestable pig and choose Harvest Meat. Your remaining pigs will keep living and producing manure. Good luck, farmer!",
-    "Thanks, Mayor!",
+    t('animalTutorial.pigHarvestExplained.text'),
+    t('animalTutorial.pigHarvestExplained.button'),
     () => {
       playerState.activeMenu = 'none'
       completePigTutorial()
@@ -393,20 +363,20 @@ export function getPigTutorialMayorClickHandler(): () => void {
     const step = animalTutorialState.pigStep
     if (step === 'buy_pen') {
       showDialog(
-        "Head to the pig pen plot and tap to buy the Pig Pen!",
-        "Got it!",
+        t('animalTutorial.pigMayorClick.buyPen'),
+        t('animalTutorial.pigMayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'buy_pig') {
       showDialog(
-        "Open the shop (the computer) and buy your first pig!",
-        "On it!",
+        t('animalTutorial.pigMayorClick.buyPig'),
+        t('animalTutorial.pigMayorClick.onItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'feed_pig') {
       showDialog(
-        "Tap the food bowl near the pig pen to deposit food for your pigs!",
-        "Got it!",
+        t('animalTutorial.pigMayorClick.feedPig'),
+        t('animalTutorial.pigMayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     }

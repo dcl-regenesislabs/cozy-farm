@@ -12,6 +12,11 @@ export const npcDialogState = {
   tutorialPage:        0,
   tutorialFinalButtonLabel: 'Got it!',
   tutorialButtonLabel: 'Got it!',
+  // True only for the tutorial's very first "Welcome to CozyFarm!" dialog —
+  // NpcDialogMenu uses this (rather than matching translated dialog text) to
+  // pick its special larger-portrait welcome layout. Set by tutorialSystem.ts,
+  // reset on close.
+  isMayorWelcome:      false,
   onClose:             null as (() => void) | null,
   onAccept:            null as (() => void) | null,  // quest_offer: called when player accepts
   onClaim:             null as (() => void) | null,  // quest_claimable: called when player claims reward

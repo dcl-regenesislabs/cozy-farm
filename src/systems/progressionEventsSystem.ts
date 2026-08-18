@@ -12,6 +12,7 @@ import { setOnBuyCompostBin } from '../game/actions'
 import { trackEvent } from '../analytics/analytics'
 import { setOnNextPlant, setOnNextWater, setOnNextFertilize, unlockFertilizerQuest } from '../game/questState'
 import { PlotState } from '../components/farmComponents'
+import { t, tList } from '../i18n'
 
 // ---------------------------------------------------------------------------
 // Called when the progression event chain fully completes and Mayor departs.
@@ -54,7 +55,7 @@ function showProgressionDialog(text: string | string[], buttonLabel: string, onB
   npcDialogState.tutorialFinalButtonLabel = buttonLabel
   npcDialogState.dialogLine          = pages[0]
   npcDialogState.mode                = 'tutorial'
-  npcDialogState.tutorialButtonLabel = pages.length > 1 ? 'Next' : buttonLabel
+  npcDialogState.tutorialButtonLabel = pages.length > 1 ? t('tutorial.nextButton') : buttonLabel
   npcDialogState.onClose             = onButton
   npcDialogState.onAccept            = null
   npcDialogState.onClaim             = null
@@ -79,12 +80,8 @@ function goToBuyCompostBin(): void {
   setArrowTarget(computer)
 
   showProgressionDialog(
-    [
-      "Wow, you've been busy! Looks like your farm has really grown since we last spoke!",
-      "Now that you're levelling up, crops will start to rot if left unharvested too long.\n\nLet me help you deal with that.",
-      "Head to the shop and buy a Compost Bin — it turns rotten crops into powerful fertilizers!",
-    ],
-    "Let's go!",
+    tList('progression.buyCompostBin.pages'),
+    t('progression.buyCompostBin.button'),
     () => {
       // Arrow hides when shop opens; reappears when shop closes without buying
       playerState.activeMenu = 'none'
@@ -134,11 +131,8 @@ function goToWasteStep(): void {
   setArrowTarget(binEntity)
 
   showProgressionDialog(
-    [
-      "Great, you bought the Compost Bin! I've added 3 organic waste to your inventory...",
-      "Open the compost bin and add all 3 units — I've set it to process quickly so you can see how it works!",
-    ],
-    "Got it!",
+    tList('progression.wasteStep.pages'),
+    t('progression.wasteStep.button'),
     () => {
       playerState.activeMenu = 'none'
       watchForWasteAdded()
@@ -185,8 +179,8 @@ function goToCollectStep(): void {
   setArrowTarget(binEntity)
 
   showProgressionDialog(
-    "The compost bin is processing! Give it a few seconds, then open it and collect your fertilizer.",
-    "I'm watching!",
+    t('progression.collectStep.text'),
+    t('progression.collectStep.button'),
     () => {
       playerState.activeMenu = 'none'
       setOnCompostCollected(() => {
@@ -223,23 +217,23 @@ function goToFertilizeStep(): void {
   }
 
   showProgressionDialog(
-    "Excellent! Now let me show you how to use fertilizer.\n\nPlant a seed in any soil plot — I'll wait here.",
-    "Planting now!",
+    t('progression.fertilizeStep.text'),
+    t('progression.fertilizeStep.button'),
     () => {
       playerState.activeMenu = 'none'
       if (targetPlot) setArrowTarget(targetPlot)
       setOnNextPlant(() => {
         if (targetPlot) setArrowTarget(targetPlot)
         showProgressionDialog(
-          "Nice planting! Now water it — the fertilizer menu opens automatically after you water.",
-          "Watering!",
+          t('progression.waterStep.text'),
+          t('progression.waterStep.button'),
           () => {
             playerState.activeMenu = 'none'
             setOnNextWater(() => {
               if (targetPlot) setArrowTarget(targetPlot)
               showProgressionDialog(
-                "Perfect! Now apply a fertilizer to this crop — tap the plot to open the fertilizer menu.",
-                "Fertilizing!",
+                t('progression.applyFertilizerStep.text'),
+                t('progression.applyFertilizerStep.button'),
                 () => {
                   playerState.activeMenu = 'none'
                   setOnNextFertilize(() => {
@@ -269,12 +263,8 @@ function completeProgressionChain(): void {
   unlockFertilizerQuest()
 
   showProgressionDialog(
-    [
-      "Incredible work! Your farm is really coming together.",
-      "Remember — crops will rot if left too long after harvest.\nUse RotShield fertilizer to prevent it, or just stay on top of your harvests.",
-      "I've left you with a challenge: generate 5 more fertilizers. Come find me when you're done and I'll make it worth your while!",
-    ],
-    "Thanks, Mayor!",
+    tList('progression.complete.pages'),
+    t('progression.complete.button'),
     () => {
       playerState.activeMenu     = 'none'
       progressionEventState.active = false
@@ -291,26 +281,26 @@ export function getProgressionEventMayorClickHandler(): () => void {
     const step = progressionEventState.step as ProgressionEventStep
     if (step === 'rot_intro_active') {
       showProgressionDialog(
-        "Head to the shop (the computer) and buy the Compost Bin for 300 coins!",
-        "Got it!",
+        t('progression.mayorClick.rotIntro'),
+        t('progression.mayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'compost_quest') {
       showProgressionDialog(
-        "Open the compost bin and add all 3 organic waste units. I've put them in your inventory!",
-        "On it!",
+        t('progression.mayorClick.compostQuest'),
+        t('progression.mayorClick.onItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'waste_quest') {
       showProgressionDialog(
-        "The bin is working — open it and collect your fertilizer once it's ready!",
-        "Got it!",
+        t('progression.mayorClick.wasteQuest'),
+        t('progression.mayorClick.gotItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     } else if (step === 'collect_quest') {
       showProgressionDialog(
-        "Plant a seed, water it, then apply a fertilizer. I'm waiting right here!",
-        "On it!",
+        t('progression.mayorClick.collectQuest'),
+        t('progression.mayorClick.onItButton'),
         () => { playerState.activeMenu = 'none' }
       )
     }

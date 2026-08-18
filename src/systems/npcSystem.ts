@@ -28,25 +28,19 @@ import { progressionEventState, progressionEventCallbacks } from '../game/progre
 import { animalTutorialState, animalTutorialCallbacks } from '../game/animalTutorialState'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
+import { t, tList, registerHoverText } from '../i18n'
 
 // ---------------------------------------------------------------------------
 // Mayor tutorial chit-chat — shown when player clicks Mayor during tutorial
 // steps where he should not offer his quest yet
 // ---------------------------------------------------------------------------
-const MAYOR_TUTORIAL_CHITCHATS = [
-  "Oh, what a nice day! The sun makes the soil feel just right for growing.",
-  "I think you'll like this place — CozyFarm has a way of growing on you!",
-  "You know, I used to play guitar in a rock band. We called ourselves The Fertilizers. We were ahead of our time.",
-  "Between you and me, Marco's farm isn't as big as he claims. Don't tell him I said that.",
-  "The smell of fresh soil in the morning… nothing quite like it, is there?",
-]
-
 let lastChitchatIndex = -1
 function getRandomChitchat(): string {
-  let idx = Math.floor(Math.random() * MAYOR_TUTORIAL_CHITCHATS.length)
-  if (idx === lastChitchatIndex) idx = (idx + 1) % MAYOR_TUTORIAL_CHITCHATS.length
+  const lines = tList('npc.mayorChitchat')
+  let idx = Math.floor(Math.random() * lines.length)
+  if (idx === lastChitchatIndex) idx = (idx + 1) % lines.length
   lastChitchatIndex = idx
-  return MAYOR_TUTORIAL_CHITCHATS[idx]
+  return lines[idx]
 }
 
 /** Tutorial steps where the Mayor should NOT offer his quest (shows chit-chat instead) */
@@ -416,12 +410,13 @@ export function initNpcSystem(def: NpcDefinition, onDespawned?: () => void) {
       entity:    colliderEntity,
       opts: {
         button:        InputAction.IA_POINTER,
-        hoverText:     `Talk to ${def.name}`,
+        hoverText:     t('npc.talkToHover', { name: def.name }),
         maxDistance:   8,
       },
     },
     () => onNpcClick(entity),
   )
+  registerHoverText(colliderEntity, 'npc.talkToHover', { name: def.name })
 
   const npc: NpcInstance = {
     entity,
@@ -512,20 +507,20 @@ function onNpcClick(entity: Entity) {
     npcDialogState.mode       = 'greeting'
   } else if (!questDef || !qp || qp.status === 'completed') {
     // No quest or already done — show normal greeting
-    npcDialogState.dialogLine = npc.def.greeting
+    npcDialogState.dialogLine = t(npc.def.greeting)
     npcDialogState.mode       = 'greeting'
   } else if (qp.status === 'available') {
     // Quest not yet accepted — offer it
-    npcDialogState.dialogLine = questDef.description
+    npcDialogState.dialogLine = t(questDef.description)
     npcDialogState.mode       = 'quest_offer'
     npcDialogState.onAccept   = () => acceptQuest(questDef.id)
   } else if (qp.status === 'active') {
     // Quest in progress — show progress
-    npcDialogState.dialogLine = `${questDef.title}\n\nProgress: ${qp.current} / ${questDef.target}`
+    npcDialogState.dialogLine = t('npc.questProgress', { title: t(questDef.title), current: qp.current, target: questDef.target })
     npcDialogState.mode       = 'quest_active'
   } else if (qp.status === 'claimable') {
     // Quest complete — let player claim reward; NPC departs after claiming
-    npcDialogState.dialogLine = `You did it! ${questDef.title} — complete!\n\nReward: ${questDef.rewardCoins} coins + ${questDef.rewardXp} XP`
+    npcDialogState.dialogLine = t('npc.questComplete', { title: t(questDef.title), coins: questDef.rewardCoins, xp: questDef.rewardXp })
     npcDialogState.mode       = 'quest_claimable'
     let claimed = false
     npcDialogState.onClaim  = () => {

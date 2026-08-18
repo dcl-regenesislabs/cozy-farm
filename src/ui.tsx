@@ -24,6 +24,7 @@ import { PigPenPanel } from './ui/PigPenPanel'
 import { FeedBowlMenu } from './ui/FeedBowlMenu'
 import { VisitHud } from './ui/VisitHud'
 import { LoadingOverlay } from './ui/LoadingOverlay'
+import { LanguageSelectOverlay } from './ui/LanguageSelectOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
 export function setupUi() {
@@ -31,9 +32,10 @@ export function setupUi() {
 }
 
 const MainUi = () => {
-  const uiUnlocked = !playerState.loadingOverlayActive
+  const uiUnlocked = !playerState.loadingOverlayActive && !playerState.languagePickerOpen
+  const languageChosen = playerState.preferredLanguage !== ''
   const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
-  const showOwnFarmUi = uiUnlocked && playerState.viewingFarm === null && playerState.farmReady
+  const showOwnFarmUi = uiUnlocked && languageChosen && playerState.viewingFarm === null && playerState.farmReady
 
   return (
     <UiEntity
@@ -44,6 +46,7 @@ const MainUi = () => {
       }}
     >
       <LoadingOverlay />
+      <LanguageSelectOverlay />
       {showOwnFarmUi && <TopHud />}
       {showVisitHud && <VisitHud />}
       {showOwnFarmUi && !['npcDialog', 'shop', 'inventory', 'farm', 'quests', 'plant', 'sell', 'compost', 'jukebox'].includes(playerState.activeMenu) && <BottomNav />}

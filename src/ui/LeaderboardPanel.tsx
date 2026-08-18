@@ -1,4 +1,5 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { room } from '../shared/farmMessages'
 import { leaderboardCallbacks } from '../services/saveService'
@@ -78,7 +79,7 @@ const EntryRow = ({ entry }: { entry: LeaderboardEntry }) => {
     >
       <RankBadge rank={entry.rank} />
       <Label
-        value={isMe ? `${formatPlayerLabel(entry.displayName, entry.address)} (you)` : formatPlayerLabel(entry.displayName, entry.address)}
+        value={isMe ? t('leaderboard.youSuffix', { name: formatPlayerLabel(entry.displayName, entry.address) }) : formatPlayerLabel(entry.displayName, entry.address)}
         fontSize={20}
         color={isMe ? C.green : C.textMain}
         uiTransform={{ flex: 1 }}
@@ -107,7 +108,7 @@ export const LeaderboardContent = () => {
       >
         {lbState.currentRank > 0 && (
           <Label
-            value={`Your rank: #${lbState.currentRank}  ·  Score: ${lbState.currentScore} ✦`}
+            value={t('leaderboard.yourRank', { rank: lbState.currentRank, score: lbState.currentScore })}
             fontSize={20}
             color={C.green}
           />
@@ -127,7 +128,7 @@ export const LeaderboardContent = () => {
           }}
         >
           <Label
-            value={lbState.loading ? 'Loading…' : '↺ Refresh'}
+            value={lbState.loading ? t('common.loading') : t('leaderboard.refresh')}
             fontSize={17}
             color={lbState.loading ? C.textMute : C.textMain}
             textAlign="middle-center"
@@ -138,11 +139,11 @@ export const LeaderboardContent = () => {
       {/* List */}
       <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%', overflow: 'hidden' }}>
         {lbState.loading && (
-          <Label value="Loading rankings…" fontSize={22} color={C.textMute}
+          <Label value={t('leaderboard.loadingRankings')} fontSize={22} color={C.textMute}
             textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 60 } }} />
         )}
         {!lbState.loading && lbState.entries.length === 0 && (
-          <Label value="No rankings yet. Be the first!" fontSize={22} color={C.textMute}
+          <Label value={t('leaderboard.noRankingsYet')} fontSize={22} color={C.textMute}
             textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 60 } }} />
         )}
         {!lbState.loading && lbState.entries.map((entry) => (
@@ -160,7 +161,7 @@ export const LeaderboardContent = () => {
 // ---------------------------------------------------------------------------
 export const LeaderboardPanel = () => (
   <PanelShell
-    title="✦  Beauty Leaderboard  ✦"
+    title={t('leaderboard.title')}
     onClose={() => { playerState.activeMenu = 'none' }}
   >
     <LeaderboardContent />

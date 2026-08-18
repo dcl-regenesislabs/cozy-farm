@@ -4,7 +4,7 @@ import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
 import { preloadUiAssets } from './systems/uiAssetPreloadSystem'
-import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible, unlockPlotGroupByName } from './systems/interactionSetup'
+import { setupEntities, unlockSoilsPhase1, unlockSoilsPhase2, unlockSoilsAll6, getSoilEntities, getComputerEntity, getTruckEntity, initVisitorWaterFeedback, resetSoilPlots, setCompostBinVisible, unlockPlotGroupByName, wirePlotGroupSigns, refreshAllPlotHoverTexts } from './systems/interactionSetup'
 import { setupLandscape } from './systems/landscapeSystem'
 import './systems/growthSystem'
 import './systems/dogSystem'
@@ -38,6 +38,9 @@ import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
 import { setAnalyticsWallet, trackEvent } from './analytics/analytics'
+import { t, refreshAllHoverTexts } from './i18n'
+import { updateBuildingVisuals } from './systems/animalSystem'
+import { applyBeautySlots, getBeautySlots } from './systems/beautySpotSystem'
 
 // First NPC visit delay (seconds) — gives player a moment to settle in
 const FIRST_NPC_DELAY_S = 300
@@ -114,6 +117,40 @@ export function main() {
     // Tutorial and NPC systems start inside onLoaded so they see the
     // restored state (tutorialComplete, tutorialStep, etc.) before firing.
     initSaveService(() => {
+      // First-run players haven't chosen a language yet at this exact instant —
+      // the Language Selection screen (LanguageSelectOverlay.tsx) is about to
+      // show, gated on the same farmReady flag that triggers this callback.
+      // Everything below generates translated text ONCE at call time (tutorial
+      // dialogs, NPC spawns with hover text) — if it ran now, it would resolve
+      // in English before the player ever gets to pick, and stay stuck that way.
+      // So: returning players (preferredLanguage already restored by applyPayload)
+      // proceed immediately; first-run players wait for the picker to resolve.
+      if (playerState.preferredLanguage === '') {
+        engine.addSystem(function waitForLanguageSelection() {
+          if (playerState.preferredLanguage === '') return
+          engine.removeSystem(waitForLanguageSelection)
+          afterLanguageReady()
+        })
+      } else {
+        afterLanguageReady()
+      }
+    })
+
+    function afterLanguageReady() {
+      // Re-resolve native pointerEventsSystem hover prompts now that the
+      // player's language is known — they were first registered during
+      // setupEntities(), before the save (or the language picker) resolved.
+      refreshAllHoverTexts()
+      // Chicken Coop / Pig Pen buy-area hover text is level/ownership-dependent
+      // and rebuilt inline (not through the static registry) — refresh it too.
+      updateBuildingVisuals()
+      // Same for the beauty decoration spot hover text.
+      applyBeautySlots(getBeautySlots())
+      // Same for the plot-group "for sale" sign hover text.
+      wirePlotGroupSigns()
+      // Same for every soil plot's hover text (Locked / Plant / Water / Harvest / ...).
+      refreshAllPlotHoverTexts()
+
       setAnalyticsWallet(playerState.wallet)
       trackEvent('session started', {
         is_new_user:       playerState.level === 1 && playerState.totalCropsHarvested === 0,
@@ -136,7 +173,7 @@ export function main() {
       const TRACKED_LEVELS = new Set([2, 5, 10, 15, 20])
       onLevelUp((newLevel) => {
         console.log('CozyFarm: Level up toast →', newLevel)
-        playerState.levelUpToastText      = `Level Up! Now Level ${newLevel}`
+        playerState.levelUpToastText      = t('hud.levelUpToast', { level: newLevel })
         if (TRACKED_LEVELS.has(newLevel)) trackEvent('level reached', { level: newLevel })
         playerState.levelUpToastExpiresAt = Date.now() + 4000
 
@@ -271,6 +308,6 @@ export function main() {
       } else {
         startRegularNpcRotation()
       }
-    })
+    }
   })
 }

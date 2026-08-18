@@ -22,6 +22,7 @@ import {
 } from '../data/animalData'
 import { buyAnimal, breedPigs, harvestPig, purchaseBuilding } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { t } from '../i18n'
 import { RevampPanelFrame } from './RevampPanel'
 import { SHARED_PAGINATION_HEIGHT_DESKTOP, SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
 import { MiniTextButton, MINI_BUTTON_IMG, MINI_BUTTON_NO_COIN_IMG, PillTabButton } from './RevampButtons'
@@ -94,14 +95,14 @@ const animalTab = { value: 'coop' as AnimalTabValue }
 const animalPage: Record<AnimalTabValue, number> = { coop: 0, pigPen: 0, stock: 0 }
 
 const PIG_STAGE_LABELS: Record<string, string> = {
-  piglet: 'Piglet',
-  adolescent: 'Teen',
-  adult: 'Adult',
-  harvestable: 'Ready!'
+  piglet: 'animals.stagePiglet',
+  adolescent: 'animals.stageTeen',
+  adult: 'animals.stageAdult',
+  harvestable: 'animals.ready'
 }
 
 function formatMs(ms: number): string {
-  if (ms <= 0) return 'Ready!'
+  if (ms <= 0) return t('animals.ready')
   const h = Math.floor(ms / 3_600_000)
   const m = Math.floor((ms % 3_600_000) / 60_000)
   const s = Math.floor((ms % 60_000) / 1_000)
@@ -399,10 +400,10 @@ function buildCoopCards(): AnimalCardSpec[] {
         {
           key: 'coop-locked',
           iconSrc: CHICKEN_ICON,
-          title: 'Chicken Coop',
-          status: `Level ${CHICKEN_COOP_UNLOCK_LEVEL}`,
+          title: t('animals.chickenCoopTitle'),
+          status: t('common.level', { level: CHICKEN_COOP_UNLOCK_LEVEL }),
           statusColor: STATUS_MUTE,
-          note: 'Unlocks later in the Pets tab.',
+          note: t('animals.unlocksLaterNote'),
           locked: true
         }
       ]
@@ -412,12 +413,12 @@ function buildCoopCards(): AnimalCardSpec[] {
       {
         key: 'coop-buy',
         iconSrc: CHICKEN_ICON,
-        title: 'Chicken Coop',
-        meta: 'Building available',
-        status: `${BUILDING_BUY_PRICE} coins`,
+        title: t('animals.chickenCoopTitle'),
+        meta: t('animals.buildingAvailable'),
+        status: t('animals.priceCoins', { price: BUILDING_BUY_PRICE }),
         statusColor: STATUS_WARNING,
-        note: 'Unlock your first coop and start producing eggs.',
-        buttonLabel: 'BUY',
+        note: t('animals.coopBuyNote'),
+        buttonLabel: t('animals.buyButton'),
         buttonTextureSrc: MINI_BUTTON_IMG,
         buttonEnabled: playerState.coins >= BUILDING_BUY_PRICE,
         onButtonPress: withSound(() => purchaseBuilding('chicken'))
@@ -429,43 +430,45 @@ function buildCoopCards(): AnimalCardSpec[] {
     {
       key: 'coop-summary',
       iconSrc: CHICKEN_ICON,
-      title: 'Chicken Coop',
-      meta: `Food ${playerState.chickenFoodInBowl} units`,
-      status: `${playerState.chickens.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      title: t('animals.chickenCoopTitle'),
+      meta: t('animals.foodUnits', { count: playerState.chickenFoodInBowl }),
+      status: t('animals.countOfMax', { count: playerState.chickens.length, max: MAX_ANIMALS_PER_BUILDING }),
       statusColor: STATUS_SUCCESS,
-      note: 'Chickens currently living in the coop.'
+      note: t('animals.chickensLivingNote')
     },
     {
       key: 'egg-stock',
       iconSrc: EGG_ICON,
-      title: 'Egg Stock',
-      meta: 'Current inventory',
+      title: t('animals.eggStockTitle'),
+      meta: t('animals.currentInventory'),
       status: `${playerState.eggsCount}`,
       statusColor: STATUS_WARNING,
-      note: 'Sell them later from the market UI.'
+      note: t('animals.sellEggsNote')
     },
     {
       key: 'coop-clean',
       iconSrc: MANURE_ICON,
-      title: 'Coop Status',
-      meta: playerState.chickenCoopDirtyAt > 0 ? 'Dirty' : 'Clean',
-      status: playerState.chickenCoopDirtyAt > 0 ? 'Needs cleaning' : 'All good',
+      title: t('animals.coopStatusTitle'),
+      meta: playerState.chickenCoopDirtyAt > 0 ? t('animals.dirty') : t('animals.clean'),
+      status: playerState.chickenCoopDirtyAt > 0 ? t('animals.needsCleaning') : t('animals.allGood'),
       statusColor: playerState.chickenCoopDirtyAt > 0 ? STATUS_WARNING : STATUS_SUCCESS,
-      note: playerState.chickenCoopDirtyAt > 0 ? 'Clean the dirt pile in-scene.' : 'No cleanup needed right now.'
+      note: playerState.chickenCoopDirtyAt > 0 ? t('animals.cleanDirtNote') : t('animals.noCleanupNote')
     }
   ]
 
   playerState.chickens.forEach((chicken, index) => {
-    const timer = playerState.chickenFoodInBowl > 0 ? formatMs(nextEggMs(chicken.lastEggAt)) : 'No food'
-    const ready = timer === 'Ready!'
+    const hasFood = playerState.chickenFoodInBowl > 0
+    const eggMs = nextEggMs(chicken.lastEggAt)
+    const ready = hasFood && eggMs <= 0
+    const timer = hasFood ? formatMs(eggMs) : t('animals.noFood')
     cards.push({
       key: chicken.id,
       iconSrc: CHICKEN_ICON,
-      title: `Chicken ${index + 1}`,
-      meta: 'Next egg',
+      title: t('animals.chickenLabel', { index: index + 1 }),
+      meta: t('animals.nextEgg'),
       status: timer,
-      statusColor: ready ? STATUS_SUCCESS : playerState.chickenFoodInBowl > 0 ? STATUS_INFO : STATUS_WARNING,
-      note: ready ? 'Egg cycle complete.' : playerState.chickenFoodInBowl > 0 ? 'Production running.' : 'Add food to resume.'
+      statusColor: ready ? STATUS_SUCCESS : hasFood ? STATUS_INFO : STATUS_WARNING,
+      note: ready ? t('animals.eggCycleComplete') : hasFood ? t('animals.productionRunning') : t('animals.addFoodToResume')
     })
   })
 
@@ -473,12 +476,12 @@ function buildCoopCards(): AnimalCardSpec[] {
     cards.push({
       key: 'buy-chicken',
       iconSrc: CHICKEN_ICON,
-      title: 'Buy Chicken',
-      meta: `Space ${playerState.chickens.length} / ${MAX_ANIMALS_PER_BUILDING}`,
-      status: '500 coins',
+      title: t('animals.buyChickenTitle'),
+      meta: t('animals.spaceOfMax', { count: playerState.chickens.length, max: MAX_ANIMALS_PER_BUILDING }),
+      status: t('animals.priceCoins', { price: 500 }),
       statusColor: STATUS_WARNING,
-      note: 'Add another chicken to boost egg output.',
-      buttonLabel: 'BUY',
+      note: t('animals.addChickenNote'),
+      buttonLabel: t('animals.buyButton'),
       buttonTextureSrc: MINI_BUTTON_IMG,
       buttonEnabled: playerState.coins >= 500,
       onButtonPress: withSound(() => buyAnimal('chicken'))
@@ -495,10 +498,10 @@ function buildPigCards(): AnimalCardSpec[] {
         {
           key: 'pig-locked',
           iconSrc: PIG_ICON,
-          title: 'Pig Pen',
-          status: `Level ${PIG_PEN_UNLOCK_LEVEL}`,
+          title: t('animals.pigPenTitle'),
+          status: t('common.level', { level: PIG_PEN_UNLOCK_LEVEL }),
           statusColor: STATUS_MUTE,
-          note: 'Unlocks later in the Pets tab.',
+          note: t('animals.unlocksLaterNote'),
           locked: true
         }
       ]
@@ -508,12 +511,12 @@ function buildPigCards(): AnimalCardSpec[] {
       {
         key: 'pig-buy',
         iconSrc: PIG_ICON,
-        title: 'Pig Pen',
-        meta: 'Building available',
-        status: `${BUILDING_BUY_PRICE} coins`,
+        title: t('animals.pigPenTitle'),
+        meta: t('animals.buildingAvailable'),
+        status: t('animals.priceCoins', { price: BUILDING_BUY_PRICE }),
         statusColor: STATUS_WARNING,
-        note: 'Raise pigs for manure, breeding, and meat.',
-        buttonLabel: 'BUY',
+        note: t('animals.pigBuyNote'),
+        buttonLabel: t('animals.buyButton'),
         buttonTextureSrc: MINI_BUTTON_IMG,
         buttonEnabled: playerState.coins >= BUILDING_BUY_PRICE,
         onButtonPress: withSound(() => purchaseBuilding('pig'))
@@ -532,41 +535,41 @@ function buildPigCards(): AnimalCardSpec[] {
     {
       key: 'pig-summary',
       iconSrc: PIG_ICON,
-      title: 'Pig Pen',
-      meta: `Food ${playerState.pigFoodInBowl} units`,
-      status: `${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`,
+      title: t('animals.pigPenTitle'),
+      meta: t('animals.foodUnits', { count: playerState.pigFoodInBowl }),
+      status: t('animals.countOfMax', { count: playerState.pigs.length, max: MAX_ANIMALS_PER_BUILDING }),
       statusColor: STATUS_SUCCESS,
-      note: 'Pigs currently living in the pen.'
+      note: t('animals.pigsLivingNote')
     },
     {
       key: 'pig-breed',
       iconSrc: PIG_ICON,
-      title: 'Breeding',
-      meta: 'Adults off cooldown',
-      status: `${readyBreeders} ready`,
+      title: t('animals.breedingTitle'),
+      meta: t('animals.adultsOffCooldown'),
+      status: t('animals.readyCount', { count: readyBreeders }),
       statusColor: canBreed ? STATUS_SUCCESS : STATUS_WARNING,
-      note: canBreed ? 'You can breed now.' : playerState.pigs.length >= MAX_ANIMALS_PER_BUILDING ? 'Pen is full.' : 'Need 2 ready adults.',
-      buttonLabel: 'BREED',
+      note: canBreed ? t('animals.canBreedNow') : playerState.pigs.length >= MAX_ANIMALS_PER_BUILDING ? t('animals.penFull') : t('animals.needTwoAdults'),
+      buttonLabel: t('animals.breedButton'),
       buttonEnabled: canBreed,
       onButtonPress: withSound(() => breedPigs())
     },
     {
       key: 'pig-clean',
       iconSrc: MANURE_ICON,
-      title: 'Pen Status',
-      meta: playerState.pigPenDirtyAt > 0 ? 'Dirty' : 'Clean',
-      status: playerState.pigPenDirtyAt > 0 ? 'Needs cleaning' : 'All good',
+      title: t('animals.penStatusTitle'),
+      meta: playerState.pigPenDirtyAt > 0 ? t('animals.dirty') : t('animals.clean'),
+      status: playerState.pigPenDirtyAt > 0 ? t('animals.needsCleaning') : t('animals.allGood'),
       statusColor: playerState.pigPenDirtyAt > 0 ? STATUS_WARNING : STATUS_SUCCESS,
-      note: playerState.pigPenDirtyAt > 0 ? 'Clean the dirt pile in-scene.' : 'No cleanup needed right now.'
+      note: playerState.pigPenDirtyAt > 0 ? t('animals.cleanDirtNote') : t('animals.noCleanupNote')
     },
     {
       key: 'pig-meat',
       iconSrc: PIG_ICON,
-      title: 'Pig Meat',
-      meta: 'Current inventory',
+      title: t('animals.pigMeatTitle'),
+      meta: t('animals.currentInventory'),
       status: `${playerState.pigMeatCount}`,
       statusColor: STATUS_WARNING,
-      note: 'Harvestable pigs turn into sellable meat.'
+      note: t('animals.pigMeatNote')
     }
   ]
 
@@ -575,19 +578,20 @@ function buildPigCards(): AnimalCardSpec[] {
     const manure = playerState.pigFoodInBowl > 0 && (stage === 'adult' || stage === 'harvestable')
       ? formatMs(nextManureMs(pig.lastManureAt))
       : stage === 'piglet' || stage === 'adolescent'
-        ? 'Growing'
-        : 'No food'
+        ? t('animals.growing')
+        : t('animals.noFood')
     const canHarvest = stage === 'harvestable'
+    const stageKey = PIG_STAGE_LABELS[stage]
 
     cards.push({
       key: pig.id,
       iconSrc: PIG_ICON,
-      title: `Pig ${index + 1}`,
-      meta: stage === 'harvestable' ? 'Harvest now' : 'Next manure',
-      status: PIG_STAGE_LABELS[stage] ?? stage,
+      title: t('animals.pigLabel', { index: index + 1 }),
+      meta: stage === 'harvestable' ? t('animals.harvestNow') : t('animals.nextManure'),
+      status: stageKey ? t(stageKey) : stage,
       statusColor: canHarvest ? STATUS_SUCCESS : stage === 'adult' ? STATUS_INFO : STATUS_WARNING,
-      note: canHarvest ? 'Ready for meat harvest.' : manure,
-      buttonLabel: canHarvest ? 'HARVEST' : undefined,
+      note: canHarvest ? t('animals.readyForHarvestNote') : manure,
+      buttonLabel: canHarvest ? t('animals.harvestButton') : undefined,
       onButtonPress: canHarvest ? withSound(() => harvestPig(pig.id)) : undefined
     })
   })
@@ -596,12 +600,12 @@ function buildPigCards(): AnimalCardSpec[] {
     cards.push({
       key: 'buy-pig',
       iconSrc: PIG_ICON,
-      title: 'Buy Pig',
-      meta: `Space ${playerState.pigs.length} / ${MAX_ANIMALS_PER_BUILDING}`,
-      status: '500 coins',
+      title: t('animals.buyPigTitle'),
+      meta: t('animals.spaceOfMax', { count: playerState.pigs.length, max: MAX_ANIMALS_PER_BUILDING }),
+      status: t('animals.priceCoins', { price: 500 }),
       statusColor: STATUS_WARNING,
-      note: 'Add another pig to increase output.',
-      buttonLabel: 'BUY',
+      note: t('animals.addPigNote'),
+      buttonLabel: t('animals.buyButton'),
       buttonTextureSrc: MINI_BUTTON_IMG,
       buttonEnabled: playerState.coins >= 500,
       onButtonPress: withSound(() => buyAnimal('pig'))
@@ -616,56 +620,56 @@ function buildStockCards(): AnimalCardSpec[] {
     {
       key: 'stock-grain',
       iconSrc: GRAIN_ICON,
-      title: 'Grain',
-      meta: 'Feed inventory',
+      title: t('animals.grainTitle'),
+      meta: t('animals.feedInventory'),
       status: `${playerState.grainCount}`,
       statusColor: STATUS_WARNING,
-      note: 'Used in bowls for chickens and pigs.'
+      note: t('animals.grainNote')
     },
     {
       key: 'stock-scraps',
       iconSrc: VEGGIE_SCRAP_ICON,
-      title: 'Veggie Scraps',
-      meta: 'Feed inventory',
+      title: t('animals.veggieScrapsTitle'),
+      meta: t('animals.feedInventory'),
       status: `${playerState.veggieScrapCount}`,
       statusColor: STATUS_INFO,
-      note: 'Handy extra food for the pig bowl.'
+      note: t('animals.veggieScrapsNote')
     },
     {
       key: 'stock-eggs',
       iconSrc: EGG_ICON,
-      title: 'Eggs',
-      meta: 'Product inventory',
+      title: t('animals.eggsTitle'),
+      meta: t('animals.productInventory'),
       status: `${playerState.eggsCount}`,
       statusColor: STATUS_SUCCESS,
-      note: 'Produced by fed chickens.'
+      note: t('animals.eggsProducedNote')
     },
     {
       key: 'stock-meat',
       iconSrc: PIG_ICON,
-      title: 'Pig Meat',
-      meta: 'Product inventory',
+      title: t('animals.pigMeatTitle'),
+      meta: t('animals.productInventory'),
       status: `${playerState.pigMeatCount}`,
       statusColor: STATUS_WARNING,
-      note: 'Harvested from mature pigs.'
+      note: t('animals.meatHarvestedNote')
     },
     {
       key: 'stock-coop-food',
       iconSrc: CHICKEN_ICON,
-      title: 'Coop Bowl',
-      meta: 'Chicken food loaded',
-      status: `${playerState.chickenFoodInBowl} units`,
+      title: t('animals.coopBowlTitle'),
+      meta: t('animals.chickenFoodLoaded'),
+      status: t('animals.unitsCount', { count: playerState.chickenFoodInBowl }),
       statusColor: STATUS_INFO,
-      note: 'Keeps egg production running.'
+      note: t('animals.coopBowlNote')
     },
     {
       key: 'stock-pen-food',
       iconSrc: PIG_ICON,
-      title: 'Pig Bowl',
-      meta: 'Pig food loaded',
-      status: `${playerState.pigFoodInBowl} units`,
+      title: t('animals.pigBowlTitle'),
+      meta: t('animals.pigFoodLoaded'),
+      status: t('animals.unitsCount', { count: playerState.pigFoodInBowl }),
       statusColor: STATUS_INFO,
-      note: 'Keeps manure and breeding running.'
+      note: t('animals.pigBowlNote')
     },
   ]
 }
@@ -686,7 +690,7 @@ export const AnimalPanel = () => {
   const pageSlice = cards.slice(page * ITEMS_PER_PAGE, (page + 1) * ITEMS_PER_PAGE)
 
   return (
-    <RevampPanelFrame titleText="Animals" onClose={() => { playerState.activeMenu = 'none' }}>
+    <RevampPanelFrame titleText={t('animals.title')} onClose={() => { playerState.activeMenu = 'none' }}>
       <UiEntity uiTransform={{ width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center' }}>
         <UiEntity
           uiTransform={{
@@ -697,9 +701,9 @@ export const AnimalPanel = () => {
           }}
         >
           {([
-            ['coop', 'Chicken Coop'],
-            ['pigPen', 'Pig Pen'],
-            ['stock', 'Stock'],
+            ['coop', t('animals.chickenCoopTitle')],
+            ['pigPen', t('animals.pigPenTitle')],
+            ['stock', t('animals.tabStock')],
           ] as const).map(([key, label], index) => (
             <UiEntity key={key} uiTransform={{ margin: { right: index < 2 ? TAB_GAP : 0 } }}>
               <PillTabButton

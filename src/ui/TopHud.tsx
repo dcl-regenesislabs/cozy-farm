@@ -1,5 +1,9 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t, getLanguage } from '../i18n'
+import type { Lang } from '../i18n'
+import { playSound } from '../systems/sfxSystem'
+import { FLAG_RECTS, LANG_FLAGS_IMG, atlasUvs as flagAtlasUvs, openLanguagePicker } from './LanguageSelectOverlay'
 import { playerState } from '../game/gameState'
 import { getXpProgress } from '../systems/levelingSystem'
 import { BTN_PROFILE } from '../data/imagePaths'
@@ -30,7 +34,13 @@ const FILL_CAP_PX = Math.round(FILL_CAP_ATLAS_W * FILL_H / BAR_FILL_RECT.h)
 const BAR_LEFT_CAP_RECT: AtlasRect  = { x: BAR_FILL_RECT.x, y: BAR_FILL_RECT.y, w: FILL_CAP_ATLAS_W, h: BAR_FILL_RECT.h }
 const BAR_FILL_MID_RECT: AtlasRect  = { x: BAR_FILL_RECT.x + FILL_CAP_ATLAS_W, y: BAR_FILL_RECT.y, w: BAR_FILL_RECT.w - FILL_CAP_ATLAS_W * 2, h: BAR_FILL_RECT.h }
 const BAR_RIGHT_CAP_RECT: AtlasRect = { x: BAR_FILL_RECT.x + BAR_FILL_RECT.w - FILL_CAP_ATLAS_W, y: BAR_FILL_RECT.y, w: FILL_CAP_ATLAS_W, h: BAR_FILL_RECT.h }
-const LEVEL_WORD_RECT: AtlasRect = { x: 682, y: 559, w: 172, h: 64 }
+// "Level" word, baked pixel art — one crop per language (new boxed style added
+// alongside the original English-only word; same 163x66 box for all three).
+const LEVEL_WORD_RECT_BY_LANG: Record<Lang, AtlasRect> = {
+  en: { x: 477, y: 566, w: 161, h: 61 }, // "Level"
+  es: { x: 477, y: 394, w: 161, h: 62 }, // "Nivel"
+  pt: { x: 477, y: 479, w: 161, h: 63 }, // "Nível"
+}
 const ARROW_RECT: AtlasRect = { x: 901, y: 572, w: 53, h: 44 }
 const COIN_STACK_RECT: AtlasRect = { x: 865, y: 652, w: 120, h: 89 }
 const LEVEL_SPROUT_RECT: AtlasRect = { x: 685, y: 652, w: 74, h: 68 }
@@ -224,8 +234,8 @@ export const TopHud = () => {
   const topRowPrimaryWidth = mobile ? s(300) : s(334)
   const topRowSecondaryWidth = mobile ? s(220) : s(176)
   const topRowGap = mobile ? s(6) : s(10)
-  const xpText = isMaxLvl ? 'MAX XP' : `${xp.current} / ${xp.needed} XP`
-  const mobileXpText = isMaxLvl ? 'MAX XP' : `${xp.current}/${xp.needed} XP`
+  const xpText = isMaxLvl ? t('hud.maxXp') : t('hud.xpProgress', { current: xp.current, needed: xp.needed })
+  const mobileXpText = isMaxLvl ? t('hud.maxXp') : t('hud.xpProgressMobile', { current: xp.current, needed: xp.needed })
   const mobileCoinsText = formatMobileHudCoins(displayCoins)
   const mobileCoinsFontSize = getMobileHudCoinFontSize(mobileCoinsText)
   const mobileXpFontSize = getMobileHudXpFontSize(mobileXpText)
@@ -307,8 +317,8 @@ export const TopHud = () => {
           <Label
             value={
               playerState.workerUnpaidDays >= 2
-                ? `Worker unpaid: ${playerState.workerOutstandingWages} coins due (${workerDebtDays} days).`
-                : `Worker wages due: ${playerState.workerOutstandingWages} coins.`
+                ? t('hud.workerUnpaidDays', { wages: playerState.workerOutstandingWages, days: workerDebtDays })
+                : t('hud.workerWagesDue', { wages: playerState.workerOutstandingWages })
             }
             fontSize={18}
             color={{ r: 1, g: 0.86, b: 0.78, a: 1 }}
@@ -414,7 +424,7 @@ export const TopHud = () => {
                 >
                   <AtlasSprite rect={LEVEL_SPROUT_RECT} width={s(26)} height={s(24)} />
                   <UiEntity uiTransform={{ width: topRowGap, height: 1 }} />
-                  <AtlasSprite rect={LEVEL_WORD_RECT} width={s(108)} height={s(40)} />
+                  <AtlasSprite rect={LEVEL_WORD_RECT_BY_LANG[getLanguage()]} width={s(108)} height={s(40)} />
                   <UiEntity uiTransform={{ width: topRowGap, height: 1 }} />
                   <AtlasNumber value={displayLevel} digitHeight={s(40)} gap={s(2)} />
                   {!isMaxLvl && <UiEntity uiTransform={{ width: s(8), height: 1 }} />}
@@ -576,7 +586,7 @@ export const TopHud = () => {
                         uiBackground={{ color: { r: 0.95, g: 0.2, b: 0.2, a: connectingBlinkOn ? 1 : 0.35 } }}
                       />
                       <Label
-                        value="Connecting..."
+                        value={t('hud.connecting')}
                         fontSize={s(14)}
                         color={{ ...HUD_BROWN, a: connectingBlinkOn ? 1 : 0.7 }}
                         textAlign="middle-right"
@@ -629,6 +639,36 @@ export const TopHud = () => {
               </UiEntity>
             </UiEntity>
           )}
+        </UiEntity>
+
+        {/* Language switcher — shows the current language's flag; tap to reopen the picker. */}
+        <UiEntity
+          uiTransform={{
+            positionType: 'absolute',
+            position: { top: s(160), left: s(40) },
+            width: s(160),
+            height: s(160),
+            borderRadius: s(24),
+            borderWidth: 2,
+            borderColor: HUD_BROWN,
+            alignItems: 'center',
+            justifyContent: 'center',
+            pointerFilter: 'block',
+          }}
+          uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 0.7 } }}
+          onMouseDown={() => {
+            playSound('buttonclick')
+            openLanguagePicker()
+          }}
+        >
+          <UiEntity
+            uiTransform={{ width: s(120), height: s(80) }}
+            uiBackground={{
+              texture: { src: LANG_FLAGS_IMG, wrapMode: 'clamp' },
+              textureMode: 'stretch',
+              uvs: flagAtlasUvs(FLAG_RECTS[getLanguage()]),
+            }}
+          />
         </UiEntity>
       </UiEntity>
     </UiEntity>

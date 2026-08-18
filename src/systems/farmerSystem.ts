@@ -31,6 +31,7 @@ import { playSound } from './sfxSystem'
 import { COINS_ICON, EXCLAMATION_ICON } from '../data/imagePaths'
 import { getWorkerStatus } from '../shared/worker'
 import { getCurrentFarmEntity, getCurrentFarmOffset } from './farmInstances'
+import { t, registerHoverText } from '../i18n'
 
 const FARMER_MODEL  = 'assets/scene/Models/Farmer01/Farmer01.glb'
 const HOME_POS_BASE         = Vector3.create(44.66, 0, 70.91)
@@ -598,7 +599,7 @@ export function spawnFarmer() {
   pointerEventsSystem.onPointerDown(
     {
       entity: bodyCollider,
-      opts: { button: InputAction.IA_POINTER, hoverText: 'Talk to Farmer', maxDistance: 8 },
+      opts: { button: InputAction.IA_POINTER, hoverText: t('farmer.hover.talkToFarmer'), maxDistance: 8 },
     },
     () => {
       playSound('menu')
@@ -609,6 +610,7 @@ export function spawnFarmer() {
       }
     }
   )
+  registerHoverText(bodyCollider, 'farmer.hover.talkToFarmer')
 
   // Persistent head icon — shows DialogIcon or BoxCropsIcon depending on inventory
   farmerHeadIconEntity = engine.addEntity()

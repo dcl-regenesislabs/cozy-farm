@@ -33,6 +33,7 @@ import {
 } from '../data/animalData'
 import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 import { trackEvent } from '../analytics/analytics'
+import { t, registerHoverText } from '../i18n'
 
 // ---------------------------------------------------------------------------
 // Wander state
@@ -120,8 +121,8 @@ function enablePointer(entity: Entity): void {
 function refreshAreaBuyPointers(): void {
   if (coopArea) {
     const hoverText = playerState.chickenCoopOwned
-      ? 'Open Chicken Coop'
-      : playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`
+      ? t('animals.hover.openCoop')
+      : playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? t('animals.hover.buildCoop', { cost: BUILDING_BUY_PRICE }) : t('animals.hover.requiresLevel', { level: CHICKEN_COOP_UNLOCK_LEVEL })
     pointerEventsSystem.onPointerDown(
       { entity: coopArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
@@ -132,8 +133,8 @@ function refreshAreaBuyPointers(): void {
   }
   if (penArea) {
     const hoverText = playerState.pigPenOwned
-      ? 'Open Pig Pen'
-      : playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`
+      ? t('animals.hover.openPen')
+      : playerState.level >= PIG_PEN_UNLOCK_LEVEL ? t('animals.hover.buildPen', { cost: BUILDING_BUY_PRICE }) : t('animals.hover.requiresLevel', { level: PIG_PEN_UNLOCK_LEVEL })
     pointerEventsSystem.onPointerDown(
       { entity: penArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
@@ -290,52 +291,58 @@ export function initAnimalBuildings(): void {
   if (coopBuilding) {
     enablePointer(coopBuilding)
     pointerEventsSystem.onPointerDown(
-      { entity: coopBuilding, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Chicken Coop', maxDistance: 8 } },
+      { entity: coopBuilding, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.openCoop'), maxDistance: 8 } },
       () => { playerState.activeMenu = 'chickenCoop' },
     )
+    registerHoverText(coopBuilding, 'animals.hover.openCoop')
   }
 
   // Wire pig pen building click → open pig pen panel
   if (penBuilding) {
     enablePointer(penBuilding)
     pointerEventsSystem.onPointerDown(
-      { entity: penBuilding, opts: { button: InputAction.IA_POINTER, hoverText: 'Open Pig Pen', maxDistance: 8 } },
+      { entity: penBuilding, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.openPen'), maxDistance: 8 } },
       () => { playerState.activeMenu = 'pigPen' },
     )
+    registerHoverText(penBuilding, 'animals.hover.openPen')
   }
 
   // Wire food bowl clicks → open feed bowl UI
   if (coopFood) {
     enablePointer(coopFood)
     pointerEventsSystem.onPointerDown(
-      { entity: coopFood, opts: { button: InputAction.IA_POINTER, hoverText: 'Feed Chickens', maxDistance: 6 } },
+      { entity: coopFood, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.feedChickens'), maxDistance: 6 } },
       () => { if (playerState.chickenCoopOwned) { playerState.activeFeedBowl = 'chicken'; playerState.activeMenu = 'feedBowl' } },
     )
+    registerHoverText(coopFood, 'animals.hover.feedChickens')
   }
 
   if (penFood) {
     enablePointer(penFood)
     pointerEventsSystem.onPointerDown(
-      { entity: penFood, opts: { button: InputAction.IA_POINTER, hoverText: 'Feed Pigs', maxDistance: 6 } },
+      { entity: penFood, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.feedPigs'), maxDistance: 6 } },
       () => { if (playerState.pigPenOwned) { playerState.activeFeedBowl = 'pig'; playerState.activeMenu = 'feedBowl' } },
     )
+    registerHoverText(penFood, 'animals.hover.feedPigs')
   }
 
   // Wire dirt click → clean
   if (coopDirt) {
     enablePointer(coopDirt)
     pointerEventsSystem.onPointerDown(
-      { entity: coopDirt, opts: { button: InputAction.IA_POINTER, hoverText: 'Clean Coop', maxDistance: 6 } },
+      { entity: coopDirt, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.cleanCoop'), maxDistance: 6 } },
       () => { cleanBuilding('chicken') },
     )
+    registerHoverText(coopDirt, 'animals.hover.cleanCoop')
   }
 
   if (penDirt) {
     enablePointer(penDirt)
     pointerEventsSystem.onPointerDown(
-      { entity: penDirt, opts: { button: InputAction.IA_POINTER, hoverText: 'Clean Pen', maxDistance: 6 } },
+      { entity: penDirt, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.cleanPen'), maxDistance: 6 } },
       () => { cleanBuilding('pig') },
     )
+    registerHoverText(penDirt, 'animals.hover.cleanPen')
   }
 
   // Apply initial visual state

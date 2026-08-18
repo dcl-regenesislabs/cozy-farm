@@ -5,6 +5,7 @@ import { EGG_CYCLE_MS, CHICKEN_COOP_UNLOCK_LEVEL, BUILDING_BUY_PRICE, getDirtInt
 import { EGG_ICON, CHICKEN_ICON, MANURE_ICON, COINS_IMAGE } from '../data/imagePaths'
 import { purchaseBuilding } from '../systems/animalSystem'
 import { playSound } from '../systems/sfxSystem'
+import { t } from '../i18n'
 import { C } from './PanelShell'
 import {
   RevampPanelFrame,
@@ -18,7 +19,7 @@ import {
 } from './RevampPanel'
 
 function formatMs(ms: number): string {
-  if (ms <= 0) return 'Ready!'
+  if (ms <= 0) return t('animals.ready')
   const h = Math.floor(ms / 3_600_000)
   const m = Math.floor((ms % 3_600_000) / 60_000)
   const s = Math.floor((ms % 60_000) / 1_000)
@@ -110,17 +111,17 @@ const ChickenTile = ({ index, lastEggAt, now }: ChickenTileProps) => {
   let borderColor: CardColor
 
   if (!hasFood) {
-    midLabel    = 'No food in bowl'
+    midLabel    = t('animals.noFoodInBowl')
     statusColor = { r: 0.9,  g: 0.35, b: 0.35, a: 1    }
     barColor    = { r: 0.6,  g: 0.2,  b: 0.2,  a: 1    }
     borderColor = { r: 0.8,  g: 0.32, b: 0.24, a: 0.95 }
   } else if (isReady) {
-    midLabel    = 'Egg ready!'
+    midLabel    = t('animals.eggReady')
     statusColor = C.green
     barColor    = C.green
     borderColor = { r: 0.32, g: 0.78, b: 0.32, a: 0.95 }
   } else if (lastEggAt === 0) {
-    midLabel    = 'Starting...'
+    midLabel    = t('animals.starting')
     statusColor = CARD_TEXT_MUTE
     barColor    = CARD_TEXT_MUTE
     borderColor = CARD_BORDER
@@ -137,7 +138,7 @@ const ChickenTile = ({ index, lastEggAt, now }: ChickenTileProps) => {
         uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value={`Chicken ${index + 1}`} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('animals.chickenLabel', { index: index + 1 })} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
       <Label
         value={midLabel}
         fontSize={CARD_STATUS}
@@ -183,9 +184,9 @@ const DirtTile = ({ now: _now }: { now: number }) => {
           color: isDirty ? { r: 1, g: 1, b: 1, a: 1 } : { r: 0.65, g: 0.65, b: 0.65, a: 1 },
         }}
       />
-      <Label value="Coop Cleanliness" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('animals.coopCleanlinessTitle')} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
       <Label
-        value={isDirty ? 'Needs cleaning!' : 'Clean'}
+        value={isDirty ? t('animals.needsCleaningBang') : t('animals.clean')}
         fontSize={CARD_STATUS}
         color={isDirty ? { r: 1, g: 0.6, b: 0.1, a: 1 } : C.green}
         textAlign="middle-center"
@@ -202,7 +203,7 @@ const DirtTile = ({ now: _now }: { now: number }) => {
           />
         </UiEntity>
         <Label
-          value={isDirty ? 'Click the dirt pile in the scene' : (count > 0 ? `Next mess in ${formatMs(remaining)}` : 'No chickens')}
+          value={isDirty ? t('animals.clickDirtPile') : (count > 0 ? t('animals.nextMessIn', { time: formatMs(remaining) }) : t('animals.noChickens'))}
           fontSize={CARD_SMALL}
           color={CARD_TEXT_MUTE}
           textAlign="middle-center"
@@ -226,9 +227,9 @@ const EggsTile = () => {
         uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
         uiBackground={{ texture: { src: EGG_ICON, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
-      <Label value="Eggs" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('animals.eggsTitle')} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
       <Label
-        value={count > 0 ? `${count} ready — sell at market` : 'None collected yet'}
+        value={count > 0 ? t('animals.readySellMarket', { count }) : t('animals.noneCollectedYet')}
         fontSize={CARD_STATUS}
         color={count > 0 ? C.green : CARD_TEXT_MUTE}
         textAlign="middle-center"
@@ -245,7 +246,7 @@ const EggsTile = () => {
           />
         </UiEntity>
         <Label
-          value={hasFood ? `Bowl: ${playerState.chickenFoodInBowl} units` : 'Bowl empty — click in scene'}
+          value={hasFood ? t('animals.bowlUnits', { count: playerState.chickenFoodInBowl }) : t('animals.bowlEmptyClick')}
           fontSize={CARD_SMALL}
           color={hasFood ? C.gold : { r: 0.9, g: 0.35, b: 0.35, a: 1 }}
           textAlign="middle-center"
@@ -277,9 +278,9 @@ export const ChickenCoopPanel = () => {
           />
           {!levelMet ? (
             <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
-              <Label value="Locked" fontSize={ss(32)} color={C.textMute} textAlign="middle-center" />
+              <Label value={t('common.locked')} fontSize={ss(32)} color={C.textMute} textAlign="middle-center" />
               <Label
-                value={`Unlocks at Level ${CHICKEN_COOP_UNLOCK_LEVEL}`}
+                value={t('common.lockedLevel', { level: CHICKEN_COOP_UNLOCK_LEVEL })}
                 fontSize={ss(24)} color={C.textMute}
                 textAlign="middle-center"
                 uiTransform={{ margin: { top: ss(10) } }}
@@ -287,9 +288,9 @@ export const ChickenCoopPanel = () => {
             </UiEntity>
           ) : (
             <UiEntity uiTransform={{ flexDirection: 'column', alignItems: 'center' }}>
-              <Label value="Chicken Coop available!" fontSize={ss(30)} color={C.textMain} textAlign="middle-center" />
+              <Label value={t('animals.chickenCoopAvailable')} fontSize={ss(30)} color={C.textMain} textAlign="middle-center" />
               <Label
-                value={`Cost: ${BUILDING_BUY_PRICE} coins`}
+                value={t('common.costCoins', { cost: BUILDING_BUY_PRICE })}
                 fontSize={ss(24)} color={C.gold}
                 textAlign="middle-center"
                 uiTransform={{ margin: { top: ss(8), bottom: ss(20) } }}
@@ -304,7 +305,7 @@ export const ChickenCoopPanel = () => {
                 onMouseDown={canAfford ? () => { playSound('buttonclick'); purchaseBuilding('chicken') } : undefined}
               >
                 <Label
-                  value={canAfford ? `Buy for ${BUILDING_BUY_PRICE}` : 'Not enough coins'}
+                  value={canAfford ? t('common.buyFor', { cost: BUILDING_BUY_PRICE }) : t('animals.notEnoughCoins')}
                   fontSize={ss(24)}
                   color={canAfford ? C.textMain : C.textMute}
                   textAlign="middle-center"
@@ -337,9 +338,9 @@ export const ChickenCoopPanel = () => {
               uiTransform={{ width: CARD_ICON, height: CARD_ICON, margin: { bottom: ss(8) }, flexShrink: 0 }}
               uiBackground={{ texture: { src: CHICKEN_ICON, wrapMode: 'clamp' }, textureMode: 'stretch', color: { r: 1, g: 1, b: 1, a: 0.3 } }}
             />
-            <Label value="No chickens yet" fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
+            <Label value={t('animals.noChickensYet')} fontSize={CARD_TITLE} color={CARD_TEXT} textAlign="middle-center" />
             <Label
-              value="Buy some in the Shop"
+              value={t('animals.buySomeInShop')}
               fontSize={CARD_STATUS} color={CARD_TEXT_MUTE}
               textAlign="middle-center"
               uiTransform={{ margin: { top: ss(8) } }}

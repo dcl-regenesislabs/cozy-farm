@@ -7,6 +7,7 @@ import { C } from './PanelShell'
 import { triggerCardShake, isShaking } from './cardShakeSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
+import { t } from '../i18n'
 import {
   CROP_HARVEST_IMAGES,
   COINS_IMAGE,
@@ -182,7 +183,7 @@ function closeDialog() {
     npcDialogState.dialogLine = npcDialogState.tutorialPages[npcDialogState.tutorialPage]
     npcDialogState.tutorialButtonLabel =
       npcDialogState.tutorialPage < npcDialogState.tutorialPages.length - 1
-        ? 'Next'
+        ? t('tutorial.nextButton')
         : npcDialogState.tutorialFinalButtonLabel
     return
   }
@@ -193,7 +194,8 @@ function closeDialog() {
   npcDialogState.onClaim  = null
   npcDialogState.tutorialPages = []
   npcDialogState.tutorialPage = 0
-  npcDialogState.tutorialFinalButtonLabel = 'Got it!'
+  npcDialogState.tutorialFinalButtonLabel = t('common.gotIt')
+  npcDialogState.isMayorWelcome = false
   playerState.activeMenu  = 'none'
   cb?.()
 }
@@ -237,7 +239,7 @@ export const NpcDialogMenu = () => {
   const isMayorWelcomeDialog =
     npcDialogState.mode === 'tutorial' &&
     npcDialogState.npcId === 'mayorchen' &&
-    npcDialogState.dialogLine.includes("Welcome to CozyFarm!")
+    npcDialogState.isMayorWelcome
   const activeQuest = isQuestMode ? getQuestForNpc(npcDialogState.npcId) : null
   const activeQuestProgress = activeQuest ? questProgressMap.get(activeQuest.id) : null
 
@@ -363,12 +365,12 @@ export const NpcDialogMenu = () => {
                   uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                 />
                 <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
-                  <Label value="Task" fontSize={d(12)} color={TEXT_BROWN_MUTE} textAlign="top-left" />
-                  <Label value={activeQuest.title} fontSize={d(14)} color={TEXT_BROWN} textAlign="top-left" />
+                  <Label value={t('npc.task')} fontSize={d(12)} color={TEXT_BROWN_MUTE} textAlign="top-left" />
+                  <Label value={t(activeQuest.title)} fontSize={d(14)} color={TEXT_BROWN} textAlign="top-left" />
                 </UiEntity>
               </UiEntity>
               <UiEntity uiTransform={{ flexDirection: 'row', alignItems: 'center' }}>
-                <Label value="Reward: " fontSize={d(13)} color={TEXT_BROWN_MUTE} />
+                <Label value={t('npc.rewardLabel')} fontSize={d(13)} color={TEXT_BROWN_MUTE} />
                 <UiEntity
                   uiTransform={{ width: 14, height: 14, margin: { left: 4, right: 4 }, flexShrink: 0 }}
                   uiBackground={{ texture: { src: COINS_IMAGE, wrapMode: 'clamp' }, textureMode: 'stretch' }}
@@ -381,7 +383,7 @@ export const NpcDialogMenu = () => {
                   uiTransform={{ width: questOfferCoinWidth, height: d(18) }}
                 />
                 <Label
-                  value={`+ ${activeQuest.rewardXp} XP`}
+                  value={t('npc.rewardXpPlus', { xp: activeQuest.rewardXp })}
                   fontSize={d(13)}
                   color={TEXT_BROWN_MUTE}
                   textAlign="middle-left"
@@ -395,7 +397,7 @@ export const NpcDialogMenu = () => {
             mobileDialog ? (
               <UiEntity uiTransform={{ width: TEXT_W, height: textContentH, flexDirection: 'column', margin: { top: d(6) } }}>
                 <UiEntity uiTransform={{ width: TEXT_W, height: d(28), justifyContent: 'center', margin: { bottom: d(8) } }}>
-                  <Label value={activeQuest.title} fontSize={d(16)} color={TEXT_BROWN} textAlign="middle-left" uiTransform={{ width: TEXT_W, height: d(28) }} />
+                  <Label value={t(activeQuest.title)} fontSize={d(16)} color={TEXT_BROWN} textAlign="middle-left" uiTransform={{ width: TEXT_W, height: d(28) }} />
                 </UiEntity>
                 <UiEntity uiTransform={{ width: TEXT_W, flexDirection: 'row', justifyContent: 'space-between' }}>
                   <UiEntity
@@ -414,7 +416,7 @@ export const NpcDialogMenu = () => {
                       uiBackground={{ texture: { src: questIcon, wrapMode: 'clamp' }, textureMode: 'stretch' }}
                     />
                     <Label
-                      value={`Progress: ${activeQuestProgress?.current ?? 0} / ${activeQuest.target}`}
+                      value={t('npc.progressLine', { current: activeQuestProgress?.current ?? 0, target: activeQuest.target })}
                       fontSize={d(13)}
                       color={C.blue}
                       textAlign="middle-center"
@@ -433,7 +435,7 @@ export const NpcDialogMenu = () => {
                     uiBackground={{ color: { r: 0.88, g: 0.82, b: 0.68, a: 0.34 } }}
                   >
                     <Label
-                      value="Reward"
+                      value={t('npc.reward')}
                       fontSize={d(15)}
                       color={TEXT_BROWN_MUTE}
                       textAlign="middle-center"
@@ -452,14 +454,14 @@ export const NpcDialogMenu = () => {
                         uiTransform={{ width: d(activeQuest.rewardCoins >= 100 ? 34 : 26), height: d(20) }}
                       />
                       <Label
-                        value=" COINS + "
+                        value={t('npc.coinsPlus')}
                         fontSize={d(9)}
                         color={TEXT_BROWN_MUTE}
                         textAlign="middle-center"
                         uiTransform={{ width: d(54), height: d(20) }}
                       />
                       <Label
-                        value={`${activeQuest.rewardXp} XP`}
+                        value={`${activeQuest.rewardXp}${t('npc.xpSuffix')}`}
                         fontSize={d(activeQuest.rewardXp >= 100 ? 9 : 10)}
                         color={TEXT_BROWN_MUTE}
                         textAlign="middle-left"
@@ -474,7 +476,7 @@ export const NpcDialogMenu = () => {
                 <UiEntity uiTransform={{ width: TEXT_W, flexDirection: 'row', height: QUEST_ACTIVE_CONTENT_H }}>
                   <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', margin: { right: 10 } }}>
                     <UiEntity uiTransform={{ height: QUEST_ACTIVE_HEADER_H, justifyContent: 'center', margin: { bottom: 8 } }}>
-                      <Label value={activeQuest.title} fontSize={d(17)} color={TEXT_BROWN} textAlign="top-left" />
+                      <Label value={t(activeQuest.title)} fontSize={d(17)} color={TEXT_BROWN} textAlign="top-left" />
                     </UiEntity>
                     <UiEntity uiTransform={{ height: QUEST_ACTIVE_ICON_H, margin: { bottom: 8, left: 44 } }}>
                       <UiEntity
@@ -484,7 +486,7 @@ export const NpcDialogMenu = () => {
                     </UiEntity>
                     <UiEntity uiTransform={{ height: QUEST_ACTIVE_TEXT_H, justifyContent: 'center' }}>
                       <Label
-                        value={`Progress: ${activeQuestProgress?.current ?? 0} / ${activeQuest.target}`}
+                        value={t('npc.progressLine', { current: activeQuestProgress?.current ?? 0, target: activeQuest.target })}
                         fontSize={d(16)}
                         color={C.blue}
                         textAlign="top-left"
@@ -499,7 +501,7 @@ export const NpcDialogMenu = () => {
 
                   <UiEntity uiTransform={{ width: 140, flexDirection: 'column' }}>
                     <UiEntity uiTransform={{ height: QUEST_ACTIVE_HEADER_H, justifyContent: 'center', margin: { bottom: 8 } }}>
-                      <Label value="Reward" fontSize={d(17)} color={TEXT_BROWN_MUTE} textAlign="top-left" />
+                      <Label value={t('npc.reward')} fontSize={d(17)} color={TEXT_BROWN_MUTE} textAlign="top-left" />
                     </UiEntity>
                     <UiEntity uiTransform={{ height: QUEST_ACTIVE_ICON_H, alignItems: 'center', justifyContent: 'center', margin: { bottom: 8 } }}>
                       <UiEntity
@@ -517,7 +519,7 @@ export const NpcDialogMenu = () => {
                           uiTransform={{ width: questActiveCoinWidth, height: QUEST_ACTIVE_TEXT_H }}
                         />
                         <Label
-                          value=" COINS + "
+                          value={t('npc.coinsPlus')}
                           fontSize={d(10)}
                           color={TEXT_BROWN_MUTE}
                           textAlign="middle-left"
@@ -531,7 +533,7 @@ export const NpcDialogMenu = () => {
                           uiTransform={{ width: questActiveXpWidth, height: QUEST_ACTIVE_TEXT_H }}
                         />
                         <Label
-                          value=" XP"
+                          value={t('npc.xpSuffix')}
                           fontSize={d(10)}
                           color={TEXT_BROWN_MUTE}
                           textAlign="middle-left"
@@ -553,7 +555,7 @@ export const NpcDialogMenu = () => {
             flexDirection: 'row',
           }}>
             <DialogButton
-              label="Accept"
+              label={t('npc.accept')}
               primary
               width={BTN_W_PAIR}
               height={BTN_H}
@@ -569,7 +571,7 @@ export const NpcDialogMenu = () => {
             />
             <UiEntity uiTransform={{ width: 10, height: 1 }} />
             <DialogButton
-              label="Not now"
+              label={t('common.notNow')}
               width={BTN_W_PAIR}
               height={BTN_H}
               fontSize={BTN_FONT}
@@ -590,7 +592,7 @@ export const NpcDialogMenu = () => {
             flexDirection: 'row',
           }}>
             <DialogButton
-              label="Claim Reward!"
+              label={t('npc.claimReward')}
               primary
               width={BTN_W_PAIR}
               height={BTN_H}
@@ -606,7 +608,7 @@ export const NpcDialogMenu = () => {
             />
             <UiEntity uiTransform={{ width: 10, height: 1 }} />
             <DialogButton
-              label="Later"
+              label={t('npc.later')}
               width={BTN_W_PAIR}
               height={BTN_H}
               fontSize={BTN_FONT}
@@ -623,7 +625,7 @@ export const NpcDialogMenu = () => {
         {npcDialogState.mode === 'quest_active' && (
           <UiEntity uiTransform={{ positionType: 'absolute', position: { left: mobileDialog ? mobileQuestButtonLeft : questActiveButtonLeft, bottom: QUEST_ACTIVE_BUTTON_BOTTOM } }}>
             <DialogButton
-              label="Keep it up!"
+              label={t('npc.keepItUp')}
               width={BTN_W_SINGLE}
               height={BTN_H}
               fontSize={BTN_FONT}
@@ -641,7 +643,7 @@ export const NpcDialogMenu = () => {
         {npcDialogState.mode === 'greeting' && (
           <UiEntity uiTransform={{ positionType: 'absolute', position: { left: BTN_CENTER, bottom: BTN_BOTTOM } }}>
             <DialogButton
-              label="Goodbye"
+              label={t('npc.goodbye')}
               width={BTN_W_SINGLE}
               height={BTN_H}
               fontSize={BTN_FONT}

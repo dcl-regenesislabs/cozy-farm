@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { musicState, SONGS, SongDef } from '../game/musicState'
 import { playSong, toggleMute, setMusicVolume } from '../systems/musicSystem'
@@ -109,7 +110,7 @@ const SongCard = ({ song, isPlaying, isMuted }: SongCardProps) => {
         />
         {active && (
           <Label
-            value={isMuted ? 'Muted' : 'Now Playing'}
+            value={isMuted ? t('jukebox.muted') : t('jukebox.nowPlaying')}
             fontSize={ss(mob ? 24 : 18)}
             color={isMuted ? C.textMute : MUTE_GREEN}
             textAlign="top-left"
@@ -143,7 +144,7 @@ const VolumeButton = ({ pct, isActive, mob }: { key?: string; pct: number; isAct
     }}
   >
     <Label
-      value={`${pct}%`}
+      value={t('jukebox.volumePercent', { pct })}
       fontSize={ss(mob ? 30 : 15)}
       color={isActive ? C.gold : C.textMute}
       textAlign="middle-center"
@@ -164,7 +165,7 @@ const VolumePicker = ({ volume }: { volume: number }) => {
       }}
     >
       <Label
-        value="Volume"
+        value={t('jukebox.volume')}
         fontSize={ss(mob ? 26 : 20)}
         color={C.textMute}
         uiTransform={{ margin: { bottom: ss(8) } }}
@@ -213,7 +214,7 @@ const MuteButton = ({ muted }: { muted: boolean }) => (
     }}
   >
     <Label
-      value={muted ? 'Unmute Music' : 'Mute Music'}
+      value={muted ? t('jukebox.unmuteMusic') : t('jukebox.muteMusic')}
       fontSize={ss(22)}
       color={muted ? { r: 1, g: 0.9, b: 0.9, a: 1 } : C.textMain}
       textAlign="middle-center"

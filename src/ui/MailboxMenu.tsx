@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { CropType, CROP_NAMES } from '../data/cropData'
 import { CROP_SEED_IMAGES, COINS_IMAGE } from '../data/imagePaths'
 import { playerState } from '../game/gameState'
@@ -118,20 +119,20 @@ function onVisitError(address: string): void {
 }
 
 function seedRewardLabel(reward: MailboxReward): string {
-  if (reward.cropType < 0) return `${reward.amount} Seeds`
+  if (reward.cropType < 0) return t('mailbox.reward.seeds', { amount: reward.amount })
   const cropName = CROP_NAMES[reward.cropType as CropType]
-  return `${reward.amount} ${cropName} Seeds`
+  return t('mailbox.reward.cropSeeds', { amount: reward.amount, cropName })
 }
 
 function rewardDescription(reward: MailboxReward): string {
   const actor = formatPlayerLabel(reward.fromName, reward.fromAddress)
-  if (reward.reason === 'like') return `${actor} liked your farm`
-  if (reward.reason === 'visit_water') return `${actor} watered your crops`
-  return `${actor} sent you a reward`
+  if (reward.reason === 'like') return t('mailbox.reward.likedFarm', { actor })
+  if (reward.reason === 'visit_water') return t('mailbox.reward.wateredCrops', { actor })
+  return t('mailbox.reward.sentReward', { actor })
 }
 
 function rewardAmountLabel(reward: MailboxReward): string {
-  return reward.type === 'coins' ? `+${reward.amount} Coins` : `+${seedRewardLabel(reward)}`
+  return reward.type === 'coins' ? t('mailbox.reward.coins', { amount: reward.amount }) : seedRewardLabel(reward)
 }
 
 function rewardIcon(reward: MailboxReward): string {
@@ -253,7 +254,7 @@ const NeighbourCard = ({ entry }: { entry: PlayerEntry }) => {
         uiTransform={{ width: textWidth, height: isMobile() ? NEIGHBOUR_TITLE_BLOCK_H : scaleCardContent(ss(54)) }}
       />
       <Label
-        value={`Level ${entry.level}`}
+        value={t('common.level', { level: entry.level })}
         fontSize={metaFont}
         color={CARD_TEXT_MUTE}
         textAlign="middle-center"
@@ -261,7 +262,7 @@ const NeighbourCard = ({ entry }: { entry: PlayerEntry }) => {
         uiTransform={{ width: textWidth, height: isMobile() ? NEIGHBOUR_META_BLOCK_H : scaleCardContent(ss(24)), margin: { top: ss(4) } }}
       />
       <Label
-        value={errored ? 'Could not load this farm.' : visiting ? 'Opening farm...' : 'Open this neighbour farm.'}
+        value={errored ? t('mailbox.neighbourCard.couldNotLoad') : visiting ? t('mailbox.neighbourCard.opening') : t('mailbox.neighbourCard.openFarm')}
         fontSize={bodyFont}
         color={errored ? { r: 0.75, g: 0.20, b: 0.12, a: 1 } : CARD_TEXT_MUTE}
         textAlign="middle-center"
@@ -271,7 +272,7 @@ const NeighbourCard = ({ entry }: { entry: PlayerEntry }) => {
       <UiEntity uiTransform={{ flex: 1 }} />
 
       <MiniTextButton
-        label={visiting ? 'OPENING' : 'VISIT'}
+        label={visiting ? t('mailbox.button.opening') : t('mailbox.button.visit')}
         width={Math.round(BUTTON_W * (isMobile() ? CARD_CONTENT_SCALE_MOBILE : 1))}
         fontSize={scaleCardContent(BUTTON_FONT)}
         topOffset={-scaleCardContent(4)}
@@ -355,7 +356,7 @@ const DirectoryTab = () => {
   if (state.loading) {
     return (
       <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
-        <Label value="Loading neighbours..." fontSize={isMobile() ? ss(24) : ss(22)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
+        <Label value={t('mailbox.loadingNeighbours')} fontSize={isMobile() ? ss(24) : ss(22)} color={CARD_TEXT_MUTE} textAlign="middle-center" />
       </UiEntity>
     )
   }
@@ -365,8 +366,8 @@ const DirectoryTab = () => {
       <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
         <Label
           value={state.errorAddr === '__timeout__'
-            ? 'Could not reach the server.\nThis feature needs the deployed scene backend.'
-            : 'No neighbours found yet.\nSave a few farms and they will show up here.'}
+            ? t('mailbox.directoryTimeoutError')
+            : t('mailbox.noNeighboursYet')}
           fontSize={isMobile() ? ss(22) : ss(20)}
           color={state.errorAddr === '__timeout__' ? { r: 0.75, g: 0.20, b: 0.12, a: 1 } : CARD_TEXT_MUTE}
           textAlign="middle-center"
@@ -403,7 +404,7 @@ const DirectoryTab = () => {
 
         {state.errorAddr !== '' && state.errorAddr !== '__timeout__' && (
           <Label
-            value={`Could not load ${displayLabel({ address: state.errorAddr, level: 0, displayName: '' })}'s farm.`}
+            value={t('mailbox.couldNotLoadFarm', { name: displayLabel({ address: state.errorAddr, level: 0, displayName: '' }) })}
             fontSize={isMobile() ? ss(18) : ss(16)}
             color={{ r: 0.75, g: 0.20, b: 0.12, a: 1 }}
             textAlign="middle-center"
@@ -463,7 +464,7 @@ const MailboxTab = () => {
           }}
         >
           <Label
-            value={`Pending rewards: ${rewards.length}`}
+            value={t('mailbox.pendingRewards', { count: rewards.length })}
             fontSize={ss(22)}
             color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
             textAlign="middle-center"
@@ -471,7 +472,7 @@ const MailboxTab = () => {
           />
 
           <MiniTextButton
-            label={state.collecting ? 'COLLECTING' : 'COLLECT ALL'}
+            label={state.collecting ? t('mailbox.button.collecting') : t('mailbox.button.collectAll')}
             width={184}
             fontSize={ss(18)}
             topOffset={-ss(3)}
@@ -498,7 +499,7 @@ const MailboxTab = () => {
             }}
           >
             <Label
-              value="Your mailbox is empty.\nLikes and visitor rewards will appear here."
+              value={t('mailbox.empty')}
               fontSize={ss(22)}
               color={CARD_TEXT_MUTE}
               textAlign="middle-center"
@@ -570,7 +571,7 @@ const MailboxTab = () => {
         }}
       >
         <Label
-          value={`Pending rewards: ${rewards.length}`}
+          value={t('mailbox.pendingRewards', { count: rewards.length })}
           fontSize={isMobile() ? ss(22) : ss(21)}
           color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
           textAlign={isMobile() ? 'middle-center' : 'middle-left'}
@@ -578,7 +579,7 @@ const MailboxTab = () => {
         />
 
         <MiniTextButton
-          label={state.collecting ? 'COLLECTING' : 'COLLECT ALL'}
+          label={state.collecting ? t('mailbox.button.collecting') : t('mailbox.button.collectAll')}
           width={Math.round((isMobile() ? 184 : 150))}
           fontSize={isMobile() ? ss(18) : ss(17)}
           topOffset={-ss(3)}
@@ -595,7 +596,7 @@ const MailboxTab = () => {
       {rewards.length === 0 ? (
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', width: '100%' }}>
           <Label
-            value="Your mailbox is empty.\nLikes and visitor rewards will appear here."
+            value={t('mailbox.empty')}
             fontSize={isMobile() ? ss(22) : ss(20)}
             color={CARD_TEXT_MUTE}
             textAlign="middle-center"
@@ -639,13 +640,13 @@ export const MailboxMenu = () => {
   socialUiCallbacks.onMailboxCollected = (data) => {
     state.collecting = false
     if (!data.success) {
-      state.mailboxHint = 'Could not collect mailbox rewards'
+      state.mailboxHint = t('mailbox.collectFailed')
       return
     }
 
     state.mailboxHint = data.rewardCount > 0
-      ? `Collected ${data.rewardCount} rewards`
-      : 'Mailbox already empty'
+      ? t('mailbox.collected', { count: data.rewardCount })
+      : t('mailbox.alreadyEmpty')
   }
 
   if (!state.initialized) {
@@ -669,12 +670,12 @@ export const MailboxMenu = () => {
   }
 
   return (
-    <RevampPanelFrame titleText="Mailbox" onClose={close}>
+    <RevampPanelFrame titleText={t('mailbox.title')} onClose={close}>
       <UiEntity uiTransform={{ width: '100%', height: '100%', flexDirection: 'column', alignItems: 'center' }}>
         <UiEntity uiTransform={{ flexDirection: 'row', justifyContent: 'center', width: '100%', margin: { top: ss(8), bottom: ss(12) } }}>
           <UiEntity uiTransform={{ margin: { right: TAB_GAP } }}>
             <PillTabButton
-              label="Neighbours"
+              label={t('mailbox.tab.neighbours')}
               selected={state.tab === 'directory'}
               width={TAB_W}
               fontSize={isMobile() ? ss(21) : ss(17)}
@@ -687,7 +688,7 @@ export const MailboxMenu = () => {
           </UiEntity>
 
           <PillTabButton
-            label={`Mailbox (${playerState.mailbox.length})`}
+            label={t('mailbox.tab.mailboxCount', { count: playerState.mailbox.length })}
             selected={state.tab === 'mailbox'}
             width={TAB_W}
             fontSize={isMobile() ? ss(20) : ss(16)}

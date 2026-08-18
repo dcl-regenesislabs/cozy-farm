@@ -12,6 +12,7 @@ import { BadgeDot } from './BadgeDot'
 import { formatPlayerLabel } from '../utils/playerLabel'
 import { getGameMaxLevel, getMobileDebugLevel } from '../game/mobileDebug'
 import { OutlineLabel } from './OutlineLabel'
+import { t } from '../i18n'
 import {
   RevampCloseButton,
   RevampTitlePlaque,
@@ -121,10 +122,12 @@ const LB_CONTENT_H    = CONTENT_H - TAB_H - TAB_MARGIN_BOT  // 377 — fixed hei
 const lbPage = { value: 0 }
 
 const tabState = { value: 'stats' as 'stats' | 'rewards' | 'ranking' }
-const TAB_LABELS: Record<'stats' | 'rewards' | 'ranking', string> = {
-  stats:   'Stats',
-  rewards: 'Rewards',
-  ranking: 'Leaderboard',
+function getTabLabel(tab: 'stats' | 'rewards' | 'ranking'): string {
+  switch (tab) {
+    case 'stats':   return t('stats.tab.stats')
+    case 'rewards': return t('stats.tab.rewards')
+    case 'ranking': return t('stats.tab.leaderboard')
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -335,9 +338,9 @@ const TabBar = ({ hasUnclaimedReward }: { hasUnclaimedReward: boolean }) => {
         flexWrap: 'wrap',
       }}
     >
-      <TabChip tabKey="stats" label={TAB_LABELS.stats} selected={tabState.value === 'stats'} onClick={() => { tabState.value = 'stats' }} />
-      <TabChip tabKey="rewards" label={TAB_LABELS.rewards} selected={tabState.value === 'rewards'} showBadge={hasUnclaimedReward} onClick={() => { tabState.value = 'rewards' }} />
-      <TabChip tabKey="ranking" label={TAB_LABELS.ranking} selected={tabState.value === 'ranking'} onClick={() => { tabState.value = 'ranking' }} />
+      <TabChip tabKey="stats" label={getTabLabel('stats')} selected={tabState.value === 'stats'} onClick={() => { tabState.value = 'stats' }} />
+      <TabChip tabKey="rewards" label={getTabLabel('rewards')} selected={tabState.value === 'rewards'} showBadge={hasUnclaimedReward} onClick={() => { tabState.value = 'rewards' }} />
+      <TabChip tabKey="ranking" label={getTabLabel('ranking')} selected={tabState.value === 'ranking'} onClick={() => { tabState.value = 'ranking' }} />
     </UiEntity>
   )
 }
@@ -371,12 +374,12 @@ const PageNav = ({
 
 // ─── StatsTab ─────────────────────────────────────────────────────────────────
 const STATS = [
-  { label: 'Crops Harvested', key: 'totalCropsHarvested', color: { r: 0.36, g: 0.63, b: 0.24, a: 1 } },
-  { label: 'Seeds Planted',   key: 'totalSeedPlanted',    color: { r: 0.54, g: 0.59, b: 0.20, a: 1 } },
-  { label: 'Times Watered',   key: 'totalWaterCount',     color: { r: 0.31, g: 0.50, b: 0.67, a: 1 } },
-  { label: 'Crops Sold',      key: 'totalSellCount',      color: { r: 0.71, g: 0.44, b: 0.18, a: 1 } },
-  { label: 'Coins Earned',    key: 'totalCoinsEarned',    color: { r: 0.73, g: 0.55, b: 0.14, a: 1 } },
-  { label: 'Beauty Score ✦',  key: 'beautyScore',         color: { r: 1, g: 0.72, b: 0.9, a: 1 } },
+  { label: 'stats.label.cropsHarvested', key: 'totalCropsHarvested', color: { r: 0.36, g: 0.63, b: 0.24, a: 1 } },
+  { label: 'stats.label.seedsPlanted',   key: 'totalSeedPlanted',    color: { r: 0.54, g: 0.59, b: 0.20, a: 1 } },
+  { label: 'stats.label.timesWatered',   key: 'totalWaterCount',     color: { r: 0.31, g: 0.50, b: 0.67, a: 1 } },
+  { label: 'stats.label.cropsSold',      key: 'totalSellCount',      color: { r: 0.71, g: 0.44, b: 0.18, a: 1 } },
+  { label: 'stats.label.coinsEarned',    key: 'totalCoinsEarned',    color: { r: 0.73, g: 0.55, b: 0.14, a: 1 } },
+  { label: 'stats.label.beautyScore',    key: 'beautyScore',         color: { r: 1, g: 0.72, b: 0.9, a: 1 } },
 ] as const
 
 const StatsTab = () => {
@@ -385,11 +388,14 @@ const StatsTab = () => {
   const maxLv  = displayLevel >= getGameMaxLevel()
   const pct    = maxLv ? 100 : (xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100)
   const mobile = isMobile()
-  const gW  = mobile ? PROFILE_GRID_W_M  : 748
-  const gML = mobile ? PROFILE_GRID_ML_M : Math.floor((CONTENT_W - gW) / 2)
-  const cW  = mobile ? PROFILE_CARD_W_M  : 238
-  const cH  = mobile ? PROFILE_CARD_H_M  : 112
+  // Desktop cards were widened (238→268) so longer es/pt stat labels ("Cosechados",
+  // "Realizados", etc.) don't overflow past the number|divider — gW derives from
+  // cW/cG so the row width and centering margin stay in sync automatically.
+  const cW  = mobile ? PROFILE_CARD_W_M  : 268
   const cG  = mobile ? CARD_GAP_M : 14
+  const gW  = mobile ? PROFILE_GRID_W_M  : 3 * cW + 2 * cG
+  const gML = mobile ? PROFILE_GRID_ML_M : Math.floor((CONTENT_W - gW) / 2)
+  const cH  = mobile ? PROFILE_CARD_H_M  : 112
   const rowGap = mobile ? 12 : 18
   const headerGap = mobile ? 14 : 18
   const statDividerH = mobile ? 44 : 54
@@ -410,14 +416,6 @@ const StatsTab = () => {
     totalCoinsEarned: { r: 0.98, g: 0.77, b: 0.16, a: 1 },
     beautyScore: { r: 0.90, g: 0.54, b: 0.77, a: 1 },
   }
-  const statLabels: Record<string, [string, string] | string> = {
-    totalCropsHarvested: ['Crops', 'Harvested'],
-    totalSeedPlanted: ['Seeds', 'Planted'],
-    totalWaterCount: ['Times', 'Watered'],
-    totalSellCount: ['Crops', 'Sold'],
-    totalCoinsEarned: ['Coins', 'Earned'],
-    beautyScore: 'Beauty\nScore ✦',
-  }
 
   return (
     // Centred column — same width as the card grid so level row aligns with cards
@@ -434,11 +432,11 @@ const StatsTab = () => {
           uiTransform={{ width: mobile ? 146 : 160, height: mobile ? 50 : 56, margin: { right: headerGap }, alignItems: 'center', justifyContent: 'center', flexShrink: 0, borderRadius: 8, borderWidth: 2, borderColor: { r: 0.94, g: 0.72, b: 0.24, a: 0.75 } }}
           uiBackground={{ color: PROFILE_LEVEL_BG }}
         >
-          <Label value={`<b>Level  ${displayLevel}</b>`} fontSize={mobile ? 22 : 24} color={PROFILE_LEVEL_TEXT} />
+          <Label value={`<b>${t('common.level', { level: displayLevel })}</b>`} fontSize={mobile ? 22 : 24} color={PROFILE_LEVEL_TEXT} />
         </UiEntity>
         <UiEntity uiTransform={{ flexDirection: 'column', flex: 1 }}>
           <Label
-            value={maxLv ? 'Max Level!' : `XP: ${xp.current} / ${xp.needed}`}
+            value={maxLv ? t('stats.maxLevel') : t('stats.xpProgress', { current: xp.current, needed: xp.needed })}
             fontSize={mobile ? 18 : 19}
             color={xpTextColor}
             uiTransform={{ margin: { bottom: 8 } }}
@@ -468,8 +466,7 @@ const StatsTab = () => {
               ? (mobile ? 27 : 46)
               : numberFont
           const valueColor = statValueColors[s.key] ?? s.color
-          const rawLabel = statLabels[s.key] ?? [s.label, '']
-          const labelLines = Array.isArray(rawLabel) ? rawLabel : String(rawLabel).split('\n')
+          const labelLines = t(s.label).split('\n')
           const idx = STATS.findIndex((entry) => entry.key === s.key)
           const isRowEnd = idx % 3 === 2
           return (
@@ -550,6 +547,7 @@ const RewardCard = ({ reward: r, marginRight = CARD_GAP, marginBottom = 10 }: Re
 
   const cropDef    = r.cropType !== null ? CROP_DATA.get(r.cropType) : null
   const isUnlocker = cropDef != null && cropDef.tier > 1
+  const rewardLabel = t(r.label)
 
   // Unclaimed cards use light fill — fully opaque on mobile so the dark atlas doesn't muddy it
   const bg = claimed   ? { r: 0.07, g: 0.18, b: 0.07, a: 1 }
@@ -567,7 +565,7 @@ const RewardCard = ({ reward: r, marginRight = CARD_GAP, marginBottom = 10 }: Re
   const w = Math.round(baseW * scale)
   const h = Math.round(baseH * scale)
   const levelFont = mobile ? 20 : 18
-  const labelFont = mobile ? (r.label.length > 18 ? 15 : 17) : 15
+  const labelFont = mobile ? (rewardLabel.length > 18 ? 15 : 17) : 15
   const unlockFont = mobile ? 14 : 13
   const statusFont = mobile ? 15 : 14
   const lockedFont = mobile ? 14 : 13
@@ -596,14 +594,14 @@ const RewardCard = ({ reward: r, marginRight = CARD_GAP, marginBottom = 10 }: Re
         setTimeout(() => claimReward(r.level), 290)
       } : undefined}
     >
-      <Label value={`Lv ${r.level}`} fontSize={levelFont} color={claimable ? C.gold : claimed ? C.green : (mobile ? C.textMain : CARD_TEXT_MUTE)} />
-      <Label value={r.label} fontSize={labelFont} color={descColor} textAlign="middle-center" textWrap="nowrap" uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />
+      <Label value={t('stats.lvShort', { level: r.level })} fontSize={levelFont} color={claimable ? C.gold : claimed ? C.green : (mobile ? C.textMain : CARD_TEXT_MUTE)} />
+      <Label value={rewardLabel} fontSize={labelFont} color={descColor} textAlign="middle-center" textWrap="nowrap" uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />
       {isUnlocker && (
-        <Label value={`Unlocks ${cropDef!.name}`} fontSize={unlockFont} color={claimed ? C.green : claimable ? C.gold : (mobile ? C.textMain : CARD_TEXT_MUTE)} textAlign="middle-center" textWrap="nowrap" uiTransform={{ margin: { top: 3 } }} />
+        <Label value={t('stats.unlocksCrop', { crop: t(cropDef!.name) })} fontSize={unlockFont} color={claimed ? C.green : claimable ? C.gold : (mobile ? C.textMain : CARD_TEXT_MUTE)} textAlign="middle-center" textWrap="nowrap" uiTransform={{ margin: { top: 3 } }} />
       )}
-      {claimed   && <Label value="Claimed" fontSize={statusFont} color={C.green} uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
-      {claimable && <Label value="Tap!" fontSize={statusFont} color={C.gold}  uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
-      {!unlocked && <Label value={`Lv ${r.level}`} fontSize={lockedFont} color={mobile ? C.textMain : CARD_TEXT_MUTE} uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
+      {claimed   && <Label value={t('common.claimed')} fontSize={statusFont} color={C.green} uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
+      {claimable && <Label value={t('stats.tapToClaim')} fontSize={statusFont} color={C.gold}  uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
+      {!unlocked && <Label value={t('stats.lvShort', { level: r.level })} fontSize={lockedFont} color={mobile ? C.textMain : CARD_TEXT_MUTE} uiTransform={{ margin: { top: mobile ? 4 : 3 } }} />}
     </UiEntity>
   )
 }
@@ -769,7 +767,7 @@ const LeaderboardTab = () => {
         uiTransform={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', height: 40, margin: { bottom: 14 }, flexShrink: 0 }}
       >
         <Label
-          value={lbState.currentRank > 0 ? `Your rank: #${lbState.currentRank}  ·  Score: ${lbState.currentScore} ✦` : ' '}
+          value={lbState.currentRank > 0 ? t('stats.yourRank', { rank: lbState.currentRank, score: lbState.currentScore }) : ' '}
           fontSize={20}
           color={C.green}
         />
@@ -784,17 +782,17 @@ const LeaderboardTab = () => {
             setTimeout(requestLeaderboard, 290)
           }}
         >
-          <Label value={lbState.loading ? 'Loading…' : '+ Refresh'} fontSize={19} color={lbState.loading ? CARD_TEXT_MUTE : BTN_TEXT} textAlign="middle-center" />
+          <Label value={lbState.loading ? t('common.loading') : t('stats.refresh')} fontSize={19} color={lbState.loading ? CARD_TEXT_MUTE : BTN_TEXT} textAlign="middle-center" />
         </UiEntity>
       </UiEntity>
 
       {/* Entry list — paddingBottom reserves space for the absolute PageNav */}
       <UiEntity uiTransform={{ flex: 1, flexDirection: 'column', width: '100%', padding: { bottom: showNav ? pageNavH + pageNavBottom : 0 } }}>
         {lbState.loading && (
-          <Label value="Loading rankings..." fontSize={22} color={C.textMute} textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 40 } }} />
+          <Label value={t('stats.loadingRankings')} fontSize={22} color={C.textMute} textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 40 } }} />
         )}
         {!lbState.loading && entries.length === 0 && (
-          <Label value="No rankings yet. Be the first!" fontSize={22} color={C.textMute} textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 40 } }} />
+          <Label value={t('stats.noRankingsYet')} fontSize={22} color={C.textMute} textAlign="middle-center" uiTransform={{ width: '100%', margin: { top: 40 } }} />
         )}
         {!lbState.loading && slice.map((entry) => {
           const isMe = entry.address === playerState.wallet
@@ -824,8 +822,8 @@ const LeaderboardTab = () => {
               <Label
                 value={(() => {
                   const base = formatPlayerLabel(entry.displayName, entry.address)
-                  const t    = base.length > 15 ? base.slice(0, 13) + '..' : base
-                  return isMe ? t + ' (you)' : t
+                  const shortLabel = base.length > 15 ? base.slice(0, 13) + '..' : base
+                  return isMe ? t('stats.youSuffix', { name: shortLabel }) : shortLabel
                 })()}
                 fontSize={20}
                 color={isMe ? C.green : C.textMain}

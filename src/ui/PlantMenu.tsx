@@ -1,5 +1,6 @@
 import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
+import { t } from '../i18n'
 import { playerState } from '../game/gameState'
 import { plantSeed } from '../game/actions'
 import { CropType, CROP_NAMES, ALL_CROP_TYPES } from '../data/cropData'
@@ -150,6 +151,7 @@ const SeedCard = ({ cropType, count }: { key?: string | number; cropType: CropTy
   const buttonScale = isMobile() ? PLANT_BUTTON_SCALE * PLANT_CARD_CONTENT_SCALE_MOBILE : PLANT_BUTTON_SCALE
   const buttonWidth = Math.round(PLANT_BUTTON_W * buttonScale)
   const buttonHeight = Math.round(PLANT_BUTTON_H * buttonScale)
+  const cropName = t(CROP_NAMES[cropType])
 
   const plant = () => {
     const entity = playerState.activePlotEntity
@@ -183,14 +185,14 @@ const SeedCard = ({ cropType, count }: { key?: string | number; cropType: CropTy
       />
 
       <Label
-        value={`<b>${CROP_NAMES[cropType]}</b>`}
-        fontSize={getPlantTitleFont(CROP_NAMES[cropType])}
+        value={`<b>${cropName}</b>`}
+        fontSize={getPlantTitleFont(cropName)}
         color={PLANT_CARD_TEXT}
         textAlign="middle-center"
       />
 
       <Label
-        value={`x${count}`}
+        value={t('common.count', { count })}
         fontSize={mobile ? scalePlantCardContent(PLANT_CARD_COUNT_FONT_MOBILE) : scalePlantCardContent(PLANT_CARD_COUNT_FONT)}
         color={PLANT_COUNT_TEXT}
         textAlign="middle-center"
@@ -214,7 +216,7 @@ const SeedCard = ({ cropType, count }: { key?: string | number; cropType: CropTy
         onMouseDown={plant}
       >
         <Label
-          value="<b>PLANT!</b>"
+          value={`<b>${t('plant.button')}</b>`}
           fontSize={scalePlantCardContent(PLANT_BUTTON_FONT)}
           color={PLANT_BUTTON_TEXT}
           textAlign="middle-center"
@@ -286,7 +288,7 @@ const PlantGrid = ({
           }}
         >
           <Label
-            value="Choose a seed to plant"
+            value={t('plant.chooseSeed')}
             fontSize={mobile ? ss(30) : ss(25)}
             color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
             textAlign="middle-center"
@@ -339,13 +341,13 @@ export const PlantMenu = () => {
       {available.length === 0 ? (
         <UiEntity uiTransform={{ flex: 1, alignItems: 'center', justifyContent: 'center', flexDirection: 'column' }}>
           <Label
-            value="No seeds in inventory!"
+            value={t('plant.noSeeds')}
             fontSize={mob ? ss(31) : ss(27)}
             color={mob ? { r: 1, g: 1, b: 1, a: 1 } : PLANT_CARD_TEXT_MUTE}
             textAlign="middle-center"
           />
           <Label
-            value="Visit the Seed Shop to buy some."
+            value={t('plant.visitShop')}
             fontSize={mob ? ss(26) : ss(20)}
             color={mob ? { r: 1, g: 1, b: 1, a: 1 } : PLANT_CARD_TEXT_MUTE}
             textAlign="middle-center"

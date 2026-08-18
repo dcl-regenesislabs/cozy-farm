@@ -2,6 +2,7 @@ import { Entity } from '@dcl/sdk/ecs'
 import { CropType } from '../data/cropData'
 import { FertilizerType } from '../data/fertilizerData'
 import type { ChickenDataPayload, PigDataPayload, MailboxReward } from '../shared/farmMessages'
+import type { Lang } from '../i18n/types'
 
 export type ChickenData = ChickenDataPayload
 export type PigData     = PigDataPayload
@@ -32,6 +33,12 @@ export const playerState = {
   userId: '',         // DCL userId (for avatar texture)
   avatarUrl: '',
   displayName: '',
+  // Localization — '' means no language chosen yet (first-run gate, see LanguageSelectOverlay)
+  preferredLanguage: '' as Lang | '',
+  // Runtime-only: true while the Language Selection screen is open. Always true
+  // on first run (no preferredLanguage saved yet); toggled on/off by the in-game
+  // HUD switcher for returning players.
+  languagePickerOpen: false,
   // Dog companion
   dogOwned: false,
   // Lifetime counters (for quests + profile stats)

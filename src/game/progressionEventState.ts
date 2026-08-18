@@ -24,11 +24,12 @@ const STEP_ORDER: ProgressionEventStep[] = [
 
 export type ProgressionMilestone = { label: string; doneAtStep: ProgressionEventStep }
 
+// `label` fields are i18n keys — resolve with t() at render time (QuestPanel.tsx)
 export const PROGRESSION_MILESTONES: ProgressionMilestone[] = [
-  { label: 'Buy the Compost Bin',      doneAtStep: 'compost_quest' },
-  { label: 'Add organic waste to bin', doneAtStep: 'waste_quest'   },
-  { label: 'Collect fertilizer',       doneAtStep: 'collect_quest' },
-  { label: 'Plant, water & fertilize', doneAtStep: 'complete'      },
+  { label: 'progression.milestone.buyCompostBin',      doneAtStep: 'compost_quest' },
+  { label: 'progression.milestone.addWaste',           doneAtStep: 'waste_quest'   },
+  { label: 'progression.milestone.collect',             doneAtStep: 'collect_quest' },
+  { label: 'progression.milestone.plantWaterFertilize', doneAtStep: 'complete'      },
 ]
 
 export function getProgressionMilestoneStatus(m: ProgressionMilestone): 'done' | 'current' | 'todo' {

@@ -10,6 +10,7 @@ import { BEAUTY_OBJECTS, RARITY_LABEL } from '../data/beautyObjectData'
 import { playSound } from './sfxSystem'
 import { isVisiting } from '../services/visitService'
 import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
+import { t } from '../i18n'
 
 // Scene-editor entity names — place these 3 objects in Creator Hub
 const SPOT_NAMES = ['BeautySpot_1', 'BeautySpot_2', 'BeautySpot_3']
@@ -95,8 +96,8 @@ function refreshSpotVisual(slotIndex: number): void {
   })
 
   const hoverText = isEmpty
-    ? `Beauty Slot ${slotIndex + 1} — Empty`
-    : `${def?.name} [${RARITY_LABEL[def?.rarity ?? 'common']}] · ${def?.beautyValue} beauty pts`
+    ? t('data.beauty.slotEmpty', { index: slotIndex + 1 })
+    : t('data.beauty.slotOccupied', { name: t(def?.name ?? ''), rarity: t(RARITY_LABEL[def?.rarity ?? 'common']), value: def?.beautyValue ?? 0 })
 
   pointerEventsSystem.removeOnPointerDown(spot)
   pointerEventsSystem.onPointerDown(

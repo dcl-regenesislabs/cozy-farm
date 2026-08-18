@@ -2,8 +2,8 @@ export type BeautyRarity = 'common' | 'rare' | 'epic' | 'legendary'
 
 export type BeautyObjectDef = {
   id: number
-  name: string
-  description: string
+  name: string          // i18n key — resolve with t() at render time
+  description: string   // i18n key — resolve with t() at render time
   rarity: BeautyRarity
   beautyValue: number
   price: number
@@ -13,8 +13,8 @@ export type BeautyObjectDef = {
 export const BEAUTY_OBJECTS = new Map<number, BeautyObjectDef>([
   [1, {
     id: 1,
-    name: 'Campfire',
-    description: 'A warm crackling fire for cozy evenings.',
+    name: 'data.beauty.campfire.name',
+    description: 'data.beauty.campfire.description',
     rarity: 'common',
     beautyValue: 15,
     price: 300,
@@ -22,8 +22,8 @@ export const BEAUTY_OBJECTS = new Map<number, BeautyObjectDef>([
   }],
   [2, {
     id: 2,
-    name: 'Rustic Bench',
-    description: 'A weathered wooden bench to sit and enjoy the farm.',
+    name: 'data.beauty.rusticBench.name',
+    description: 'data.beauty.rusticBench.description',
     rarity: 'common',
     beautyValue: 20,
     price: 450,
@@ -31,8 +31,8 @@ export const BEAUTY_OBJECTS = new Map<number, BeautyObjectDef>([
   }],
   [3, {
     id: 3,
-    name: 'Wheelbarrow',
-    description: 'An old trusty wheelbarrow. Rustic charm.',
+    name: 'data.beauty.wheelbarrow.name',
+    description: 'data.beauty.wheelbarrow.description',
     rarity: 'rare',
     beautyValue: 30,
     price: 600,
@@ -40,8 +40,8 @@ export const BEAUTY_OBJECTS = new Map<number, BeautyObjectDef>([
   }],
   [4, {
     id: 4,
-    name: 'Round Rug',
-    description: 'A cozy handwoven rug. Perfect for indoors.',
+    name: 'data.beauty.roundRug.name',
+    description: 'data.beauty.roundRug.description',
     rarity: 'rare',
     beautyValue: 35,
     price: 750,
@@ -56,9 +56,10 @@ export const RARITY_COLOR: Record<BeautyRarity, { r: number; g: number; b: numbe
   legendary: { r: 0.85, g: 0.55, b: 0.05, a: 1 },
 }
 
+// i18n keys — resolve with t() at render time
 export const RARITY_LABEL: Record<BeautyRarity, string> = {
-  common:    'Common',
-  rare:      'Rare',
-  epic:      'Epic',
-  legendary: 'Legendary',
+  common:    'data.rarity.common',
+  rare:      'data.rarity.rare',
+  epic:      'data.rarity.epic',
+  legendary: 'data.rarity.legendary',
 }

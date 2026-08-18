@@ -27,6 +27,7 @@ import {
   getTutorialMilestoneStatus,
 } from '../game/tutorialState'
 import { playSound } from '../systems/sfxSystem'
+import { t } from '../i18n'
 import {
   REVAMP_BG_IMG,
   REVAMP_CLOSE_HIT_PAD_MOBILE,
@@ -157,59 +158,59 @@ function buildGuideItems(): GuideItem[] {
   const items: GuideItem[] = []
 
   const tutorialEntries = tutorialState.active
-    ? TUTORIAL_MILESTONES.map((m) => ({ label: m.label, status: getTutorialMilestoneStatus(m) }))
-    : buildSampleChecklist(TUTORIAL_MILESTONES.map((m) => m.label), 4)
+    ? TUTORIAL_MILESTONES.map((m) => ({ label: t(m.label), status: getTutorialMilestoneStatus(m) }))
+    : buildSampleChecklist(TUTORIAL_MILESTONES.map((m) => t(m.label)), 4)
 
   // These three guides are only ever rendered once the player has actually
   // started or finished the flow (see the `xxxOwned` / `rotSystemUnlocked`
   // OR-conditions below), so the real per-step status is always meaningful —
   // no need for a fake placeholder once `active` (mid-session-resume only)
   // goes back to false on a later reconnect.
-  const progressionEntries = PROGRESSION_MILESTONES.map((m) => ({ label: m.label, status: getProgressionMilestoneStatus(m) }))
-  const chickenEntries = CHICKEN_MILESTONES.map((m) => ({ label: m.label, status: getChickenMilestoneStatus(m) }))
-  const pigEntries = PIG_MILESTONES.map((m) => ({ label: m.label, status: getPigMilestoneStatus(m) }))
+  const progressionEntries = PROGRESSION_MILESTONES.map((m) => ({ label: t(m.label), status: getProgressionMilestoneStatus(m) }))
+  const chickenEntries = CHICKEN_MILESTONES.map((m) => ({ label: t(m.label), status: getChickenMilestoneStatus(m) }))
+  const pigEntries = PIG_MILESTONES.map((m) => ({ label: t(m.label), status: getPigMilestoneStatus(m) }))
 
   if (tutorialState.active || QUEST_DEBUG) {
     items.push(makeGuideItem(
       'guide-tutorial',
-      'Mayor Chen',
-      'Tutorial',
+      t('quest.guide.ownerMayor'),
+      t('quest.guide.tutorial.title'),
       getNpcHead('mayorchen'),
       tutorialEntries,
-      'Core onboarding checklist for the farm loop.',
+      t('quest.guide.tutorial.note'),
     ))
   }
 
   if (progressionEventState.active || playerState.rotSystemUnlocked || QUEST_DEBUG) {
     items.push(makeGuideItem(
       'guide-fertilizer',
-      'Mayor Chen',
-      'Fertilizer Guide',
+      t('quest.guide.ownerMayor'),
+      t('quest.guide.fertilizer.title'),
       getNpcHead('mayorchen'),
       progressionEntries,
-      'Unlock compost, collect fertilizer and use it on crops.',
+      t('quest.guide.fertilizer.note'),
     ))
   }
 
   if (animalTutorialState.chickenActive || playerState.chickenCoopOwned || QUEST_DEBUG) {
     items.push(makeGuideItem(
       'guide-chicken',
-      'Animal Guide',
-      'Chicken Coop',
+      t('quest.guide.ownerAnimalGuide'),
+      t('quest.guide.chickenCoop.title'),
       getNpcHead('rosa'),
       chickenEntries,
-      'Coop basics: build, buy, feed and keep it clean.',
+      t('quest.guide.chickenCoop.note'),
     ))
   }
 
   if (animalTutorialState.pigActive || playerState.pigPenOwned || QUEST_DEBUG) {
     items.push(makeGuideItem(
       'guide-pig',
-      'Animal Guide',
-      'Pig Pen',
+      t('quest.guide.ownerAnimalGuide'),
+      t('quest.guide.pigPen.title'),
       getNpcHead('marco'),
       pigEntries,
-      'Pen basics plus growth, breeding and meat harvesting.',
+      t('quest.guide.pigPen.note'),
     ))
   }
 
@@ -264,12 +265,12 @@ function buildQuestItems(): QuestItem[] {
         kind: 'quest' as const,
         key: def.id,
         ownerLabel: def.npcName,
-        title: def.title,
+        title: t(def.title),
         avatarSrc: getNpcHead(def.npcId ?? def.id),
         current: Math.min(qp.current, def.target),
         total: def.target,
         status: qp.status,
-        description: def.description.replace(/\n/g, ' '),
+        description: t(def.description).replace(/\n/g, ' '),
         rewardCoins: def.rewardCoins,
         rewardXp: def.rewardXp,
       }
@@ -282,15 +283,15 @@ function buildPanelItems(): QuestPanelItem[] {
 }
 
 function getStatusText(item: QuestPanelItem): string {
-  if (item.kind === 'guide') return 'Guide'
+  if (item.kind === 'guide') return t('quest.status.guide')
 
   switch (item.status) {
-    case 'claimable': return 'Claim'
-    case 'completed': return 'Done'
-    case 'available': return 'New'
+    case 'claimable': return t('common.claim')
+    case 'completed': return t('quest.status.done')
+    case 'available': return t('quest.status.new')
     case 'active':
     default:
-      return 'Active'
+      return t('quest.status.active')
   }
 }
 
@@ -317,14 +318,14 @@ function getStatusNote(item: QuestPanelItem): string {
 
   switch (item.status) {
     case 'claimable':
-      return 'Return to this NPC to claim the reward.'
+      return t('quest.note.claimable')
     case 'completed':
-      return 'Reward already collected.'
+      return t('quest.note.completed')
     case 'available':
-      return 'Talk to this NPC to accept the quest.'
+      return t('quest.note.available')
     case 'active':
     default:
-      return 'Keep progressing to complete this quest.'
+      return t('quest.note.active')
   }
 }
 
@@ -535,14 +536,14 @@ function QuestExpandedContent({ item }: { item: QuestItem }) {
         }}
       >
         <Label
-          value={`<b>${item.rewardCoins}</b> coins`}
+          value={`<b>${t('quest.rewardCoins', { amount: item.rewardCoins })}</b>`}
           fontSize={isMobile() ? ss(21) : ss(22)}
           color={C.gold}
           textAlign="middle-center"
           uiTransform={{ margin: { right: ss(24) } }}
         />
         <Label
-          value={`<b>+${item.rewardXp}</b> XP`}
+          value={`<b>${t('quest.rewardXp', { amount: item.rewardXp })}</b>`}
           fontSize={isMobile() ? ss(21) : ss(22)}
           color={C.panelText}
           textAlign="middle-center"
@@ -670,7 +671,7 @@ function QuestAccordionRow({
           }}
         >
           <Label
-            value={`<b>${item.current}</b> / ${item.total}`}
+            value={`<b>${t('quest.progressFraction', { current: item.current, total: item.total })}</b>`}
             fontSize={mobile ? ss(15) : ss(16)}
             color={item.current >= item.total ? C.green : C.panelText}
             textAlign="middle-right"
@@ -717,7 +718,7 @@ function MobileQuestDetailCard({ item }: { item: QuestPanelItem }) {
   const chipText = getStatusText(item)
   const chip = getStatusChipColors(item)
   const countColor = item.kind === 'quest' && item.current >= item.total ? C.green : C.panelText
-  const mobileCountText = `${item.current} / ${item.total}`
+  const mobileCountText = t('quest.progressFraction', { current: item.current, total: item.total })
 
   return (
     <UiEntity
@@ -906,14 +907,14 @@ function MobileQuestDetailCard({ item }: { item: QuestPanelItem }) {
                   }}
                 >
                   <Label
-                    value={`<b>${item.rewardCoins}</b> coins`}
+                    value={`<b>${t('quest.rewardCoins', { amount: item.rewardCoins })}</b>`}
                     fontSize={qmf(ss(24))}
                     color={C.gold}
                     textAlign="middle-center"
                     uiTransform={{ margin: { right: ss(28) } }}
                   />
                   <Label
-                    value={`<b>+${item.rewardXp}</b> XP`}
+                    value={`<b>${t('quest.rewardXp', { amount: item.rewardXp })}</b>`}
                     fontSize={qmf(ss(24))}
                     color={C.panelText}
                     textAlign="middle-center"
@@ -1099,13 +1100,13 @@ export const QuestPanel = () => {
             }}
           >
             <Label
-              value="No quests available right now"
+              value={t('quest.empty.title')}
               fontSize={mobile ? qmf(ss(30)) : ss(26)}
               color={{ r: 0.97, g: 0.90, b: 0.68, a: 1 }}
               textAlign="middle-center"
             />
             <Label
-              value="Talk to visitors and progress through the farm to unlock more."
+              value={t('quest.empty.subtitle')}
               fontSize={mobile ? qmf(ss(20)) : ss(19)}
               color={C.panelTextMuted}
               textAlign="middle-center"

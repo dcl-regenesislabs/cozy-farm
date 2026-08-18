@@ -53,20 +53,21 @@ const PIG_STEP_ORDER: PigTutorialStep[] = [
 
 export type AnimalMilestone<S extends string> = { label: string; doneAtStep: S }
 
+// `label` fields are i18n keys — resolve with t() at render time (QuestPanel.tsx)
 export const CHICKEN_MILESTONES: AnimalMilestone<ChickenTutorialStep>[] = [
-  { label: 'Build the Chicken Coop',  doneAtStep: 'buy_chicken'  },
-  { label: 'Buy your first chicken',  doneAtStep: 'feed_chicken' },
-  { label: 'Fill the food bowl',      doneAtStep: 'clean_intro'  },
-  { label: 'Learn about cleaning',    doneAtStep: 'complete'     },
+  { label: 'animalTutorial.chickenMilestone.buildCoop',  doneAtStep: 'buy_chicken'  },
+  { label: 'animalTutorial.chickenMilestone.buyChicken', doneAtStep: 'feed_chicken' },
+  { label: 'animalTutorial.chickenMilestone.fillBowl',   doneAtStep: 'clean_intro'  },
+  { label: 'animalTutorial.chickenMilestone.cleaning',   doneAtStep: 'complete'     },
 ]
 
 export const PIG_MILESTONES: AnimalMilestone<PigTutorialStep>[] = [
-  { label: 'Build the Pig Pen',           doneAtStep: 'buy_pig'           },
-  { label: 'Buy your first pig',          doneAtStep: 'feed_pig'          },
-  { label: 'Fill the food bowl',          doneAtStep: 'clean_intro'       },
-  { label: 'Learn about growth stages',   doneAtStep: 'breed_explained'   },
-  { label: 'Learn about breeding',        doneAtStep: 'harvest_explained' },
-  { label: 'Learn about harvesting meat', doneAtStep: 'complete'          },
+  { label: 'animalTutorial.pigMilestone.buildPen',      doneAtStep: 'buy_pig'           },
+  { label: 'animalTutorial.pigMilestone.buyPig',        doneAtStep: 'feed_pig'          },
+  { label: 'animalTutorial.pigMilestone.fillBowl',      doneAtStep: 'clean_intro'       },
+  { label: 'animalTutorial.pigMilestone.growthStages',  doneAtStep: 'breed_explained'   },
+  { label: 'animalTutorial.pigMilestone.breeding',      doneAtStep: 'harvest_explained' },
+  { label: 'animalTutorial.pigMilestone.harvestingMeat', doneAtStep: 'complete'          },
 ]
 
 export function getChickenMilestoneStatus(m: AnimalMilestone<ChickenTutorialStep>): 'done' | 'current' | 'todo' {

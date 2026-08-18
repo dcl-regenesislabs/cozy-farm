@@ -2,6 +2,7 @@ import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { engine } from '@dcl/sdk/ecs'
 import { playerState } from '../game/gameState'
 import { room } from '../shared/farmMessages'
+import { t } from '../i18n'
 
 const LOADING_SCALE = 1.15
 const ls = (value: number) => Math.round(value * LOADING_SCALE)
@@ -45,7 +46,7 @@ const FOOTER_LEFT = ls(176)
 const FOOTER_W = ls(660)
 
 type AtlasRect = { x: number; y: number; w: number; h: number }
-type LoadingStep = { id: string; label: string; threshold: number; labelLeft: number; labelWidth: number }
+type LoadingStep = { id: string; labelKey: string; threshold: number; labelLeft: number; labelWidth: number }
 
 const SPRITES = {
   iconStrip: { x: 30, y: 20, w: 973, h: 163 },
@@ -55,10 +56,10 @@ const SPRITES = {
 // no longer means "claiming a slot" like it used to, so it's relabeled as a
 // generic setup step in between connecting and loading the actual farm data.
 const STEPS: LoadingStep[] = [
-  { id: 'connecting', label: 'Connecting',   threshold: 0,    labelLeft: ls(-8),  labelWidth: ls(140) },
-  { id: 'preparing',  label: 'Preparing',    threshold: 0.15, labelLeft: ls(181), labelWidth: ls(140) },
-  { id: 'loading',    label: 'Loading farm', threshold: 0.45, labelLeft: ls(364), labelWidth: ls(140) },
-  { id: 'ready',      label: 'Ready!',       threshold: 0.99, labelLeft: ls(552), labelWidth: ls(140) },
+  { id: 'connecting', labelKey: 'loading.step.connecting',  threshold: 0,    labelLeft: ls(-8),  labelWidth: ls(140) },
+  { id: 'preparing',  labelKey: 'loading.step.preparing',   threshold: 0.15, labelLeft: ls(181), labelWidth: ls(140) },
+  { id: 'loading',    labelKey: 'loading.step.loadingFarm', threshold: 0.45, labelLeft: ls(364), labelWidth: ls(140) },
+  { id: 'ready',      labelKey: 'loading.step.ready',       threshold: 0.99, labelLeft: ls(552), labelWidth: ls(140) },
 ]
 
 function getAnimatedEllipsis(): string {
@@ -91,19 +92,19 @@ function getLoadProgress(): { progress: number; subtitle: string } {
   const now = Date.now()
 
   if (!room.isReady()) {
-    return { progress: 0, subtitle: `Connecting to the server${getAnimatedEllipsis()}` }
+    return { progress: 0, subtitle: t('loading.subtitle.connecting', { ellipsis: getAnimatedEllipsis() }) }
   }
 
   if (loadingStartedAt === 0) loadingStartedAt = now
   const timedProgress = Math.min(PROGRESS_CAP, ((now - loadingStartedAt) / PROGRESS_DURATION_MS) * PROGRESS_CAP)
 
   if (!playerState.farmReady || timedProgress < PROGRESS_CAP) {
-    return { progress: timedProgress, subtitle: 'Loading your farm...' }
+    return { progress: timedProgress, subtitle: t('loading.subtitle.loadingFarm') }
   }
 
   if (readyAt === 0) readyAt = now
   const finishFrac = Math.min(1, (now - readyAt) / READY_HOLD_MS)
-  return { progress: PROGRESS_CAP + (1 - PROGRESS_CAP) * finishFrac, subtitle: 'Loading your farm...' }
+  return { progress: PROGRESS_CAP + (1 - PROGRESS_CAP) * finishFrac, subtitle: t('loading.subtitle.loadingFarm') }
 }
 
 // Dismiss the overlay once the bar has genuinely reached 100%.
@@ -126,7 +127,7 @@ const LoadingTitle = () => (
     }}
   >
     <Label
-      value="Preparing your farm"
+      value={t('loading.title')}
       fontSize={ls(42)}
       color={TITLE_COLOR}
       textAlign="middle-left"
@@ -163,7 +164,7 @@ const LoadingStepLabels = ({ progress }: { progress: number }) => (
     {STEPS.map((step) => (
       <Label
         key={step.id}
-        value={step.label}
+        value={t(step.labelKey)}
         fontSize={ls(16)}
         color={progress >= step.threshold ? STEP_GREEN : STEP_BROWN}
         textAlign="middle-center"
@@ -246,7 +247,7 @@ export const LoadingOverlay = () => {
         <LoadingProgressBar progress={progress} />
 
         <Label
-          value="Setting up your plots and buildings"
+          value={t('loading.footer')}
           fontSize={ls(18)}
           color={STEP_BROWN}
           textAlign="middle-left"

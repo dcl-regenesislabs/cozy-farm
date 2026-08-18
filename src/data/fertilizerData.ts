@@ -7,34 +7,34 @@ export enum FertilizerType {
 
 export interface FertilizerDefinition {
   type:        FertilizerType
-  name:        string
-  description: string
+  name:        string   // i18n key — resolve with t() at render time
+  description: string   // i18n key — resolve with t() at render time
   iconSrc:     string
 }
 
 export const FERTILIZER_DATA: Map<FertilizerType, FertilizerDefinition> = new Map([
   [FertilizerType.GrowthBoost, {
     type: FertilizerType.GrowthBoost,
-    name: 'Growth Boost',
-    description: '-25% grow time',
+    name: 'data.fertilizer.growthBoost.name',
+    description: 'data.fertilizer.growthBoost.description',
     iconSrc: 'assets/scene/Images/GrowthBoostFertilizerIcon.png',
   }],
   [FertilizerType.YieldBoost, {
     type: FertilizerType.YieldBoost,
-    name: 'Yield Boost',
-    description: 'x1.5 harvest yield',
+    name: 'data.fertilizer.yieldBoost.name',
+    description: 'data.fertilizer.yieldBoost.description',
     iconSrc: 'assets/scene/Images/YieldBoostFertilizerIcon.png',
   }],
   [FertilizerType.WaterSaver, {
     type: FertilizerType.WaterSaver,
-    name: 'Water Saver',
-    description: '-1 watering required',
+    name: 'data.fertilizer.waterSaver.name',
+    description: 'data.fertilizer.waterSaver.description',
     iconSrc: 'assets/scene/Images/WaterSaverFertilizerIcon.png',
   }],
   [FertilizerType.RotShield, {
     type: FertilizerType.RotShield,
-    name: 'Rot Shield',
-    description: 'Crop never rots',
+    name: 'data.fertilizer.rotShield.name',
+    description: 'data.fertilizer.rotShield.description',
     iconSrc: 'assets/scene/Images/RotShieldFertilizerIcon.png',
   }],
 ])

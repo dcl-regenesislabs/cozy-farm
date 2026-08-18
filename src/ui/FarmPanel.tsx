@@ -8,6 +8,7 @@ import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
 import { getRotTimeMs } from '../game/rotUtils'
 import { tutorialState } from '../game/tutorialState'
+import { t } from '../i18n'
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { getSoilEntities } from '../systems/interactionSetup'
@@ -45,6 +46,7 @@ type PlotVisualState = {
   progressPct?: number
   progressColor?: CardColor
   fertilizer?: { name: string; iconSrc: string }
+  isReady?: boolean
 }
 
 const UI_SCALE = 0.8
@@ -130,7 +132,7 @@ const farmTab = { value: 'home' as FarmTabValue }
 const farmPage: Record<FarmTabValue, number> = { home: 0, expansion: 0, compost: 0 }
 
 function formatTime(ms: number): string {
-  if (ms <= 0) return 'Ready!'
+  if (ms <= 0) return t('farm.ready')
   const s = Math.ceil(ms / 1000)
   const h = Math.floor(s / 3600)
   const m = Math.floor((s % 3600) / 60)
@@ -262,39 +264,41 @@ function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], 
   const plot = PlotState.getOrNull(entity)
   if (!plot) return null
 
+  const plotLabel = t('farm.plotLabel', { index: idx + 1 })
+
   if (!plot.isUnlocked) {
     return {
       iconSrc: SOIL_ICON,
-      title: `Plot ${idx + 1}`,
-      status: 'Locked',
+      title: plotLabel,
+      status: t('common.locked'),
       statusColor: FARM_CARD_TEXT_MUTE,
-      note: 'Unlock this area to use the plot',
+      note: t('farm.unlockPlotNote'),
     }
   }
 
   if (plot.cropType === -1) {
     return {
       iconSrc: SOIL_ICON,
-      title: `Plot ${idx + 1}`,
-      status: plot.justHarvested ? 'Clear plot' : 'Empty',
+      title: plotLabel,
+      status: plot.justHarvested ? t('farm.clearPlot') : t('farm.empty'),
       statusColor: plot.justHarvested ? FARM_STATUS_WARNING : FARM_CARD_TEXT_MUTE,
-      note: plot.justHarvested ? 'Remove leftovers and replant' : 'Ready for a new seed',
+      note: plot.justHarvested ? t('farm.removeLeftoversNote') : t('farm.readyForSeedNote'),
     }
   }
 
   const ct = plot.cropType as CropType
   const def = CROP_DATA.get(ct)!
-  const title = CROP_NAMES[ct]
-  const meta = `Plot ${idx + 1}`
+  const title = t(CROP_NAMES[ct])
+  const meta = plotLabel
 
   if (plot.isRotten) {
     return {
       iconSrc: ORGANIC_WASTE_ICON,
       title,
       meta,
-      status: 'Rotting!',
+      status: t('farm.rotting'),
       statusColor: FARM_STATUS_DANGER,
-      note: 'Take it to the compost bin',
+      note: t('farm.takeToCompostNote'),
       progressPct: 100,
       progressColor: FARM_STATUS_DANGER,
     }
@@ -307,11 +311,12 @@ function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], 
       iconSrc: CROP_HARVEST_IMAGES[ct],
       title,
       meta,
-      status: 'Ready!',
+      status: t('farm.ready'),
       statusColor: FARM_STATUS_READY,
-      note: timeUntilRot && timeUntilRot > 0 ? `Rots in ${formatTime(timeUntilRot)}` : 'Harvest whenever you want',
+      note: timeUntilRot && timeUntilRot > 0 ? t('farm.rotsIn', { time: formatTime(timeUntilRot) }) : t('farm.harvestAnytimeNote'),
       progressPct: 100,
       progressColor: FARM_STATUS_READY,
+      isReady: true,
     }
   }
 
@@ -320,9 +325,9 @@ function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], 
       iconSrc: CROP_HARVEST_IMAGES[ct],
       title,
       meta,
-      status: 'Needs water',
+      status: t('farm.needsWater'),
       statusColor: FARM_STATUS_WATER,
-      note: `${plot.waterCount}/${def.wateringsRequired} watered`,
+      note: t('farm.wateredCount', { count: plot.waterCount, required: def.wateringsRequired }),
     }
   }
 
@@ -337,10 +342,10 @@ function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], 
   let statusColor = FARM_STATUS_WARNING
 
   if (waterStatus.canWater) {
-    status = 'Water now!'
+    status = t('farm.waterNow')
     statusColor = FARM_STATUS_WATER
   } else if (windowRelevant && waterStatus.nextWindowInMs !== null) {
-    status = `Water in ${formatTime(waterStatus.nextWindowInMs)}`
+    status = t('farm.waterIn', { time: formatTime(waterStatus.nextWindowInMs) })
     statusColor = FARM_STATUS_WARNING
   }
 
@@ -354,10 +359,10 @@ function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], 
     meta,
     status,
     statusColor,
-    note: `${plot.waterCount}/${def.wateringsRequired} watered`,
+    note: t('farm.wateredCount', { count: plot.waterCount, required: def.wateringsRequired }),
     progressPct: Math.min(100, Math.floor((elapsed / effectiveGrowTimeMs) * 100)),
     progressColor: statusColor,
-    fertilizer: fertilizer ? { name: fertilizer.name, iconSrc: fertilizer.iconSrc } : undefined,
+    fertilizer: fertilizer ? { name: t(fertilizer.name), iconSrc: fertilizer.iconSrc } : undefined,
   }
 }
 
@@ -462,7 +467,7 @@ const PlotCard = ({
 }) => {
   const visual = getPlotVisualState(entity, idx, now)
   if (!visual) return null
-  const showBottomReady = visual.status === 'Ready!' && visual.statusColor === FARM_STATUS_READY
+  const showBottomReady = visual.isReady === true
 
   return (
     <FarmCardFrame>
@@ -546,7 +551,7 @@ const PlotCard = ({
 
       {showBottomReady && (
         <Label
-          value="<b>Ready!</b>"
+          value={`<b>${t('farm.ready')}</b>`}
           fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)}
           color={FARM_STATUS_READY}
           textAlign="middle-center"
@@ -581,13 +586,14 @@ const PlotCard = ({
 
 const CompostStatusCard = () => {
   const { wasteInBin, cyclesDone, nextCycleMs } = getCompostPanelState()
-  const status = cyclesDone > 0 ? `${cyclesDone} ready` : wasteInBin > 0 ? 'Working' : 'Idle'
+  const status = cyclesDone > 0 ? t('farm.compostReadyCount', { count: cyclesDone }) : wasteInBin > 0 ? t('farm.compostWorking') : t('farm.compostIdle')
   const statusColor = cyclesDone > 0 ? FARM_STATUS_READY : wasteInBin > 0 ? FARM_STATUS_WARNING : FARM_CARD_TEXT_MUTE
   const note = nextCycleMs !== null
-    ? `Next fertilizer in ${formatTime(nextCycleMs)}`
+    ? t('farm.nextFertilizerIn', { time: formatTime(nextCycleMs) })
     : wasteInBin > 0
-      ? 'Collect ready fertilizer to free space'
-      : 'Add organic waste to start composting'
+      ? t('farm.collectReadyNote')
+      : t('farm.addWasteToStartNote')
+  const title = t('farm.compostStatusTitle')
 
   return (
     <FarmCardFrame>
@@ -604,8 +610,8 @@ const CompostStatusCard = () => {
           textureMode: 'stretch',
         }}
       />
-      <Label value="<b>Compost Status</b>" fontSize={getFarmCardTitleFont('Compost Status')} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`Hand ${playerState.organicWaste} | Bin ${wasteInBin}`} fontSize={scaleFarmCardContent(FARM_CARD_META_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(4) } }} />
+      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" />
+      <Label value={t('farm.compostHandBin', { hand: playerState.organicWaste, bin: wasteInBin })} fontSize={scaleFarmCardContent(FARM_CARD_META_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(4) } }} />
       <Label value={`<b>${status}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={statusColor} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
       <Label value={note} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
     </FarmCardFrame>
@@ -668,6 +674,7 @@ const CompostActionCard = ({
 const FertilizerStockCard = ({ type }: { type: FertilizerType }) => {
   const def = FERTILIZER_DATA.get(type)!
   const count = playerState.fertilizers.get(type) ?? 0
+  const name = t(def.name)
 
   return (
     <FarmCardFrame>
@@ -684,39 +691,42 @@ const FertilizerStockCard = ({ type }: { type: FertilizerType }) => {
           textureMode: 'stretch',
         }}
       />
-      <Label value={`<b>${def.name}</b>`} fontSize={getFarmCardTitleFont(def.name)} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`<b>x${count}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={count > 0 ? FARM_COMPOST_SUCCESS : FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
-      <Label value={def.description} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
+      <Label value={`<b>${name}</b>`} fontSize={getFarmCardTitleFont(name)} color={FARM_CARD_TEXT} textAlign="middle-center" />
+      <Label value={`<b>${t('common.count', { count })}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={count > 0 ? FARM_COMPOST_SUCCESS : FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
+      <Label value={t(def.description)} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
     </FarmCardFrame>
   )
 }
 
-const LockedCompostCard = () => (
-  <FarmCardFrame>
-    <UiEntity uiTransform={{ height: scaleFarmCardContent(FARM_CARD_ICON_TOP_SPACE), flexShrink: 0 }} />
-    <UiEntity
-      uiTransform={{
-        width: scaleFarmCardContent(FARM_CARD_ICON),
-        height: scaleFarmCardContent(FARM_CARD_ICON),
-        margin: { bottom: scaleFarmCardContent(FARM_CARD_ICON_MARGIN) },
-        flexShrink: 0,
-      }}
-      uiBackground={{
-        texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' },
-        textureMode: 'stretch',
-      }}
-    />
-    <Label value="<b>Compost Bin</b>" fontSize={getFarmCardTitleFont('Compost Bin')} color={FARM_CARD_TEXT} textAlign="middle-center" />
-    <Label value="<b>Locked</b>" fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={FARM_STATUS_WARNING} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
-    <Label
-      value="Buy it in the shop under Fertilizers"
-      fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)}
-      color={FARM_CARD_TEXT_MUTE}
-      textAlign="middle-center"
-      uiTransform={{ margin: { top: ss(8) } }}
-    />
-  </FarmCardFrame>
-)
+const LockedCompostCard = () => {
+  const title = t('farm.compostBinTitle')
+  return (
+    <FarmCardFrame>
+      <UiEntity uiTransform={{ height: scaleFarmCardContent(FARM_CARD_ICON_TOP_SPACE), flexShrink: 0 }} />
+      <UiEntity
+        uiTransform={{
+          width: scaleFarmCardContent(FARM_CARD_ICON),
+          height: scaleFarmCardContent(FARM_CARD_ICON),
+          margin: { bottom: scaleFarmCardContent(FARM_CARD_ICON_MARGIN) },
+          flexShrink: 0,
+        }}
+        uiBackground={{
+          texture: { src: ORGANIC_WASTE_ICON, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+        }}
+      />
+      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" />
+      <Label value={`<b>${t('common.locked')}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={FARM_STATUS_WARNING} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
+      <Label
+        value={t('farm.compostLockedNote')}
+        fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)}
+        color={FARM_CARD_TEXT_MUTE}
+        textAlign="middle-center"
+        uiTransform={{ margin: { top: ss(8) } }}
+      />
+    </FarmCardFrame>
+  )
+}
 
 const FarmTabChip = ({
   tabKey,
@@ -829,9 +839,9 @@ const FarmTabs = ({
       flexShrink: 0,
     }}
   >
-    <FarmTabChip tabKey="home" label="My Farm" selected={tab === 'home'} showBadge={homeHasReady} onClick={() => { farmTab.value = 'home' }} />
-    <FarmTabChip tabKey="expansion" label="Expansion" selected={tab === 'expansion'} showBadge={expansionHasReady} onClick={() => { farmTab.value = 'expansion' }} />
-    <FarmTabChip tabKey="compost" label="Compost Bin" selected={tab === 'compost'} showBadge={compostHasReady} onClick={() => { farmTab.value = 'compost' }} />
+    <FarmTabChip tabKey="home" label={t('farm.tabHome')} selected={tab === 'home'} showBadge={homeHasReady} onClick={() => { farmTab.value = 'home' }} />
+    <FarmTabChip tabKey="expansion" label={t('farm.tabExpansion')} selected={tab === 'expansion'} showBadge={expansionHasReady} onClick={() => { farmTab.value = 'expansion' }} />
+    <FarmTabChip tabKey="compost" label={t('farm.compostBinTitle')} selected={tab === 'compost'} showBadge={compostHasReady} onClick={() => { farmTab.value = 'compost' }} />
   </UiEntity>
 )
 
@@ -984,12 +994,12 @@ export const FarmPanel = () => {
           key: 'compost-add',
           node: (
             <CompostActionCard
-              title="Add Waste"
-              status={`Hand x${playerState.organicWaste}`}
+              title={t('farm.addWasteTitle')}
+              status={t('farm.handCount', { count: playerState.organicWaste })}
               statusColor={playerState.organicWaste > 0 ? FARM_STATUS_WARNING : FARM_CARD_TEXT_MUTE}
-              note="Move organic waste into the bin"
+              note={t('farm.moveWasteNote')}
               iconSrc={ORGANIC_WASTE_ICON}
-              buttonLabel="ADD!"
+              buttonLabel={t('farm.addButton')}
               zoomKey="farm_add_waste"
               active={playerState.organicWaste > 0}
               onAction={addCompostWaste}
@@ -1000,12 +1010,12 @@ export const FarmPanel = () => {
           key: 'compost-collect',
           node: (
             <CompostActionCard
-              title="Collect"
-              status={cyclesDone > 0 ? `${cyclesDone} ready` : 'Nothing ready'}
+              title={t('farm.collectTitle')}
+              status={cyclesDone > 0 ? t('farm.compostReadyCount', { count: cyclesDone }) : t('farm.nothingReady')}
               statusColor={cyclesDone > 0 ? FARM_COMPOST_SUCCESS : FARM_CARD_TEXT_MUTE}
-              note={cyclesDone > 0 ? 'Claim finished fertilizer now' : 'Come back when a cycle finishes'}
+              note={cyclesDone > 0 ? t('farm.claimFertilizerNote') : t('farm.comeBackNote')}
               iconSrc={ORGANIC_WASTE_ICON}
-              buttonLabel="COLLECT"
+              buttonLabel={t('farm.collectButton')}
               zoomKey="farm_collect_compost"
               active={cyclesDone > 0}
               onAction={collectCompostReady}
