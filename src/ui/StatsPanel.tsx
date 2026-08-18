@@ -388,11 +388,14 @@ const StatsTab = () => {
   const maxLv  = displayLevel >= getGameMaxLevel()
   const pct    = maxLv ? 100 : (xp.needed > 0 ? Math.min(100, Math.floor((xp.current / xp.needed) * 100)) : 100)
   const mobile = isMobile()
-  const gW  = mobile ? PROFILE_GRID_W_M  : 748
-  const gML = mobile ? PROFILE_GRID_ML_M : Math.floor((CONTENT_W - gW) / 2)
-  const cW  = mobile ? PROFILE_CARD_W_M  : 238
-  const cH  = mobile ? PROFILE_CARD_H_M  : 112
+  // Desktop cards were widened (238→268) so longer es/pt stat labels ("Cosechados",
+  // "Realizados", etc.) don't overflow past the number|divider — gW derives from
+  // cW/cG so the row width and centering margin stay in sync automatically.
+  const cW  = mobile ? PROFILE_CARD_W_M  : 268
   const cG  = mobile ? CARD_GAP_M : 14
+  const gW  = mobile ? PROFILE_GRID_W_M  : 3 * cW + 2 * cG
+  const gML = mobile ? PROFILE_GRID_ML_M : Math.floor((CONTENT_W - gW) / 2)
+  const cH  = mobile ? PROFILE_CARD_H_M  : 112
   const rowGap = mobile ? 12 : 18
   const headerGap = mobile ? 14 : 18
   const statDividerH = mobile ? 44 : 54

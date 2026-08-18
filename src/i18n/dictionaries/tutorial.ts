@@ -42,7 +42,7 @@ export const tutorialDict: TranslationDictionary = {
     es: 'Increíble! Ya eres un verdadero granjero, esto es lo básico de la agricultura.\n\nSigamos practicando — ¡cosecha 3 cebollas más!',
     pt: 'Incrível! Agora você já é um verdadeiro fazendeiro, isso é o básico da agricultura.\n\nVamos continuar praticando — colha mais 3 cebolas!',
   },
-  'tutorial.harvestMore.button': { en: "I'm on fire!", es: '¡Estoy imparable!', pt: 'Estou imparável!' },
+  'tutorial.harvestMore.button': { en: "I'm on fire!", es: '¡Imparable!', pt: 'Estou imparável!' },
 
   'tutorial.openQuests.pages': {
     en: ['On your farm you\'ll get a lot of nearby visitors and neighbours with requests!...', 'Open the Quests panel using the button at the bottom of the screen to see what awaits you.'],

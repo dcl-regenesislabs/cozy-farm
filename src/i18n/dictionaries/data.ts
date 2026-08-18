@@ -17,13 +17,13 @@ export const dataDict: TranslationDictionary = {
 
   // ── Fertilizers ────────────────────────────────────────────────────────────
   'data.fertilizer.growthBoost.name':        { en: 'Growth Boost', es: 'Impulso de Crecimiento', pt: 'Impulso de Crescimento' },
-  'data.fertilizer.growthBoost.description': { en: '-25% grow time', es: '-25% tiempo de crecimiento', pt: '-25% tempo de crescimento' },
+  'data.fertilizer.growthBoost.description': { en: '-25% grow time', es: '-25% tiempo crecim.', pt: '-25% tempo crescim.' },
   'data.fertilizer.yieldBoost.name':         { en: 'Yield Boost', es: 'Impulso de Rendimiento', pt: 'Impulso de Rendimento' },
-  'data.fertilizer.yieldBoost.description':  { en: 'x1.5 harvest yield', es: 'x1.5 rendimiento de cosecha', pt: 'x1.5 rendimento da colheita' },
+  'data.fertilizer.yieldBoost.description':  { en: 'x1.5 harvest yield', es: 'x1.5 rendim. cosecha', pt: 'x1.5 rendim. colheita' },
   'data.fertilizer.waterSaver.name':         { en: 'Water Saver', es: 'Ahorro de Agua', pt: 'Economia de Água' },
   'data.fertilizer.waterSaver.description':  { en: '-1 watering required', es: '-1 riego necesario', pt: '-1 rega necessária' },
   'data.fertilizer.rotShield.name':          { en: 'Rot Shield', es: 'Escudo Antipodredumbre', pt: 'Escudo Anti-Podridão' },
-  'data.fertilizer.rotShield.description':   { en: 'Crop never rots', es: 'El cultivo nunca se pudre', pt: 'A plantação nunca apodrece' },
+  'data.fertilizer.rotShield.description':   { en: 'Crop never rots', es: 'Nunca se pudre', pt: 'Nunca apodrece' },
 
   // ── Beauty objects ─────────────────────────────────────────────────────────
   'data.beauty.campfire.name':        { en: 'Campfire', es: 'Fogata', pt: 'Fogueira' },
@@ -51,6 +51,10 @@ export const dataDict: TranslationDictionary = {
   'data.levelReward.level18': { en: '+1000 Coins', es: '+1000 Monedas', pt: '+1000 Moedas' },
   'data.levelReward.level20': { en: '+3 Pumpkin Seeds', es: '+3 Semillas de Calabaza', pt: '+3 Sementes de Abóbora' },
   'data.levelReward.level25': { en: '+3 Sunflower Seeds', es: '+3 Semillas de Girasol', pt: '+3 Sementes de Girassol' },
+
+  // ── Beauty spot hover text (src/systems/beautySpotSystem.ts) ─────────────────
+  'data.beauty.slotEmpty':    { en: 'Beauty Slot {index} — Empty', es: 'Espacio {index} — Vacío', pt: 'Vaga {index} — Vazia' },
+  'data.beauty.slotOccupied': { en: '{name} [{rarity}] · {value} beauty pts', es: '{name} [{rarity}] · {value} pts de belleza', pt: '{name} [{rarity}] · {value} pts de beleza' },
 
   // ── Plot groups ────────────────────────────────────────────────────────────
   'data.plotGroup.starter':    { en: 'Starter Plots', es: 'Parcelas Iniciales', pt: 'Lotes Iniciais' },

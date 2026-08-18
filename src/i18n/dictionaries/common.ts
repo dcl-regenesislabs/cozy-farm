@@ -20,6 +20,6 @@ export const commonDict: TranslationDictionary = {
   'common.gotIt':       { en: 'Got it!',      es: '¡Entendido!',     pt: 'Entendi!' },
   'common.coins':       { en: 'coins',        es: 'monedas',         pt: 'moedas' },
   'common.level':       { en: 'Level {level}', es: 'Nivel {level}',  pt: 'Nível {level}' },
-  'common.hover.petDog': { en: 'Pet the dog', es: 'Acariciar al perro', pt: 'Fazer carinho no cachorro' },
+  'common.hover.petDog': { en: 'Pet the dog', es: 'Acariciar perro', pt: 'Fazer carinho' },
   'common.pageOf': { en: '{page} / {last}', es: '{page} / {last}', pt: '{page} / {last}' },
 }

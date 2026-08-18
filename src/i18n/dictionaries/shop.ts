@@ -7,7 +7,7 @@ export const shopDict: TranslationDictionary = {
   'shop.tab.seeds':       { en: 'Seeds',       es: 'Semillas',    pt: 'Sementes' },
   'shop.tab.pets':        { en: 'Pets',        es: 'Mascotas',    pt: 'Animais' },
   'shop.tab.ornaments':   { en: 'Ornaments',   es: 'Ornamentos',  pt: 'Ornamentos' },
-  'shop.tab.workers':     { en: 'Workers',     es: 'Trabajadores', pt: 'Trabalhadores' },
+  'shop.tab.workers':     { en: 'Workers',     es: 'Trabajad.', pt: 'Trabalh.' },
   'shop.tab.fertilizers': { en: 'Fertilizers', es: 'Fertilizantes', pt: 'Fertilizantes' },
 
   // Card titles (non-crop items)
@@ -32,22 +32,22 @@ export const shopDict: TranslationDictionary = {
     es: 'Los 3 espacios de decoración están llenos — una futura actualización permitirá cambiar ornamentos',
     pt: 'As 3 vagas de decoração estão cheias — uma futura atualização vai permitir trocar ornamentos',
   },
-  'shop.notEnoughCoins': { en: 'Not enough coins', es: 'No tienes suficientes monedas', pt: 'Moedas insuficientes' },
+  'shop.notEnoughCoins': { en: 'Not enough coins', es: 'Monedas insuficientes', pt: 'Moedas insuficientes' },
 
   // Workers tab
   'shop.worker.lockedNote':  { en: 'Unlock the worker area first', es: 'Desbloquea primero la zona de trabajadores', pt: 'Desbloqueie primeiro a área dos trabalhadores' },
-  'shop.worker.noHireValue': { en: 'No hire', es: 'Sin contratar', pt: 'Sem contratação' },
+  'shop.worker.noHireValue': { en: 'No hire', es: 'Sin contratar', pt: 'Sem contrato' },
   'shop.worker.noHireNote':  { en: 'Hire the farm worker in the expansion', es: 'Contrata al trabajador en la expansión de la granja', pt: 'Contrate o trabalhador na expansão da fazenda' },
 
   'shop.worker.statusTitle':      { en: 'Status', es: 'Estado', pt: 'Status' },
-  'shop.worker.status.idleUnpaid':  { en: 'Idle (unpaid)',   es: 'Inactivo (sin pagar)',   pt: 'Inativo (sem pagamento)' },
-  'shop.worker.status.idleNoSeeds': { en: 'Idle (no seeds)', es: 'Inactivo (sin semillas)', pt: 'Inativo (sem sementes)' },
+  'shop.worker.status.idleUnpaid':  { en: 'Idle (unpaid)',   es: 'Inactivo (sin pago)',   pt: 'Inativo (sem pag.)' },
+  'shop.worker.status.idleNoSeeds': { en: 'Idle (no seeds)', es: 'Inactivo (sin sem.)', pt: 'Inativo (sem sem.)' },
   'shop.worker.status.active':      { en: 'Active', es: 'Activo', pt: 'Ativo' },
   'shop.worker.status.idle':        { en: 'Idle',   es: 'Inactivo', pt: 'Inativo' },
 
-  'shop.worker.note.backPayDue':    { en: 'Back-pay due',     es: 'Pago atrasado pendiente', pt: 'Pagamento atrasado pendente' },
-  'shop.worker.note.noSeedsLoaded': { en: 'No seeds loaded',  es: 'Sin semillas cargadas',   pt: 'Sem sementes carregadas' },
-  'shop.worker.note.running':       { en: 'Worker running',   es: 'Trabajador activo',       pt: 'Trabalhador em atividade' },
+  'shop.worker.note.backPayDue':    { en: 'Back-pay due',     es: 'Pago atrasado', pt: 'Pagamento atrasado' },
+  'shop.worker.note.noSeedsLoaded': { en: 'No seeds loaded',  es: 'Sin semillas',   pt: 'Sem sementes' },
+  'shop.worker.note.running':       { en: 'Worker running',   es: 'Trabajador activo',       pt: 'Trabalhador ativo' },
 
   'shop.worker.dailyWageTitle': { en: 'Daily Wage', es: 'Salario Diario', pt: 'Salário Diário' },
   'shop.worker.perDay':         { en: 'coins / day', es: 'monedas / día', pt: 'moedas / dia' },
@@ -55,8 +55,8 @@ export const shopDict: TranslationDictionary = {
   'shop.worker.outstandingTitle': { en: 'Outstanding', es: 'Pendiente', pt: 'Pendente' },
   'shop.worker.coinDue': {
     en: { one: 'coin due',  other: 'coins due' },
-    es: { one: 'moneda pendiente', other: 'monedas pendientes' },
-    pt: { one: 'moeda pendente',   other: 'moedas pendentes' },
+    es: { one: 'moneda pendiente', other: 'monedas' },
+    pt: { one: 'moeda pendente',   other: 'moedas' },
   },
 
   'shop.worker.missedDaysTitle': { en: 'Missed Days', es: 'Días Perdidos', pt: 'Dias Perdidos' },
@@ -66,9 +66,9 @@ export const shopDict: TranslationDictionary = {
     pt: { one: 'dia perdido', other: 'dias perdidos' },
   },
 
-  'shop.worker.payrollTitle': { en: 'Payroll', es: 'Nómina', pt: 'Folha de Pagamento' },
+  'shop.worker.payrollTitle': { en: 'Payroll', es: 'Nómina', pt: 'Salários' },
   'shop.worker.balanceLabel': { en: 'balance', es: 'saldo',  pt: 'saldo' },
-  'shop.worker.noWagesDue':   { en: 'No wages due', es: 'Sin salarios pendientes', pt: 'Sem salários pendentes' },
+  'shop.worker.noWagesDue':   { en: 'No wages due', es: 'Sin pagos pendientes', pt: 'Sem pagamentos' },
 
   'shop.worker.stoppedAfterDays': {
     en: { one: 'Worker stopped after {count} unpaid day. Clear all back-pay to reactivate them.', other: 'Worker stopped after {count} unpaid days. Clear all back-pay to reactivate them.' },

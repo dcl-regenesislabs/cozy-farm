@@ -45,20 +45,17 @@ const BTN_PRIMARY_IMG         = 'assets/images/revamp/Type=Primary, State=Focuse
 const BTN_SECONDARY_IMG       = 'assets/images/revamp/Type=Secondary, State=Default.png'
 const REVAMP_BG_IMG           = 'assets/images/revamp/background.png'
 // Per-language title atlas — see REVAMP_NAMES_IMG_BY_LANG in RevampPanel.tsx.
-// es/pt point at files that don't exist yet (placeholders for the user's export).
 const REVAMP_NAMES_IMG        = 'assets/images/revamp/names.png'
-const REVAMP_NAMES_IMG_ES     = 'assets/images/revamp/names_es.png'
-const REVAMP_NAMES_IMG_PT     = 'assets/images/revamp/names_pt.png'
+const REVAMP_NAMES_IMG_ES     = 'assets/images/revamp/names_spanish.png'
+const REVAMP_NAMES_IMG_PT     = 'assets/images/revamp/names_portuguese.png'
 const REVAMP_CLOSE_IMG        = 'assets/images/ui_loading/closebutton.png'
 const NPC_DIALOG_BG           = 'assets/images/ui_loading/npc_dialog_background.png'
 const HUD_ATLAS               = 'assets/images/ui_loading/profile_atlas.png'
 const ENVELOPE_ICON           = 'assets/images/envelope.png'
 
-// Language Selection screen (src/ui/LanguageSelectOverlay.tsx) — placeholders
-// for the user's flag exports, same "wire the path, drop the file in later" pattern.
-const FLAG_EN_IMG = 'assets/images/ui_language/flag_en.png'
-const FLAG_ES_IMG = 'assets/images/ui_language/flag_es.png'
-const FLAG_PT_IMG = 'assets/images/ui_language/flag_pt.png'
+// Language Selection screen (src/ui/LanguageSelectOverlay.tsx) — single atlas
+// with all 3 flags (USA/Spain/Brazil), cropped per-language via UV rects.
+const LANG_FLAGS_IMG = 'assets/images/revamp/languages.png'
 
 /** Every static texture used by a UI panel (shop, jukebox chrome, dialogs, HUD, etc.), preloaded via AssetLoad so panels don't pop-in on first open. */
 export const UI_PRELOAD_ASSETS: string[] = Array.from(new Set([
@@ -76,5 +73,5 @@ export const UI_PRELOAD_ASSETS: string[] = Array.from(new Set([
   BTN_PRIMARY_IMG, BTN_SECONDARY_IMG,
   REVAMP_BG_IMG, REVAMP_NAMES_IMG, REVAMP_NAMES_IMG_ES, REVAMP_NAMES_IMG_PT, REVAMP_CLOSE_IMG,
   NPC_DIALOG_BG, HUD_ATLAS, ENVELOPE_ICON,
-  FLAG_EN_IMG, FLAG_ES_IMG, FLAG_PT_IMG,
+  LANG_FLAGS_IMG,
 ]))

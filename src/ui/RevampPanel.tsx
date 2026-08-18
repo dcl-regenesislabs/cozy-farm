@@ -9,22 +9,21 @@ import type { Lang } from '../i18n'
 // graphics ("names.png") composited at render time, instead of a separate full
 // *_atlas.png per panel that only differed by its baked title text.
 //
-// The names atlas has baked-in English lettering, so it's swapped per language —
-// see REVAMP_NAMES_IMG_BY_LANG below. Only the `en` file ships today; `es`/`pt`
-// are placeholders for localized exports (until they land, those two languages
-// will show a blank tile for these titles — everything else in the game is
-// still fully translated).
+// The names atlas has baked-in lettering, so the NAME crop is swapped per
+// language — see REVAMP_NAMES_IMG_BY_LANG below. The brown pill background
+// behind the name (TILE_RECT) only exists in the original English atlas —
+// the es/pt exports only contain the redrawn text, not the pill art — so the
+// tile always crops from the `en` image regardless of which language is active.
 
 export const REVAMP_BG_IMG    = 'assets/images/revamp/background.png'
 export const REVAMP_CLOSE_IMG = 'assets/images/ui_loading/closebutton.png'
 const NAMES_ATLAS_SIZE = 1024
 
-// Per-language atlas source. Add the real es/pt files at these exact paths —
-// no code changes needed once they exist.
+// Per-language atlas source.
 const REVAMP_NAMES_IMG_BY_LANG: Record<Lang, string> = {
   en: 'assets/images/revamp/names.png',
-  es: 'assets/images/revamp/names_es.png',
-  pt: 'assets/images/revamp/names_pt.png',
+  es: 'assets/images/revamp/names_spanish.png',
+  pt: 'assets/images/revamp/names_portuguese.png',
 }
 
 export const REVAMP_PANEL_W        = 1032
@@ -62,10 +61,9 @@ export type RevampPanelName =
   | 'farm'
   | 'sellCrops'
 
-// Rects measured directly off assets/images/revamp/names.png (1024x1024).
-// `es`/`pt` are cloned from `en` as a starting point — once the localized atlas
-// files exist, re-measure these per language, since translated labels are
-// often a different width/height than the English lettering they replace.
+// Rects measured directly off each language's atlas (1024x1024) via pixel
+// bounding-box analysis — each language has its own hand-drawn layout (not a
+// resized copy of the English grid), so these are independent per language.
 const EN_NAME_RECTS: Record<RevampPanelName, Rect> = {
   shop:        { x: 506, y: 134, w: 503, h: 85  }, // reads "El Amazonas"
   inventory:   { x: 71,  y: 69,  w: 396, h: 100 },
@@ -80,10 +78,40 @@ const EN_NAME_RECTS: Record<RevampPanelName, Rect> = {
   sellCrops:   { x: 463, y: 703, w: 382, h: 97  },
 }
 
+// assets/images/revamp/names_spanish.png
+const ES_NAME_RECTS: Record<RevampPanelName, Rect> = {
+  inventory:   { x: 33,  y: 77,  w: 422, h: 83  }, // "Inventario"
+  shop:        { x: 505, y: 84,  w: 503, h: 85  }, // "El Amazonas"
+  pigPen:      { x: 31,  y: 205, w: 284, h: 99  }, // "Pocilga"
+  chickenCoop: { x: 444, y: 242, w: 359, h: 83  }, // "Gallinero"
+  plantSeeds:  { x: 18,  y: 342, w: 337, h: 83  }, // "Sembrar"
+  compostBin:  { x: 444, y: 348, w: 470, h: 99  }, // "Compostera"
+  profile:     { x: 20,  y: 447, w: 219, h: 84  }, // "Perfil"
+  farm:        { x: 444, y: 454, w: 270, h: 99  }, // "Granja"
+  quest:       { x: 20,  y: 553, w: 274, h: 84  }, // "Misión"
+  sellCrops:   { x: 443, y: 560, w: 563, h: 83  }, // "Venta Cosecha"
+  jukebox:     { x: 20,  y: 659, w: 308, h: 83  }, // "Rockola"
+}
+
+// assets/images/revamp/names_portuguese.png
+const PT_NAME_RECTS: Record<RevampPanelName, Rect> = {
+  inventory:   { x: 26,  y: 83,  w: 423, h: 84  }, // "Inventário"
+  shop:        { x: 27,  y: 189, w: 486, h: 84  }, // "O Amazonas"
+  pigPen:      { x: 27,  y: 295, w: 374, h: 100 }, // "Chiqueiro"
+  chickenCoop: { x: 27,  y: 427, w: 404, h: 84  }, // "Galinheiro"
+  plantSeeds:  { x: 27,  y: 533, w: 300, h: 84  }, // "Semear"
+  compostBin:  { x: 27,  y: 639, w: 495, h: 100 }, // "Composteira"
+  profile:     { x: 625, y: 88,  w: 219, h: 84  }, // "Perfil"
+  farm:        { x: 625, y: 194, w: 326, h: 84  }, // "Fazenda"
+  quest:       { x: 625, y: 300, w: 288, h: 84  }, // "Missão"
+  sellCrops:   { x: 518, y: 424, w: 483, h: 84  }, // "Venda Safra"
+  jukebox:     { x: 626, y: 545, w: 335, h: 84  }, // "Jukebox"
+}
+
 const NAME_RECTS_BY_LANG: Record<Lang, Record<RevampPanelName, Rect>> = {
   en: EN_NAME_RECTS,
-  es: EN_NAME_RECTS,
-  pt: EN_NAME_RECTS,
+  es: ES_NAME_RECTS,
+  pt: PT_NAME_RECTS,
 }
 
 // Plaque box (tile + centered name) that straddles the top edge of the background frame.
@@ -124,7 +152,7 @@ export const RevampTitlePlaque = ({ name, panelWidth, scale = 1 }: { name: Revam
         justifyContent: 'center',
       }}
       uiBackground={{
-        texture: { src: namesImg, wrapMode: 'clamp', filterMode: 'tri-linear' },
+        texture: { src: REVAMP_NAMES_IMG_BY_LANG.en, wrapMode: 'clamp', filterMode: 'tri-linear' },
         textureMode: 'stretch',
         uvs: atlasUvs(TILE_RECT, NAMES_ATLAS_SIZE),
       }}
@@ -168,7 +196,7 @@ export const RevampTextPlaque = ({
         justifyContent: 'center',
       }}
       uiBackground={{
-        texture: { src: REVAMP_NAMES_IMG_BY_LANG[getLanguage()], wrapMode: 'clamp', filterMode: 'tri-linear' },
+        texture: { src: REVAMP_NAMES_IMG_BY_LANG.en, wrapMode: 'clamp', filterMode: 'tri-linear' },
         textureMode: 'stretch',
         uvs: atlasUvs(TILE_RECT, NAMES_ATLAS_SIZE),
       }}

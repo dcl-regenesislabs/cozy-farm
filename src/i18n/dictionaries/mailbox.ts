@@ -1,8 +1,8 @@
 import type { TranslationDictionary } from '../types'
 
 export const mailboxDict: TranslationDictionary = {
-  'mailbox.hover.mailboxNeighbours': { en: 'Mailbox & Neighbours', es: 'Buzón y Vecinos', pt: 'Caixa de Correio e Vizinhos' },
-  'mailbox.title': { en: 'Mailbox', es: 'Buzón', pt: 'Caixa de Correio' },
+  'mailbox.hover.mailboxNeighbours': { en: 'Mailbox & Neighbours', es: 'Buzón y Vecinos', pt: 'Correio e Vizinhos' },
+  'mailbox.title': { en: 'Mailbox', es: 'Buzón', pt: 'Correio' },
   'mailbox.tab.neighbours': { en: 'Neighbours', es: 'Vecinos', pt: 'Vizinhos' },
   'mailbox.tab.mailboxCount': { en: 'Mailbox ({count})', es: 'Buzón ({count})', pt: 'Correio ({count})' },
   'mailbox.loadingNeighbours': { en: 'Loading neighbours...', es: 'Cargando vecinos...', pt: 'Carregando vizinhos...' },

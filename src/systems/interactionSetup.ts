@@ -136,7 +136,7 @@ function enablePointerOnGltf(entity: Entity): void {
   })
 }
 
-function wirePlotGroupSigns(): void {
+export function wirePlotGroupSigns(): void {
   plotGroupSignEntities.clear()
 
   for (const def of BUY_PLOT_GROUPS) {
@@ -145,8 +145,8 @@ function wirePlotGroupSigns(): void {
     if (!signEntity) continue
 
     enablePointerOnGltf(signEntity)
-    const parts = ['Expand Farm', '+3 plots', `${def.coinCost} coins`]
-    if (def.requiredLevel > 0) parts.push(`Lv ${def.requiredLevel}+`)
+    const parts = [t('unlock.hover.expandFarmLabel'), t('unlock.hover.plusPlots', { count: 3 }), t('unlock.hover.costCoinsShort', { cost: def.coinCost })]
+    if (def.requiredLevel > 0) parts.push(t('unlock.hover.levelPlus', { level: def.requiredLevel }))
     const hoverText = parts.join('  •  ')
 
     pointerEventsSystem.onPointerDown(

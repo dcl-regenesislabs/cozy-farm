@@ -26,7 +26,7 @@ export const statsDict: TranslationDictionary = {
   // ('Claimed' badge reuses common.claimed)
 
   // LeaderboardTab
-  'stats.loadingRankings': { en: 'Loading rankings...', es: 'Cargando clasificación...', pt: 'Carregando classificação...' },
+  'stats.loadingRankings': { en: 'Loading rankings...', es: 'Cargando ranking...', pt: 'Carregando ranking...' },
   'stats.noRankingsYet':   { en: 'No rankings yet. Be the first!', es: 'Aún no hay clasificación. ¡Sé el primero!', pt: 'Ainda não há classificação. Seja o primeiro!' },
   'stats.refresh':         { en: '+ Refresh', es: '+ Actualizar', pt: '+ Atualizar' },
   // (loading refresh button state reuses common.loading)

@@ -15,7 +15,7 @@ export const compostDict: TranslationDictionary = {
     es: { one: '¡{count} fertilizante listo!', other: '¡{count} fertilizantes listos!' },
     pt: { one: '{count} fertilizante pronto!', other: '{count} fertilizantes prontos!' },
   },
-  'compost.addWasteButton':    { en: 'Add Waste', es: 'Agregar Residuo', pt: 'Adicionar Resíduo' },
+  'compost.addWasteButton':    { en: 'Add Waste', es: 'Agregar', pt: 'Adicionar' },
   'compost.nothingReady':      { en: 'Nothing ready', es: 'Nada listo', pt: 'Nada pronto' },
   'compost.collectCount':      { en: 'Collect ({count})', es: 'Recolectar ({count})', pt: 'Coletar ({count})' },
   'compost.yourFertilizers':   { en: 'Your Fertilizers', es: 'Tus Fertilizantes', pt: 'Seus Fertilizantes' },

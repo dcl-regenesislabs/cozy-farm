@@ -32,7 +32,7 @@ export function setupUi() {
 }
 
 const MainUi = () => {
-  const uiUnlocked = !playerState.loadingOverlayActive
+  const uiUnlocked = !playerState.loadingOverlayActive && !playerState.languagePickerOpen
   const languageChosen = playerState.preferredLanguage !== ''
   const showVisitHud = uiUnlocked && playerState.viewingFarm !== null
   const showOwnFarmUi = uiUnlocked && languageChosen && playerState.viewingFarm === null && playerState.farmReady

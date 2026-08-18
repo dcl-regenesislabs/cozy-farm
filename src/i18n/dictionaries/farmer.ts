@@ -1,7 +1,7 @@
 import type { TranslationDictionary } from '../types'
 
 export const farmerDict: TranslationDictionary = {
-  'farmer.hover.talkToFarmer': { en: 'Talk to Farmer', es: 'Hablar con el Granjero', pt: 'Falar com o Fazendeiro' },
+  'farmer.hover.talkToFarmer': { en: 'Talk to Farmer', es: 'Hablar con Granjero', pt: 'Falar com Fazendeiro' },
 
   // ─── FarmerMenu.tsx ─────────────────────────────────────────────────────────
   'farmer.panelTitle':        { en: 'Farmer', es: 'Granjero', pt: 'Fazendeiro' },

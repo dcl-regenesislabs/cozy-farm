@@ -121,8 +121,8 @@ function enablePointer(entity: Entity): void {
 function refreshAreaBuyPointers(): void {
   if (coopArea) {
     const hoverText = playerState.chickenCoopOwned
-      ? 'Open Chicken Coop'
-      : playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? `Build Chicken Coop (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${CHICKEN_COOP_UNLOCK_LEVEL}`
+      ? t('animals.hover.openCoop')
+      : playerState.level >= CHICKEN_COOP_UNLOCK_LEVEL ? t('animals.hover.buildCoop', { cost: BUILDING_BUY_PRICE }) : t('animals.hover.requiresLevel', { level: CHICKEN_COOP_UNLOCK_LEVEL })
     pointerEventsSystem.onPointerDown(
       { entity: coopArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
@@ -133,8 +133,8 @@ function refreshAreaBuyPointers(): void {
   }
   if (penArea) {
     const hoverText = playerState.pigPenOwned
-      ? 'Open Pig Pen'
-      : playerState.level >= PIG_PEN_UNLOCK_LEVEL ? `Build Pig Pen (${BUILDING_BUY_PRICE} coins)` : `Requires Level ${PIG_PEN_UNLOCK_LEVEL}`
+      ? t('animals.hover.openPen')
+      : playerState.level >= PIG_PEN_UNLOCK_LEVEL ? t('animals.hover.buildPen', { cost: BUILDING_BUY_PRICE }) : t('animals.hover.requiresLevel', { level: PIG_PEN_UNLOCK_LEVEL })
     pointerEventsSystem.onPointerDown(
       { entity: penArea, opts: { button: InputAction.IA_POINTER, hoverText, maxDistance: 8 } },
       () => {
