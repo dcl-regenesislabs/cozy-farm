@@ -6,7 +6,7 @@ import type { TranslationDictionary } from '../types'
 export const dataDict: TranslationDictionary = {
   // ── Crops ──────────────────────────────────────────────────────────────────
   'data.crop.onion':     { en: 'Onion',     es: 'Cebolla',    pt: 'Cebola' },
-  'data.crop.potato':    { en: 'Potato',    es: 'Papa',       pt: 'Batata' },
+  'data.crop.potato':    { en: 'Potato',    es: 'Patata',     pt: 'Batata' },
   'data.crop.garlic':    { en: 'Garlic',    es: 'Ajo',        pt: 'Alho' },
   'data.crop.tomato':    { en: 'Tomato',    es: 'Tomate',     pt: 'Tomate' },
   'data.crop.carrot':    { en: 'Carrot',    es: 'Zanahoria',  pt: 'Cenoura' },
@@ -42,7 +42,7 @@ export const dataDict: TranslationDictionary = {
 
   // ── Level-up rewards ───────────────────────────────────────────────────────
   'data.levelReward.level2':  { en: '+5 Onion Seeds', es: '+5 Semillas de Cebolla', pt: '+5 Sementes de Cebola' },
-  'data.levelReward.level3':  { en: '+5 Potato Seeds', es: '+5 Semillas de Papa', pt: '+5 Sementes de Batata' },
+  'data.levelReward.level3':  { en: '+5 Potato Seeds', es: '+5 Semillas de Patata', pt: '+5 Sementes de Batata' },
   'data.levelReward.level5':  { en: '+3 Tomato Seeds', es: '+3 Semillas de Tomate', pt: '+3 Sementes de Tomate' },
   'data.levelReward.level7':  { en: '+3 Carrot Seeds', es: '+3 Semillas de Zanahoria', pt: '+3 Sementes de Cenoura' },
   'data.levelReward.level10': { en: '+500 Coins', es: '+500 Monedas', pt: '+500 Moedas' },

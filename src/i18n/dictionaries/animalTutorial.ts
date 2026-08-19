@@ -33,7 +33,7 @@ export const animalTutorialDict: TranslationDictionary = {
   'animalTutorial.chickenCleanIntro.button': { en: 'Thanks, Mayor!', es: '¡Gracias, Alcalde!', pt: 'Obrigado, Prefeito!' },
 
   'animalTutorial.chickenMayorClick.buyCoop':    { en: 'Head to the coop plot and tap to buy the Chicken Coop!', es: 'Ve a la parcela del gallinero y toca para comprar el Gallinero.', pt: 'Vá até o lote do galinheiro e toque para comprar o Galinheiro.' },
-  'animalTutorial.chickenMayorClick.buyChicken': { en: 'Open the shop (the computer) and buy your first chicken!', es: 'Abre la tienda (la computadora) y compra tu primera gallina.', pt: 'Abra a loja (o computador) e compre sua primeira galinha!' },
+  'animalTutorial.chickenMayorClick.buyChicken': { en: 'Open the shop (the computer) and buy your first chicken!', es: 'Abre la tienda (el ordenador) y compra tu primera gallina.', pt: 'Abra a loja (o computador) e compre sua primeira galinha!' },
   'animalTutorial.chickenMayorClick.feedChicken': { en: 'Tap the food bowl near the coop to deposit grain for your chickens!', es: 'Toca el comedero cerca del gallinero para depositar grano para tus gallinas.', pt: 'Toque no comedouro perto do galinheiro para depositar grãos para suas galinhas!' },
   'animalTutorial.chickenMayorClick.gotItButton': { en: 'Got it!', es: '¡Entendido!', pt: 'Entendi!' },
   'animalTutorial.chickenMayorClick.onItButton':  { en: 'On it!', es: '¡Voy!', pt: 'Pode deixar!' },
@@ -94,7 +94,7 @@ export const animalTutorialDict: TranslationDictionary = {
   'animalTutorial.pigHarvestExplained.button': { en: 'Thanks, Mayor!', es: '¡Gracias, Alcalde!', pt: 'Obrigado, Prefeito!' },
 
   'animalTutorial.pigMayorClick.buyPen':  { en: 'Head to the pig pen plot and tap to buy the Pig Pen!', es: 'Ve a la parcela del chiquero y toca para comprar el Chiquero.', pt: 'Vá até o lote do chiqueiro e toque para comprar o Chiqueiro.' },
-  'animalTutorial.pigMayorClick.buyPig':  { en: 'Open the shop (the computer) and buy your first pig!', es: 'Abre la tienda (la computadora) y compra tu primer cerdo.', pt: 'Abra a loja (o computador) e compre seu primeiro porco!' },
+  'animalTutorial.pigMayorClick.buyPig':  { en: 'Open the shop (the computer) and buy your first pig!', es: 'Abre la tienda (el ordenador) y compra tu primer cerdo.', pt: 'Abra a loja (o computador) e compre seu primeiro porco!' },
   'animalTutorial.pigMayorClick.feedPig': { en: 'Tap the food bowl near the pig pen to deposit food for your pigs!', es: 'Toca el comedero cerca del chiquero para depositar comida para tus cerdos.', pt: 'Toque no comedouro perto do chiqueiro para depositar comida para seus porcos!' },
   'animalTutorial.pigMayorClick.gotItButton': { en: 'Got it!', es: '¡Entendido!', pt: 'Entendi!' },
   'animalTutorial.pigMayorClick.onItButton':  { en: 'On it!', es: '¡Voy!', pt: 'Pode deixar!' },

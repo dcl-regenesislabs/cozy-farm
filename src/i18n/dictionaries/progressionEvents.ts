@@ -77,7 +77,7 @@ export const progressionEventsDict: TranslationDictionary = {
   'progression.complete.button': { en: 'Thanks, Mayor!', es: '¡Gracias, Alcalde!', pt: 'Obrigado, Prefeito!' },
 
   // Re-shown when the player clicks Mayor mid-event
-  'progression.mayorClick.rotIntro':      { en: 'Head to the shop (the computer) and buy the Compost Bin for 300 coins!', es: 'Ve a la tienda (la computadora) y compra la Compostera por 300 monedas.', pt: 'Vá até a loja (o computador) e compre a Composteira por 300 moedas!' },
+  'progression.mayorClick.rotIntro':      { en: 'Head to the shop (the computer) and buy the Compost Bin for 300 coins!', es: 'Ve a la tienda (el ordenador) y compra la Compostera por 300 monedas.', pt: 'Vá até a loja (o computador) e compre a Composteira por 300 moedas!' },
   'progression.mayorClick.compostQuest':  { en: "Open the compost bin and add all 3 organic waste units. I've put them in your inventory!", es: 'Abre la compostera y agrega las 3 unidades de residuo orgánico. ¡Las puse en tu inventario!', pt: 'Abra a composteira e adicione as 3 unidades de resíduo orgânico. Coloquei elas no seu inventário!' },
   'progression.mayorClick.wasteQuest':    { en: "The bin is working — open it and collect your fertilizer once it's ready!", es: 'La compostera está funcionando — ábrela y recolecta tu fertilizante cuando esté listo.', pt: 'A composteira está funcionando — abra e colete seu fertilizante quando estiver pronto!' },
   'progression.mayorClick.collectQuest':  { en: "Plant a seed, water it, then apply a fertilizer. I'm waiting right here!", es: 'Planta una semilla, riégala y luego aplícale un fertilizante. ¡Te espero aquí mismo!', pt: 'Plante uma semente, regue e depois aplique um fertilizante. Estou esperando bem aqui!' },
