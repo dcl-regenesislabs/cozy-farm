@@ -52,18 +52,25 @@ const FLAG_ORDER: Lang[] = ['en', 'es', 'pt']
 let previewLang: Lang = 'en'
 
 const FLAG_SIZE = ls(150)
+// Selected flag renders a bit bigger so tapping one visibly "pops" into
+// place instead of only changing via the border color.
+const FLAG_SIZE_SELECTED = ls(168)
 const FLAG_GAP = ls(40)
-const FLAGS_TOP = ls(280)
+// Row is sized to the larger (selected) flag so growth never clips; shifted
+// up by half the size delta to keep the row's visual center stable no
+// matter which flag (if any) is currently selected.
+const FLAGS_TOP = ls(280) - Math.round((FLAG_SIZE_SELECTED - FLAG_SIZE) / 2)
 const TITLE_TOP = ls(160)
 const BUTTON_TOP = ls(500)
 
 const FlagButton = ({ lang }: { key?: string; lang: Lang }) => {
   const selected = previewLang === lang
   const rect = FLAG_RECTS[lang]
+  const boxSize = selected ? FLAG_SIZE_SELECTED : FLAG_SIZE
 
   // Contain-fit the flag's real aspect ratio inside the inner box instead of
   // stretching it to a square (these are landscape flags, ~1.3:1 to 1.5:1).
-  const innerMax = FLAG_SIZE - ls(16)
+  const innerMax = boxSize - ls(16)
   const ratio = rect.w / rect.h
   let flagW = innerMax
   let flagH = Math.round(flagW / ratio)
@@ -75,8 +82,8 @@ const FlagButton = ({ lang }: { key?: string; lang: Lang }) => {
   return (
     <UiEntity
       uiTransform={{
-        width: FLAG_SIZE,
-        height: FLAG_SIZE,
+        width: boxSize,
+        height: boxSize,
         margin: { left: FLAG_GAP / 2, right: FLAG_GAP / 2 },
         borderWidth: ls(4),
         borderColor: selected ? FLAG_BORDER_SELECTED : FLAG_BORDER_IDLE,
@@ -168,7 +175,7 @@ export const LanguageSelectOverlay = () => {
             positionType: 'absolute',
             position: { top: FLAGS_TOP, left: 0 },
             width: BACKGROUND_W,
-            height: FLAG_SIZE,
+            height: FLAG_SIZE_SELECTED,
             flexDirection: 'row',
             justifyContent: 'center',
             alignItems: 'center',

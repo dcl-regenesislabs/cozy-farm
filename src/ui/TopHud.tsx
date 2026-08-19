@@ -641,14 +641,16 @@ export const TopHud = () => {
           )}
         </UiEntity>
 
-        {/* Language switcher — shows the current language's flag; tap to reopen the picker. */}
+        {/* Language switcher — shows the current language's flag; tap to reopen the picker.
+            Desktop is shrunk 2.5x and nudged right (with breathing room from the screen
+            edge) vs. the mobile size; mobile keeps its original larger, more-left placement. */}
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: s(160), left: s(40) },
-            width: s(160),
-            height: s(160),
-            borderRadius: s(24),
+            position: mobile ? { top: s(160), left: s(40) } : { top: s(160), left: s(100) },
+            width: mobile ? s(160) : s(64),
+            height: mobile ? s(160) : s(64),
+            borderRadius: mobile ? s(24) : s(10),
             borderWidth: 2,
             borderColor: HUD_BROWN,
             alignItems: 'center',
@@ -662,7 +664,7 @@ export const TopHud = () => {
           }}
         >
           <UiEntity
-            uiTransform={{ width: s(120), height: s(80) }}
+            uiTransform={{ width: mobile ? s(120) : s(48), height: mobile ? s(80) : s(32) }}
             uiBackground={{
               texture: { src: LANG_FLAGS_IMG, wrapMode: 'clamp' },
               textureMode: 'stretch',

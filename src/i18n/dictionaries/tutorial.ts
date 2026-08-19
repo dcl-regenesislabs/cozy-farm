@@ -4,7 +4,7 @@ import type { TranslationDictionary } from '../types'
 export const tutorialDict: TranslationDictionary = {
   'tutorial.welcome.text': {
     en: "Welcome to CozyFarm! I'm Mayor Chen, and I'll guide you through the basics.\n\nHere are 15 coins to get you started — go inside your house and log into your computer to buy 5 Onion seeds on El Amazonas!",
-    es: '¡Bienvenido a CozyFarm! Soy el Alcalde Chen, y te voy a guiar por lo básico.\n\nAquí tienes 15 monedas para empezar — entra a tu casa e inicia sesión en tu computadora para comprar 5 semillas de cebolla en El Amazonas!',
+    es: '¡Bienvenido a CozyFarm! Soy el Alcalde Chen, y te voy a guiar por lo básico.\n\nAquí tienes 15 monedas para empezar — entra a tu casa e inicia sesión en tu ordenador para comprar 5 semillas de cebolla en El Amazonas!',
     pt: 'Bem-vindo à CozyFarm! Sou o Prefeito Chen, e vou te guiar pelo básico.\n\nAqui estão 15 moedas para você começar — entre na sua casa e acesse seu computador para comprar 5 sementes de cebola no El Amazonas!',
   },
   'tutorial.welcome.button': { en: 'Thanks, Mayor!', es: '¡Gracias, Alcalde!', pt: 'Obrigado, Prefeito!' },
@@ -66,7 +66,7 @@ export const tutorialDict: TranslationDictionary = {
     ],
     es: [
       '¡Lo lograste — ya eres un verdadero granjero! 🌱\n\nTe desbloqueé tres parcelas más.',
-      'Además, ve a tu computadora de la tienda — ¡las semillas de cebolla, papa y ajo ya están disponibles! Los cultivos de nivel 2 y 3 se desbloquean más adelante a medida que avances.',
+      'Además, ve a tu ordenador de la tienda — ¡las semillas de cebolla, patata y ajo ya están disponibles! Los cultivos de nivel 2 y 3 se desbloquean más adelante a medida que avances.',
       'El pueblo de CozyFarm está orgulloso de ti. ¡Buena suerte!',
     ],
     pt: [

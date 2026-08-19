@@ -15,7 +15,7 @@ export const farmerDict: TranslationDictionary = {
   'farmer.hireButton':        { en: 'Hire for {cost} coins', es: 'Contratar por {cost} monedas', pt: 'Contratar por {cost} moedas' },
   'farmer.workerUnpaidStatus': {
     en: { one: 'Worker unpaid: {wages} coins due ({count} day). Use the computer to clear wages.', other: 'Worker unpaid: {wages} coins due ({count} days). Use the computer to clear wages.' },
-    es: { one: 'Trabajador sin pagar: debes {wages} monedas ({count} día). Usa la computadora para saldar la deuda.', other: 'Trabajador sin pagar: debes {wages} monedas ({count} días). Usa la computadora para saldar la deuda.' },
+    es: { one: 'Trabajador sin pagar: debes {wages} monedas ({count} día). Usa el ordenador para saldar la deuda.', other: 'Trabajador sin pagar: debes {wages} monedas ({count} días). Usa el ordenador para saldar la deuda.' },
     pt: { one: 'Trabalhador sem pagamento: você deve {wages} moedas ({count} dia). Use o computador para quitar a dívida.', other: 'Trabalhador sem pagamento: você deve {wages} moedas ({count} dias). Use o computador para quitar a dívida.' },
   },
   'farmer.workerIdleNoSeeds': { en: 'Worker idle: no seeds loaded. Daily wage is {wage} coins.', es: 'Trabajador inactivo: no hay semillas cargadas. El salario diario es de {wage} monedas.', pt: 'Trabalhador ocioso: sem sementes carregadas. O salário diário é de {wage} moedas.' },
