@@ -507,7 +507,6 @@ function scheduleAutoSave(): void {
 // Pause / resume auto-save (used by visitService during farm visits)
 // ---------------------------------------------------------------------------
 export function pauseAutoSave(): void {
-  flushQueuedSaveInternal()
   if (autoSaveTimer !== null) {
     clearTimeout(autoSaveTimer)
     autoSaveTimer = null

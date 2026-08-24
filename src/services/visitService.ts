@@ -8,6 +8,7 @@ import {
   pauseAutoSave, resumeAutoSave,
   visitCallbacks, registryCallbacks,
 } from './saveService'
+import { flushSave } from './saveTriggers'
 import { refreshAllPlotHoverTexts, clearVisitSessionWater, getSoilEntities } from '../systems/interactionSetup'
 
 // ---------------------------------------------------------------------------
@@ -49,8 +50,10 @@ export function requestPlayerRegistry(page: number): void {
 }
 
 export function enterVisitMode(address: string, payload: FarmStatePayload): void {
+  flushSave()
   visitedPayload = payload
   ownPlotSnapshot = snapshotOwnPlots()
+  pauseAutoSave()
 
   // Clear existing crop models before applying visited data
   for (const entity of getSoilEntities()) {
@@ -63,7 +66,6 @@ export function enterVisitMode(address: string, payload: FarmStatePayload): void
   playerState.visitorSessionWaterCount = 0
   playerState.activeMenu  = 'none'
   clearVisitSessionWater()
-  pauseAutoSave()
   refreshAllPlotHoverTexts()
 }
 
