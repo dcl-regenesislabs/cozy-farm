@@ -34,6 +34,7 @@ import {
 import { getCurrentFarmEntity, getEntityWorldPosition } from './farmInstances'
 import { trackEvent } from '../analytics/analytics'
 import { t, registerHoverText } from '../i18n'
+import { queueSave } from '../services/saveTriggers'
 
 // ---------------------------------------------------------------------------
 // Wander state
@@ -398,6 +399,7 @@ export function purchaseBuilding(type: 'chicken' | 'pig'): boolean {
   playSound('buttonclick')
   updateBuildingVisuals()
   console.log(`[AnimalSystem] Bought ${type} building`)
+  queueSave()
   return true
 }
 
@@ -419,6 +421,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     if (playerState.chickens.length === 1) animalTutorialCallbacks.onFirstChickenBought()
     console.log(`[AnimalSystem] buyAnimal chicken — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
+    queueSave()
     return true
   } else {
     if (!playerState.pigPenOwned) return false
@@ -438,6 +441,7 @@ export function buyAnimal(type: 'chicken' | 'pig'): boolean {
     if (playerState.pigs.length === 1) animalTutorialCallbacks.onFirstPigBought()
     console.log(`[AnimalSystem] buyAnimal pig — wanderers in map: ${wanderers.size}`)
     playSound('buttonclick')
+    queueSave()
     return true
   }
 }
@@ -476,6 +480,7 @@ export function breedPigs(): boolean {
   spawnPigWanderer(piglet, now, playerState.pigs.length - 1)
   playSound('harvest')
   console.log('[AnimalSystem] Piglet born!')
+  queueSave()
   return true
 }
 
@@ -497,6 +502,7 @@ export function harvestPig(pigId: string): boolean {
   playSound('harvest')
   updateBuildingVisuals()
   console.log('[AnimalSystem] Pig harvested for meat')
+  queueSave()
   return true
 }
 
@@ -513,6 +519,7 @@ export function sellPigMeat(count: number): boolean {
   playerState.totalCoinsEarned += coins
   addXp(5 * count)
   playSound('truck')
+  queueSave()
   return true
 }
 
@@ -529,6 +536,7 @@ export function sellEggs(count: number): boolean {
   playerState.totalCoinsEarned += coins
   addXp(5 * count)
   playSound('truck')
+  queueSave()
   return true
 }
 
@@ -577,6 +585,7 @@ export function depositFoodInBowl(type: 'chicken' | 'pig', grainAmount: number, 
   }
   updateBuildingVisuals()
   playSound('buttonclick')
+  queueSave()
   return true
 }
 
@@ -589,6 +598,7 @@ export function buyGrain(amount: number, totalCost: number): boolean {
   playerState.coins     -= totalCost
   playerState.grainCount += amount
   playSound('buttonclick')
+  queueSave()
   return true
 }
 
@@ -634,6 +644,7 @@ function cleanBuilding(type: 'chicken' | 'pig'): void {
   updateBuildingVisuals()
   playSound('harvest')
   console.log(`[AnimalSystem] Cleaned ${type} building → +${CLEAN_ORGANIC_WASTE_PER_ANIMAL} organic waste`)
+  queueSave()
 }
 
 // ---------------------------------------------------------------------------

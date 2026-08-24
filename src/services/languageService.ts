@@ -1,6 +1,6 @@
 import type { Lang } from '../i18n'
 import { setLanguage, refreshAllHoverTexts } from '../i18n'
-import { saveFarm } from './saveService'
+import { queueSave } from './saveTriggers'
 import { updateBuildingVisuals } from '../systems/animalSystem'
 import { applyBeautySlots, getBeautySlots } from '../systems/beautySpotSystem'
 import { wirePlotGroupSigns, refreshAllPlotHoverTexts } from '../systems/interactionSetup'
@@ -10,8 +10,7 @@ import { wirePlotGroupSigns, refreshAllPlotHoverTexts } from '../systems/interac
  * the in-game HUD switcher both call this. Updates the live language, re-applies
  * every native pointerEventsSystem hover text that isn't covered by the generic
  * registry (building buy-areas, beauty decoration spots, plot-group signs, soil
- * plots), and persists the choice immediately (same "set state, then saveFarm()"
- * pattern used elsewhere for one-off explicit saves).
+ * plots), and persists the choice immediately using the regular queued save path.
  */
 export function changeLanguage(lang: Lang): void {
   setLanguage(lang)
@@ -20,5 +19,5 @@ export function changeLanguage(lang: Lang): void {
   applyBeautySlots(getBeautySlots())
   wirePlotGroupSigns()
   refreshAllPlotHoverTexts()
-  saveFarm()
+  queueSave()
 }

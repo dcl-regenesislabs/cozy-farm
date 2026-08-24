@@ -6,12 +6,15 @@ import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer
 import { CROP_HARVEST_IMAGES, ORGANIC_WASTE_ICON, SOIL_ICON } from '../data/imagePaths'
 import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
+import { onCollectFertilizer } from '../game/questState'
 import { getRotTimeMs } from '../game/rotUtils'
 import { tutorialState } from '../game/tutorialState'
 import { t } from '../i18n'
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { getSoilEntities } from '../systems/interactionSetup'
+import { fireCompostCollected, fireCompostWasteAdded } from '../systems/progressionEventsSystem'
+import { queueSave } from '../services/saveTriggers'
 import { BadgeDot } from './BadgeDot'
 import { getZoomScale, isZooming, triggerCardZoom } from './cardZoomSystem'
 import {
@@ -250,6 +253,9 @@ function collectCompostReady() {
   playerState.compostWasteCount -= cyclesDone
   playerState.compostLastCollectedAt = now
   playSound('buttonclick')
+  onCollectFertilizer(cyclesDone)
+  fireCompostCollected()
+  queueSave()
 }
 
 function addCompostWaste() {
@@ -258,6 +264,8 @@ function addCompostWaste() {
   playerState.compostWasteCount += 1
   if (playerState.compostLastCollectedAt === 0) playerState.compostLastCollectedAt = Date.now()
   playSound('buttonclick')
+  fireCompostWasteAdded()
+  queueSave()
 }
 
 function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], idx: number, now: number): PlotVisualState | null {

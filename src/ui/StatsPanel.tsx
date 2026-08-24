@@ -34,6 +34,7 @@ import {
   SharedPaginationBar,
 } from './SharedPaginationBar'
 import { lerpColor, setTabActive } from './tabFadeSystem'
+import { queueSave } from '../services/saveTriggers'
 
 const UI_SCALE = 0.8
 const ss       = (v: number) => Math.round(v * UI_SCALE)
@@ -147,6 +148,7 @@ function claimReward(level: number): void {
   } else if (reward.type === 'unlock_crop' && reward.cropType !== null) {
     playerState.unlockedCrops.add(reward.cropType)
   }
+  queueSave()
 }
 
 // ─── ProfilePanelFrame ────────────────────────────────────────────────────────
