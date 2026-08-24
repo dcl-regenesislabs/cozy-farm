@@ -13,8 +13,8 @@
     "deploy:production": "sdk-commands deploy --target-content https://worlds-content-server.decentraland.org"
   },
   "devDependencies": {
-    "@dcl/js-runtime": "7.21.1-22918726402.commit-ee210ee",
-    "@dcl/sdk": "7.21.1-22918726402.commit-ee210ee"
+    "@dcl/js-runtime": "https://sdk-team-cdn.decentraland.org/@dcl/js-sdk-toolchain/branch/feat/bevy-headless-server/@dcl/js-runtime/dcl-js-runtime-7.26.1-32272684883.commit-03948db.tgz",
+    "@dcl/sdk": "https://sdk-team-cdn.decentraland.org/@dcl/js-sdk-toolchain/branch/feat/bevy-headless-server/dcl-sdk-7.26.1-32272684883.commit-03948db.tgz"
   },
   "engines": {
     "node": ">=16.0.0",
