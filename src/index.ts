@@ -232,7 +232,7 @@ export function main() {
         for (const npc of getAllEligibleNpcs()) {
           if (getNpcEntity(npc.id) !== null) continue
           const result = getActiveQuestForNpc(npc.id)
-          if (result && (result.qp.status === 'available' || result.qp.status === 'active')) {
+          if (result && (result.qp.status === 'available' || result.qp.status === 'active' || result.qp.status === 'claimable')) {
             initNpcSystem(npc, () => onNpcDeparted(npc.id))
             return   // one at a time
           }
