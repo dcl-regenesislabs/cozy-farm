@@ -1,6 +1,7 @@
 import { engine, AudioSource, Transform } from '@dcl/sdk/ecs'
 import { Vector3 } from '@dcl/sdk/math'
 import { musicState, SONGS, SongId } from '../game/musicState'
+import { queueSave } from '../services/saveTriggers'
 
 /**
  * Creates the background music audio entity and starts playing A La Fresca.
@@ -48,6 +49,7 @@ export function playSong(songId: SongId) {
     loop:         true,
     volume:       musicState.volume,
   })
+  queueSave()
 }
 
 /** Toggle mute on/off. */
@@ -57,6 +59,7 @@ export function toggleMute() {
   if (audioEntity) {
     AudioSource.getMutable(audioEntity).playing = !musicState.muted
   }
+  queueSave()
 }
 
 /** Set mute to a specific value. */
@@ -67,13 +70,16 @@ export function setMuted(muted: boolean) {
   if (audioEntity) {
     AudioSource.getMutable(audioEntity).playing = !muted
   }
+  queueSave()
 }
 
 /** Set background music volume (0.0 – 1.0). */
 export function setMusicVolume(volume: number) {
+  if (musicState.volume === volume) return
   musicState.volume = volume
   const { audioEntity } = musicState
   if (audioEntity) {
     AudioSource.getMutable(audioEntity).volume = volume
   }
+  queueSave()
 }

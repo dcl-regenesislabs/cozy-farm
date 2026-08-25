@@ -6,12 +6,15 @@ import { ALL_FERTILIZER_TYPES, FERTILIZER_DATA, FertilizerType, randomFertilizer
 import { CROP_HARVEST_IMAGES, ORGANIC_WASTE_ICON, SOIL_ICON } from '../data/imagePaths'
 import { getWateringStatus } from '../game/actions'
 import { playerState } from '../game/gameState'
+import { onCollectFertilizer } from '../game/questState'
 import { getRotTimeMs } from '../game/rotUtils'
 import { tutorialState } from '../game/tutorialState'
 import { t } from '../i18n'
 import { C } from './PanelShell'
 import { playSound } from '../systems/sfxSystem'
 import { getSoilEntities } from '../systems/interactionSetup'
+import { fireCompostCollected, fireCompostWasteAdded } from '../systems/progressionEventsSystem'
+import { queueSave } from '../services/saveTriggers'
 import { BadgeDot } from './BadgeDot'
 import { getZoomScale, isZooming, triggerCardZoom } from './cardZoomSystem'
 import {
@@ -127,6 +130,7 @@ const FARM_PAGINATION_MARGIN_TOP_DESKTOP = ss(26)
 const FARM_PAGINATION_MARGIN_TOP_MOBILE = ss(34)
 
 const COMPOST_CYCLE_MS = 300_000
+const TUTORIAL_COMPOST_CYCLE_MS = 15_000
 
 const farmTab = { value: 'home' as FarmTabValue }
 const farmPage: Record<FarmTabValue, number> = { home: 0, expansion: 0, compost: 0 }
@@ -228,10 +232,11 @@ function getCompostPanelState() {
   const now = Date.now()
   const wasteInBin = playerState.compostWasteCount
   const lastCollected = playerState.compostLastCollectedAt
+  const cycleMs = playerState.tutorialCompostCycle ? TUTORIAL_COMPOST_CYCLE_MS : COMPOST_CYCLE_MS
   const timeElapsed = lastCollected > 0 && wasteInBin > 0 ? now - lastCollected : 0
-  const cyclesDone = Math.min(Math.floor(timeElapsed / COMPOST_CYCLE_MS), wasteInBin)
+  const cyclesDone = Math.min(Math.floor(timeElapsed / cycleMs), wasteInBin)
   const nextCycleMs = wasteInBin > cyclesDone && lastCollected > 0
-    ? COMPOST_CYCLE_MS - (timeElapsed % COMPOST_CYCLE_MS)
+    ? cycleMs - (timeElapsed % cycleMs)
     : null
 
   return { wasteInBin, cyclesDone, nextCycleMs }
@@ -250,6 +255,9 @@ function collectCompostReady() {
   playerState.compostWasteCount -= cyclesDone
   playerState.compostLastCollectedAt = now
   playSound('buttonclick')
+  onCollectFertilizer(cyclesDone)
+  fireCompostCollected()
+  queueSave()
 }
 
 function addCompostWaste() {
@@ -258,6 +266,8 @@ function addCompostWaste() {
   playerState.compostWasteCount += 1
   if (playerState.compostLastCollectedAt === 0) playerState.compostLastCollectedAt = Date.now()
   playSound('buttonclick')
+  fireCompostWasteAdded()
+  queueSave()
 }
 
 function getPlotVisualState(entity: ReturnType<typeof getSoilEntities>[number], idx: number, now: number): PlotVisualState | null {

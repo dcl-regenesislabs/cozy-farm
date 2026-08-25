@@ -10,6 +10,7 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
 import { DialogActionButton } from './RevampButtons'
 import { OutlineLabel } from './OutlineLabel'
+import { queueSave } from '../services/saveTriggers'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
 
@@ -165,6 +166,7 @@ export const UnlockMenu = () => {
                 removeForSaleSign()
                 unlockFarmerPlots()
                 spawnFarmer()
+                queueSave()
                 playerState.activeMenu = 'none'
               }, ZOOM_DURATION)
             }}

@@ -13,6 +13,7 @@ import { trackEvent } from '../analytics/analytics'
 import { setOnNextPlant, setOnNextWater, setOnNextFertilize, unlockFertilizerQuest } from '../game/questState'
 import { PlotState } from '../components/farmComponents'
 import { t, tList } from '../i18n'
+import { queueSave } from '../services/saveTriggers'
 
 // ---------------------------------------------------------------------------
 // Called when the progression event chain fully completes and Mayor departs.
@@ -69,6 +70,7 @@ function showProgressionDialog(text: string | string[], buttonLabel: string, onB
 function goToBuyCompostBin(): void {
   progressionEventState.step       = 'rot_intro_active'
   playerState.progressionEventStep = 'rot_intro_active'
+  queueSave()
 
   if (playerState.compostBinUnlocked) {
     // Player already owns one (e.g. reconnect after purchase) — skip to waste step
@@ -126,6 +128,7 @@ function goToWasteStep(): void {
 
   playerState.organicWaste += 3
   playerState.tutorialCompostCycle = true
+  queueSave()
 
   const binEntity = getCompostBinEntity()
   setArrowTarget(binEntity)
@@ -174,6 +177,7 @@ function watchForWasteAdded(): void {
 function goToCollectStep(): void {
   progressionEventState.step       = 'waste_quest'
   playerState.progressionEventStep = 'waste_quest'
+  queueSave()
 
   const binEntity = getCompostBinEntity()
   setArrowTarget(binEntity)
@@ -198,6 +202,7 @@ function goToCollectStep(): void {
 function goToFertilizeStep(): void {
   progressionEventState.step       = 'collect_quest'
   playerState.progressionEventStep = 'collect_quest'
+  queueSave()
 
   // Find first empty unlocked soil plot
   const soilEntities = getSoilEntities()
@@ -261,6 +266,7 @@ function completeProgressionChain(): void {
 
   // Unlock the Mayor fertilizer quest (auto-start it as active)
   unlockFertilizerQuest()
+  queueSave()
 
   showProgressionDialog(
     tList('progression.complete.pages'),

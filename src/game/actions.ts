@@ -20,6 +20,7 @@ import { BEAUTY_OBJECTS } from '../data/beautyObjectData'
 import { placeOrnamentInNextSlot, isOrnamentPlaced, hasEmptySlot } from '../systems/beautySpotSystem'
 import { tryDropVeggieScrap } from '../systems/animalSystem'
 import { trackEvent } from '../analytics/analytics'
+import { queueSave } from '../services/saveTriggers'
 
 /** Create or update the crop child entity on a soil plot */
 export function setCropModel(soilEntity: Entity, modelSrc: string) {
@@ -286,6 +287,7 @@ export function plantSeed(entity: Entity, cropType: CropType): boolean {
   // Only close the plant menu if no callback (e.g. progression event) opened a new dialog
   if (playerState.activeMenu === 'plant') playerState.activeMenu = 'none'
   playerState.activePlotEntity = null
+  queueSave()
   return true
 }
 
@@ -361,6 +363,7 @@ export function waterCrop(entity: Entity): boolean {
   playerState.totalWaterCount += 1
   onWater()
   onTutorialAction('water')
+  queueSave()
   return true
 }
 
@@ -396,6 +399,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
     spawnOrganicWasteVfx(Transform.get(entity).position)
     resetPlot()
     playSound('harvest')
+    queueSave()
     return true
   }
 
@@ -430,6 +434,7 @@ export function harvestCrop(entity: Entity, targetInventory?: Map<CropType, numb
   tryDropVeggieScrap()
 
   resetPlot()
+  queueSave()
   return true
 }
 
@@ -455,6 +460,7 @@ export function applyFertilizer(entity: Entity, fertilizerType: FertilizerType):
   lastSoilIconState.delete(entity)  // force icon rebuild next tick
   updatePlotHoverText(entity)
   onFertilize()
+  queueSave()
   return true
 }
 
@@ -467,6 +473,7 @@ export function buySeed(cropType: CropType, quantity: number): boolean {
   const current = playerState.seeds.get(cropType) ?? 0
   playerState.seeds.set(cropType, current + quantity)
   onTutorialAction('buy_seeds')
+  queueSave()
   return true
 }
 
@@ -482,6 +489,7 @@ export function sellCrop(cropType: CropType, quantity: number): boolean {
   playerState.totalCoinsEarned += def.sellPrice * toSell
   onSell(toSell)
   onTutorialAction('sell')
+  queueSave()
   return true
 }
 
@@ -500,6 +508,7 @@ export function buyOrnament(objectId: number): boolean {
   playerState.coins -= def.price
   placeOrnamentInNextSlot(objectId)
   console.log(`CozyFarm: Bought ornament "${def.name}" (id=${objectId}, beauty=${def.beautyValue})`)
+  queueSave()
   return true
 }
 
@@ -519,6 +528,7 @@ export function buyCompostBin(): boolean {
   const cb = onBuyCompostBinCb
   onBuyCompostBinCb = null
   cb?.()
+  queueSave()
   return true
 }
 
@@ -531,5 +541,6 @@ export function buyDog(): boolean {
   spawnDog()
   trackEvent('feature unlocked', { feature: 'dog' })
   console.log('CozyFarm Dog: purchased and spawned')
+  queueSave()
   return true
 }
