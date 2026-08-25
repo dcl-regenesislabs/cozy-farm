@@ -195,6 +195,7 @@ function AtlasNumber(props: { value: number; digitHeight: number; gap?: number }
 
 export const TopHud = () => {
   const mobile = isMobile()
+  const languageSwitcherPosition = mobile ? { top: s(160), right: s(64) } : { top: s(160), left: s(100) }
   const displayLevel = getMobileDebugLevel(playerState.level)
   const displayCoins = getMobileDebugCoins(playerState.coins)
   const maxLevel = getGameMaxLevel()
@@ -647,7 +648,7 @@ export const TopHud = () => {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: mobile ? { top: s(160), left: s(40) } : { top: s(160), left: s(100) },
+            position: languageSwitcherPosition,
             width: mobile ? s(160) : s(64),
             height: mobile ? s(160) : s(64),
             borderRadius: mobile ? s(24) : s(10),
