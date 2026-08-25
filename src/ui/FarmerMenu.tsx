@@ -7,7 +7,7 @@ import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
-import { queueSave } from '../services/saveTriggers'
+import { saveFarm } from '../services/saveService'
 import { trackEvent } from '../analytics/analytics'
 import { t } from '../i18n'
 import { SharedPaginationBar } from './SharedPaginationBar'
@@ -23,20 +23,16 @@ function giveSeeds(cropType: CropType, amount: number) {
   playerState.seeds.set(cropType, playerCount - toGive)
   const farmerCount = playerState.farmerSeeds.get(cropType) ?? 0
   playerState.farmerSeeds.set(cropType, farmerCount + toGive)
-  queueSave()
 }
 
 function collectAll() {
-  let collectedAny = false
   playerState.farmerInventory.forEach((count, cropType) => {
     if (count <= 0) return
     const current = playerState.harvested.get(cropType) ?? 0
     playerState.harvested.set(cropType, current + count)
     playerState.farmerInventory.set(cropType, 0)
-    collectedAny = true
   })
   updateFarmerInventoryDisplay()
-  if (collectedAny) queueSave()
 }
 
 type SeedGiveCardProps = { key?: string | number; cropType: CropType; playerCount: number; farmerCount: number }
@@ -184,7 +180,7 @@ export const FarmerMenu = () => {
                 playerState.workerUnpaidDays = 0
                 playerState.workerLastWageProcessedAt = Date.now()
                 trackEvent('feature unlocked', { feature: 'farmer_hired' })
-                queueSave()
+                saveFarm()
               }, 290)
             }}
           />

@@ -1,5 +1,4 @@
 import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
-import { onLeaveScene } from '@dcl/sdk/players'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -34,15 +33,12 @@ import { initBeautySpotSystem } from '../systems/beautySpotSystem'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
 import { progressionEventState } from '../game/progressionEventState'
-import { registerSaveHandlers } from './saveTriggers'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval
 // ---------------------------------------------------------------------------
 const AUTO_SAVE_INTERVAL_MS = 60_000
-const SAVE_DEBOUNCE_MS = 1_000
 let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
-let queuedSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
 
 // ---------------------------------------------------------------------------
@@ -436,44 +432,10 @@ export function restorePlotStates(savedPlots: PlotSaveState[]): void {
 // ---------------------------------------------------------------------------
 // Send save to server
 // ---------------------------------------------------------------------------
-function canSaveNow(): boolean {
-  if (!farmLoaded) return false
-  if (playerState.viewingFarm !== null) return false
-  if (!playerState.serverConnected) return false
-  return true
-}
-
-function clearQueuedSaveTimer(): void {
-  if (queuedSaveTimer !== null) {
-    clearTimeout(queuedSaveTimer)
-    queuedSaveTimer = null
-  }
-}
-
-function sendCurrentSave(): boolean {
-  if (!canSaveNow()) return false
+export function saveFarm(): void {
+  if (!farmLoaded) return    // don't save before the first load completes
   const payload = buildSavePayload()
   void room.send('playerSaveFarm', payload)
-  return true
-}
-
-function flushQueuedSaveInternal(): void {
-  clearQueuedSaveTimer()
-  if (sendCurrentSave()) return
-  if (!farmLoaded) return
-  if (playerState.viewingFarm !== null) return
-  queuedSaveTimer = setTimeout(flushQueuedSaveInternal, SAVE_DEBOUNCE_MS)
-}
-
-function queueSaveInternal(): void {
-  if (!farmLoaded) return
-  if (playerState.viewingFarm !== null) return
-  clearQueuedSaveTimer()
-  queuedSaveTimer = setTimeout(flushQueuedSaveInternal, SAVE_DEBOUNCE_MS)
-}
-
-export function saveFarm(): void {
-  sendCurrentSave()
 }
 
 function applyWorkerServerState(data: {
@@ -493,7 +455,7 @@ export function requestPayWorkerWages(): void {
 }
 
 // ---------------------------------------------------------------------------
-// Schedule fallback auto-save every 60s
+// Schedule auto-save every 60s
 // ---------------------------------------------------------------------------
 function scheduleAutoSave(): void {
   if (autoSaveTimer !== null) clearTimeout(autoSaveTimer)
@@ -538,21 +500,11 @@ export const leaderboardCallbacks = {
 // onLoaded is called after the first farm state is applied
 // ---------------------------------------------------------------------------
 export function initSaveService(onLoaded?: () => void): void {
-  registerSaveHandlers({
-    queue: queueSaveInternal,
-    flush: flushQueuedSaveInternal,
-  })
-
   room.onReady((isReady) => {
     playerState.serverConnected = isReady
   })
 
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
-  onLeaveScene((userId) => {
-    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) return
-    if (playerState.viewingFarm !== null) return
-    flushQueuedSaveInternal()
-  })
 
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (data) => {
