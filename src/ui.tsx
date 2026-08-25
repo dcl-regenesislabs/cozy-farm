@@ -1,5 +1,3 @@
-import { engine, UiCanvasInformation } from '@dcl/sdk/ecs'
-import { isMobile as isMobilePlatform } from '@dcl/sdk/platform'
 import ReactEcs, { ReactEcsRenderer, UiEntity } from '@dcl/sdk/react-ecs'
 import { playerState } from './game/gameState'
 import { TopHud } from './ui/TopHud'
@@ -29,53 +27,8 @@ import { LoadingOverlay } from './ui/LoadingOverlay'
 import { LanguageSelectOverlay } from './ui/LanguageSelectOverlay'
 import { MAILBOX_FEATURE_ENABLED } from './game/featureFlags'
 
-let uiRendererSyncRegistered = false
-let lastAppliedUiRendererSignature = ''
-
 export function setupUi() {
-  if (!uiRendererSyncRegistered) {
-    uiRendererSyncRegistered = true
-    engine.addSystem(syncUiRendererSystem)
-  }
-  applyUiRenderer(true)
-}
-
-function getUiCanvasInfo() {
-  return UiCanvasInformation.getOrNull(engine.RootEntity)
-}
-
-function getMobileUiDensityScale(): number {
-  if (!isMobilePlatform()) return 1
-  const canvasInfo = getUiCanvasInfo()
-  if (!canvasInfo) return 1
-  return canvasInfo.devicePixelRatio > 0 ? canvasInfo.devicePixelRatio : 1
-}
-
-function getUiRendererConfig() {
-  const densityScale = getMobileUiDensityScale()
-  const isMobile = isMobilePlatform()
-  const virtualWidth = isMobile ? Math.max(1, Math.round(1600 * densityScale)) : 1920
-  const virtualHeightBase = isMobile ? Math.max(1, Math.round(720 * densityScale)) : 1080
-
-  return {
-    virtualWidth,
-    // Keep the mobile virtual size off exact 16:9 so the SDK does not override it back to 1600x720.
-    virtualHeight: isMobile ? virtualHeightBase + 1 : virtualHeightBase,
-    screenInset: 'none' as const
-  }
-}
-
-function applyUiRenderer(force: boolean = false): void {
-  const config = getUiRendererConfig()
-  const signature = `${isMobilePlatform()}:${config.virtualWidth}x${config.virtualHeight}:${config.screenInset}`
-  if (!force && signature === lastAppliedUiRendererSignature) return
-
-  ReactEcsRenderer.setUiRenderer(MainUi, config)
-  lastAppliedUiRendererSignature = signature
-}
-
-function syncUiRendererSystem(): void {
-  applyUiRenderer()
+  ReactEcsRenderer.setUiRenderer(MainUi, { virtualWidth: 1920, virtualHeight: 1080 })
 }
 
 const MainUi = () => {

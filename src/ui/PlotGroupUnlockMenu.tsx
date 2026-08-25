@@ -10,7 +10,6 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
 import { OutlineLabel } from './OutlineLabel'
 import { DialogActionButton } from './RevampButtons'
-import { queueSave } from '../services/saveTriggers'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
 
@@ -79,7 +78,6 @@ export const PlotGroupUnlockMenu = () => {
     playerState.unlockedPlotGroups = [...playerState.unlockedPlotGroups, def.groupName]
     unlockPlotGroupByName(def.groupName)
     hidePlotGroupSign(def.groupName)
-    queueSave()
     playerState.activeMenu = 'none'
   }
 

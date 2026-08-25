@@ -9,7 +9,6 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { formatTime } from '../systems/growthSystem'
 import { fireCompostWasteAdded, fireCompostCollected } from '../systems/progressionEventsSystem'
 import { onCollectFertilizer } from '../game/questState'
-import { queueSave } from '../services/saveTriggers'
 import { t } from '../i18n'
 import { RevampPanelFrame } from './RevampPanel'
 
@@ -60,7 +59,6 @@ function collectReady() {
   playSound('buttonclick')
   onCollectFertilizer(cycles)
   fireCompostCollected()
-  queueSave()
 }
 
 function addWaste() {
@@ -72,7 +70,6 @@ function addWaste() {
   }
   playSound('buttonclick')
   fireCompostWasteAdded()
-  queueSave()
 }
 
 // ─── Panel frame — shared revamp background + "Compost Bin" title plaque ────

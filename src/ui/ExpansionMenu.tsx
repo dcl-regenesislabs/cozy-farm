@@ -14,7 +14,6 @@ import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { COINS_IMAGE, SOIL_ICON } from '../data/imagePaths'
 import { DialogActionButton } from './RevampButtons'
 import { OutlineLabel } from './OutlineLabel'
-import { queueSave } from '../services/saveTriggers'
 
 const BG_SRC = 'assets/images/ui_loading/npc_dialog_background.png'
 
@@ -74,7 +73,6 @@ export const ExpansionMenu = () => {
       removeForSaleSign3()
       unlockExpansion2Plots()
     }
-    queueSave()
     playerState.activeMenu = 'none'
   }
 
