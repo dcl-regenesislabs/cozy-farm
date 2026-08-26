@@ -1,7 +1,7 @@
 import { CropType } from '../data/cropData'
 import { playerState } from '../game/gameState'
 import { room, type CropCount } from '../shared/farmMessages'
-import { saveFarm } from './saveService'
+import { queueSave } from './saveTriggers'
 import { getVisitedPayload } from './visitService'
 
 export const socialUiCallbacks = {
@@ -79,7 +79,7 @@ export function initSocialService(): void {
       addCollectedSeeds(data.seeds)
       playerState.mailbox = []
       playerState.mailboxSeenCount = 0
-      saveFarm()
+      queueSave()
     }
 
     socialUiCallbacks.onMailboxCollected?.({

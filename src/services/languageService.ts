@@ -1,6 +1,6 @@
 import type { Lang } from '../i18n'
 import { setLanguage, refreshAllHoverTexts } from '../i18n'
-import { saveFarm } from './saveService'
+import { queueSave } from './saveTriggers'
 import { updateBuildingVisuals } from '../systems/animalSystem'
 import { applyBeautySlots, getBeautySlots } from '../systems/beautySpotSystem'
 import { wirePlotGroupSigns, refreshAllPlotHoverTexts } from '../systems/interactionSetup'
@@ -20,5 +20,5 @@ export function changeLanguage(lang: Lang): void {
   applyBeautySlots(getBeautySlots())
   wirePlotGroupSigns()
   refreshAllPlotHoverTexts()
-  saveFarm()
+  queueSave()
 }

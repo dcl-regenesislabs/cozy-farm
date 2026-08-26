@@ -7,7 +7,7 @@ import { MAYOR_DEF } from '../data/npcData'
 import { setArrowTarget, initTutorialArrow } from './tutorialArrowSystem'
 import { playSound } from './sfxSystem'
 import { getCoopAreaEntity, getPenAreaEntity, getCoopFoodEntity, getPenFoodEntity } from './animalSystem'
-import { saveFarm } from '../services/saveService'
+import { queueSave } from '../services/saveTriggers'
 import { CHICKEN_COOP_UNLOCK_LEVEL, PIG_PEN_UNLOCK_LEVEL } from '../data/animalData'
 import { progressionEventState } from '../game/progressionEventState'
 import { tutorialState } from '../game/tutorialState'
@@ -141,7 +141,7 @@ function goToChickenCleanIntro(): void {
 function completeChickenTutorial(): void {
   setChickenStep('complete')
   animalTutorialState.chickenActive = false
-  saveFarm()
+  queueSave()
   departAllActiveNpcs()
   onChickenTutorialCompleteCb?.()
 }
@@ -353,7 +353,7 @@ function goToPigHarvestExplained(): void {
 function completePigTutorial(): void {
   setPigStep('complete')
   animalTutorialState.pigActive = false
-  saveFarm()
+  queueSave()
   departAllActiveNpcs()
   onPigTutorialCompleteCb?.()
 }
