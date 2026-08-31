@@ -1,6 +1,5 @@
 import { executeTask, engine, InputAction, SkyboxTime, TouchScreenControls } from '@dcl/sdk/ecs'
 import { isServer } from '@dcl/sdk/network'
-import { isMobile as isMobilePlatform } from '@dcl/sdk/platform'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
@@ -315,8 +314,8 @@ export function main() {
 }
 
 function configureMobileTouchControls(): void {
-  if (!isMobilePlatform()) return
-
+  // Cozy Farm only uses pointer interactions in-scene. Keep movement/aiming visible,
+  // but remove the extra action buttons from the native touch HUD.
   TouchScreenControls.createOrReplace(engine.RootEntity, {
     hideJoystick: false,
     hideCrosshair: false,

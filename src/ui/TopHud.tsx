@@ -1,4 +1,4 @@
-import ReactEcs, { Label, ScreenInsetArea, UiEntity } from '@dcl/sdk/react-ecs'
+import ReactEcs, { InteractableArea, Label, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { t, getLanguage } from '../i18n'
 import type { Lang } from '../i18n'
@@ -195,10 +195,7 @@ function AtlasNumber(props: { value: number; digitHeight: number; gap?: number }
 
 export const TopHud = () => {
   const mobile = isMobile()
-  const hudTop = 26
-  const languageSwitcherPosition = mobile
-    ? { top: hudTop + s(160), right: s(64) }
-    : { top: hudTop + s(160), left: s(100) }
+  const languageSwitcherPosition = mobile ? { top: s(160), right: s(64) } : { top: s(160), left: s(100) }
   const displayLevel = getMobileDebugLevel(playerState.level)
   const displayCoins = getMobileDebugCoins(playerState.coins)
   const maxLevel = getGameMaxLevel()
@@ -243,6 +240,36 @@ export const TopHud = () => {
   const mobileCoinsText = formatMobileHudCoins(displayCoins)
   const mobileCoinsFontSize = getMobileHudCoinFontSize(mobileCoinsText)
   const mobileXpFontSize = getMobileHudXpFontSize(mobileXpText)
+  const languageSwitcher = (
+    <UiEntity
+      uiTransform={{
+        positionType: 'absolute',
+        position: languageSwitcherPosition,
+        width: mobile ? s(160) : s(64),
+        height: mobile ? s(160) : s(64),
+        borderRadius: mobile ? s(24) : s(10),
+        borderWidth: 2,
+        borderColor: HUD_BROWN,
+        alignItems: 'center',
+        justifyContent: 'center',
+        pointerFilter: 'block',
+      }}
+      uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 0.7 } }}
+      onMouseDown={() => {
+        playSound('buttonclick')
+        openLanguagePicker()
+      }}
+    >
+      <UiEntity
+        uiTransform={{ width: mobile ? s(120) : s(48), height: mobile ? s(80) : s(32) }}
+        uiBackground={{
+          texture: { src: LANG_FLAGS_IMG, wrapMode: 'clamp' },
+          textureMode: 'stretch',
+          uvs: flagAtlasUvs(FLAG_RECTS[getLanguage()]),
+        }}
+      />
+    </UiEntity>
+  )
 
   return (
     <UiEntity
@@ -335,7 +362,7 @@ export const TopHud = () => {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: hudTop, left: 0 },
+            position: { top: 26, left: 0 },
             width: '100%',
           height: boardHeight,
           justifyContent: 'center',
@@ -644,42 +671,12 @@ export const TopHud = () => {
             </UiEntity>
           )}
         </UiEntity>
-
-        {/* Language switcher — shows the current language's flag; tap to reopen the picker.
-            Desktop is shrunk 2.5x and nudged right (with breathing room from the screen
-            edge) vs. the mobile size; mobile keeps its original larger, more-left placement. */}
       </UiEntity>
 
-      <ScreenInsetArea>
-        <UiEntity
-          uiTransform={{
-            positionType: 'absolute',
-            position: languageSwitcherPosition,
-            width: mobile ? s(160) : s(64),
-            height: mobile ? s(160) : s(64),
-            borderRadius: mobile ? s(24) : s(10),
-            borderWidth: 2,
-            borderColor: HUD_BROWN,
-            alignItems: 'center',
-            justifyContent: 'center',
-            pointerFilter: 'block',
-          }}
-          uiBackground={{ color: { r: 0.12, g: 0.08, b: 0.04, a: 0.7 } }}
-          onMouseDown={() => {
-            playSound('buttonclick')
-            openLanguagePicker()
-          }}
-        >
-          <UiEntity
-            uiTransform={{ width: mobile ? s(120) : s(48), height: mobile ? s(80) : s(32) }}
-            uiBackground={{
-              texture: { src: LANG_FLAGS_IMG, wrapMode: 'clamp' },
-              textureMode: 'stretch',
-              uvs: flagAtlasUvs(FLAG_RECTS[getLanguage()]),
-            }}
-          />
-        </UiEntity>
-      </ScreenInsetArea>
+      {/* Keep the mobile flag selector inside the Explorer HUD-safe zone; desktop
+          keeps the original absolute placement. */}
+      {mobile ? <InteractableArea>{languageSwitcher}</InteractableArea> : languageSwitcher}
     </UiEntity>
   )
 }
+
