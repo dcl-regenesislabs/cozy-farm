@@ -1,5 +1,6 @@
-import { executeTask, engine, SkyboxTime } from '@dcl/sdk/ecs'
+import { executeTask, engine, InputAction, SkyboxTime, TouchScreenControls } from '@dcl/sdk/ecs'
 import { isServer } from '@dcl/sdk/network'
+import { isMobile as isMobilePlatform } from '@dcl/sdk/platform'
 import { getUserData } from '~system/UserIdentity'
 import { PlayerIdentityData } from '@dcl/sdk/ecs'
 import { setupUi } from './ui'
@@ -59,6 +60,7 @@ export function main() {
   // Force midday skybox at runtime — scene.json's skyboxConfig.fixedTime sets the
   // manifest default, but this pins it in-world regardless of realm/portal overrides.
   SkyboxTime.createOrReplace(engine.RootEntity, { fixedTime: 43200 })
+  configureMobileTouchControls()
 
   setupUi()
   preloadUiAssets()
@@ -309,5 +311,24 @@ export function main() {
         startRegularNpcRotation()
       }
     }
+  })
+}
+
+function configureMobileTouchControls(): void {
+  if (!isMobilePlatform()) return
+
+  TouchScreenControls.createOrReplace(engine.RootEntity, {
+    hideJoystick: false,
+    hideCrosshair: false,
+    mainAction: InputAction.IA_POINTER,
+    touchInputs: [
+      { inputAction: InputAction.IA_JUMP, hide: true },
+      { inputAction: InputAction.IA_PRIMARY, hide: true },
+      { inputAction: InputAction.IA_SECONDARY, hide: true },
+      { inputAction: InputAction.IA_ACTION_3, hide: true },
+      { inputAction: InputAction.IA_ACTION_4, hide: true },
+      { inputAction: InputAction.IA_ACTION_5, hide: true },
+      { inputAction: InputAction.IA_ACTION_6, hide: true },
+    ],
   })
 }

@@ -1,4 +1,4 @@
-import ReactEcs, { Label, UiEntity } from '@dcl/sdk/react-ecs'
+import ReactEcs, { Label, ScreenInsetArea, UiEntity } from '@dcl/sdk/react-ecs'
 import { isMobile } from '@dcl/sdk/platform'
 import { t, getLanguage } from '../i18n'
 import type { Lang } from '../i18n'
@@ -195,7 +195,10 @@ function AtlasNumber(props: { value: number; digitHeight: number; gap?: number }
 
 export const TopHud = () => {
   const mobile = isMobile()
-  const languageSwitcherPosition = mobile ? { top: s(160), right: s(64) } : { top: s(160), left: s(100) }
+  const hudTop = 26
+  const languageSwitcherPosition = mobile
+    ? { top: hudTop + s(160), right: s(64) }
+    : { top: hudTop + s(160), left: s(100) }
   const displayLevel = getMobileDebugLevel(playerState.level)
   const displayCoins = getMobileDebugCoins(playerState.coins)
   const maxLevel = getGameMaxLevel()
@@ -332,7 +335,7 @@ export const TopHud = () => {
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
-            position: { top: 26, left: 0 },
+            position: { top: hudTop, left: 0 },
             width: '100%',
           height: boardHeight,
           justifyContent: 'center',
@@ -645,6 +648,9 @@ export const TopHud = () => {
         {/* Language switcher — shows the current language's flag; tap to reopen the picker.
             Desktop is shrunk 2.5x and nudged right (with breathing room from the screen
             edge) vs. the mobile size; mobile keeps its original larger, more-left placement. */}
+      </UiEntity>
+
+      <ScreenInsetArea>
         <UiEntity
           uiTransform={{
             positionType: 'absolute',
@@ -673,7 +679,7 @@ export const TopHud = () => {
             }}
           />
         </UiEntity>
-      </UiEntity>
+      </ScreenInsetArea>
     </UiEntity>
   )
 }
