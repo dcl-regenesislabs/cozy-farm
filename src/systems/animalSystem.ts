@@ -87,6 +87,7 @@ let pigBounds:          WanderBounds = { minX: 0, maxX: 1, minZ: 0, maxZ: 1 }
 const wanderers = new Map<string, AnimalWanderer>()
 let systemRegistered = false
 let uidCounter = Date.now()
+const hiddenCollisionMasks = new Map<Entity, { visible: number; invisible: number }>()
 
 function newId(): string { return `a${(uidCounter++).toString(36)}` }
 
@@ -96,6 +97,25 @@ function newId(): string { return `a${(uidCounter++).toString(36)}` }
 
 function setVisible(entity: Entity | null, visible: boolean): void {
   if (!entity) return
+
+  const gltf = GltfContainer.getMutableOrNull(entity)
+  if (gltf) {
+    if (visible) {
+      const cached = hiddenCollisionMasks.get(entity)
+      if (cached) {
+        gltf.visibleMeshesCollisionMask = cached.visible
+        gltf.invisibleMeshesCollisionMask = cached.invisible
+      }
+    } else {
+      hiddenCollisionMasks.set(entity, {
+        visible: gltf.visibleMeshesCollisionMask ?? 0,
+        invisible: gltf.invisibleMeshesCollisionMask ?? 0,
+      })
+      gltf.visibleMeshesCollisionMask = 0
+      gltf.invisibleMeshesCollisionMask = 0
+    }
+  }
+
   if (VisibilityComponent.has(entity)) {
     VisibilityComponent.getMutable(entity).visible = visible
   } else {
