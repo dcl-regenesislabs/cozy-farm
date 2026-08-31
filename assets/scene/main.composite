@@ -5039,19 +5039,19 @@
           "json": {
             "position": {
               "x": 0,
-              "y": 0,
+              "y": 0.029999999329447746,
               "z": 0.47999998927116394
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
             },
             "rotation": {
               "x": 0,
               "y": 0,
               "z": 0,
               "w": 1
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
             },
             "parent": 748
           }
@@ -5081,19 +5081,19 @@
           "json": {
             "position": {
               "x": 0,
-              "y": 0,
+              "y": 0.029999999329447746,
               "z": 0
-            },
-            "scale": {
-              "x": 1,
-              "y": 1,
-              "z": 1
             },
             "rotation": {
               "x": 0,
               "y": 0,
               "z": 0,
               "w": 1
+            },
+            "scale": {
+              "x": 1,
+              "y": 1,
+              "z": 1
             },
             "parent": 516
           }
@@ -6750,41 +6750,6 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
-        "647": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "648": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "649": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "650": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "651": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
         "652": {
           "json": {
             "src": "assets/asset-packs/worn_out_medium_stone_path/StonePathBroken_01/StonePathBroken_01.glb",
@@ -7114,13 +7079,6 @@
             "invisibleMeshesCollisionMask": 3
           }
         },
-        "726": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
         "730": {
           "json": {
             "src": "assets/asset-packs/for_sale_sign/ForSaleSign_01/ForSaleSign_01.glb",
@@ -7215,55 +7173,6 @@
         "753": {
           "json": {
             "src": "assets/scene/Models/AnimalWater/AnimalWater.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "755": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "756": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "757": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "760": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "761": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "762": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
-            "visibleMeshesCollisionMask": 0,
-            "invisibleMeshesCollisionMask": 3
-          }
-        },
-        "763": {
-          "json": {
-            "src": "assets/asset-packs/round_rug/Carpet_01/Carpet_01.glb",
             "visibleMeshesCollisionMask": 0,
             "invisibleMeshesCollisionMask": 3
           }
@@ -9148,26 +9057,6 @@
               "Tag Group 3",
               "Tag Group 4"
             ]
-          }
-        }
-      }
-    },
-    {
-      "name": "inspector::Selection",
-      "jsonSchema": {
-        "type": "object",
-        "properties": {
-          "gizmo": {
-            "type": "integer",
-            "serializationType": "int32"
-          }
-        },
-        "serializationType": "map"
-      },
-      "data": {
-        "0": {
-          "json": {
-            "gizmo": 0
           }
         }
       }
@@ -11557,6 +11446,26 @@
       }
     },
     {
+      "name": "inspector::Hide",
+      "jsonSchema": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean",
+            "serializationType": "boolean"
+          }
+        },
+        "serializationType": "map"
+      },
+      "data": {
+        "794": {
+          "json": {
+            "value": true
+          }
+        }
+      }
+    },
+    {
       "name": "inspector::Config",
       "jsonSchema": {
         "type": "object",
@@ -12044,7 +11953,7 @@
       }
     },
     {
-      "name": "inspector::SceneMetadata-v4",
+      "name": "inspector::SceneMetadata-v5",
       "jsonSchema": {
         "type": "object",
         "properties": {
@@ -12370,6 +12279,14 @@
               "type": "boolean",
               "serializationType": "boolean"
             }
+          },
+          "hideLandscapeTerrain": {
+            "type": "boolean",
+            "serializationType": "optional",
+            "optionalJsonSchema": {
+              "type": "boolean",
+              "serializationType": "boolean"
+            }
           }
         },
         "serializationType": "map"
@@ -12378,7 +12295,7 @@
         "0": {
           "json": {
             "name": "CozyFarm",
-            "description": "Empty Scene Template",
+            "description": "Grow crops, raise animals, and build your dream farm! Claim your own plot, harvest and sell produce, decorate your space, and enjoy this cozy farming world.",
             "thumbnail": "assets/scene/Images/CozyFarm.png",
             "categories": [],
             "author": "DCL Regenesis Labs",
@@ -12387,6 +12304,98 @@
             "layout": {
               "parcels": [
                 {
+                  "x": -3,
+                  "y": 6
+                },
+                {
+                  "x": -2,
+                  "y": 6
+                },
+                {
+                  "x": -1,
+                  "y": 6
+                },
+                {
+                  "x": 0,
+                  "y": 6
+                },
+                {
+                  "x": 1,
+                  "y": 6
+                },
+                {
+                  "x": 2,
+                  "y": 6
+                },
+                {
+                  "x": 3,
+                  "y": 6
+                },
+                {
+                  "x": 4,
+                  "y": 6
+                },
+                {
+                  "x": 5,
+                  "y": 6
+                },
+                {
+                  "x": 6,
+                  "y": 6
+                },
+                {
+                  "x": -3,
+                  "y": 5
+                },
+                {
+                  "x": -2,
+                  "y": 5
+                },
+                {
+                  "x": -1,
+                  "y": 5
+                },
+                {
+                  "x": 0,
+                  "y": 5
+                },
+                {
+                  "x": 1,
+                  "y": 5
+                },
+                {
+                  "x": 2,
+                  "y": 5
+                },
+                {
+                  "x": 3,
+                  "y": 5
+                },
+                {
+                  "x": 4,
+                  "y": 5
+                },
+                {
+                  "x": 5,
+                  "y": 5
+                },
+                {
+                  "x": 6,
+                  "y": 5
+                },
+                {
+                  "x": -3,
+                  "y": 4
+                },
+                {
+                  "x": -2,
+                  "y": 4
+                },
+                {
+                  "x": -1,
+                  "y": 4
+                },
+                {
                   "x": 0,
                   "y": 4
                 },
@@ -12405,6 +12414,26 @@
                 {
                   "x": 4,
                   "y": 4
+                },
+                {
+                  "x": 5,
+                  "y": 4
+                },
+                {
+                  "x": 6,
+                  "y": 4
+                },
+                {
+                  "x": -3,
+                  "y": 3
+                },
+                {
+                  "x": -2,
+                  "y": 3
+                },
+                {
+                  "x": -1,
+                  "y": 3
                 },
                 {
                   "x": 0,
@@ -12427,6 +12456,26 @@
                   "y": 3
                 },
                 {
+                  "x": 5,
+                  "y": 3
+                },
+                {
+                  "x": 6,
+                  "y": 3
+                },
+                {
+                  "x": -3,
+                  "y": 2
+                },
+                {
+                  "x": -2,
+                  "y": 2
+                },
+                {
+                  "x": -1,
+                  "y": 2
+                },
+                {
                   "x": 0,
                   "y": 2
                 },
@@ -12447,6 +12496,26 @@
                   "y": 2
                 },
                 {
+                  "x": 5,
+                  "y": 2
+                },
+                {
+                  "x": 6,
+                  "y": 2
+                },
+                {
+                  "x": -3,
+                  "y": 1
+                },
+                {
+                  "x": -2,
+                  "y": 1
+                },
+                {
+                  "x": -1,
+                  "y": 1
+                },
+                {
                   "x": 0,
                   "y": 1
                 },
@@ -12467,6 +12536,26 @@
                   "y": 1
                 },
                 {
+                  "x": 5,
+                  "y": 1
+                },
+                {
+                  "x": 6,
+                  "y": 1
+                },
+                {
+                  "x": -3,
+                  "y": 0
+                },
+                {
+                  "x": -2,
+                  "y": 0
+                },
+                {
+                  "x": -1,
+                  "y": 0
+                },
+                {
                   "x": 0,
                   "y": 0
                 },
@@ -12485,6 +12574,134 @@
                 {
                   "x": 4,
                   "y": 0
+                },
+                {
+                  "x": 5,
+                  "y": 0
+                },
+                {
+                  "x": 6,
+                  "y": 0
+                },
+                {
+                  "x": -3,
+                  "y": -1
+                },
+                {
+                  "x": -2,
+                  "y": -1
+                },
+                {
+                  "x": -1,
+                  "y": -1
+                },
+                {
+                  "x": 0,
+                  "y": -1
+                },
+                {
+                  "x": 1,
+                  "y": -1
+                },
+                {
+                  "x": 2,
+                  "y": -1
+                },
+                {
+                  "x": 3,
+                  "y": -1
+                },
+                {
+                  "x": 4,
+                  "y": -1
+                },
+                {
+                  "x": 5,
+                  "y": -1
+                },
+                {
+                  "x": 6,
+                  "y": -1
+                },
+                {
+                  "x": -3,
+                  "y": -2
+                },
+                {
+                  "x": -2,
+                  "y": -2
+                },
+                {
+                  "x": -1,
+                  "y": -2
+                },
+                {
+                  "x": 0,
+                  "y": -2
+                },
+                {
+                  "x": 1,
+                  "y": -2
+                },
+                {
+                  "x": 2,
+                  "y": -2
+                },
+                {
+                  "x": 3,
+                  "y": -2
+                },
+                {
+                  "x": 4,
+                  "y": -2
+                },
+                {
+                  "x": 5,
+                  "y": -2
+                },
+                {
+                  "x": 6,
+                  "y": -2
+                },
+                {
+                  "x": -3,
+                  "y": -3
+                },
+                {
+                  "x": -2,
+                  "y": -3
+                },
+                {
+                  "x": -1,
+                  "y": -3
+                },
+                {
+                  "x": 0,
+                  "y": -3
+                },
+                {
+                  "x": 1,
+                  "y": -3
+                },
+                {
+                  "x": 2,
+                  "y": -3
+                },
+                {
+                  "x": 3,
+                  "y": -3
+                },
+                {
+                  "x": 4,
+                  "y": -3
+                },
+                {
+                  "x": 5,
+                  "y": -3
+                },
+                {
+                  "x": 6,
+                  "y": -3
                 }
               ],
               "base": {
@@ -12532,7 +12749,8 @@
               "fixedTime": 43200
             },
             "creator": "",
-            "disableNearbyVoiceChat": false
+            "disableNearbyVoiceChat": false,
+            "hideLandscapeTerrain": false
           }
         }
       }
