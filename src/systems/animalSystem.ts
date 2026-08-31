@@ -98,28 +98,40 @@ function newId(): string { return `a${(uidCounter++).toString(36)}` }
 function setVisible(entity: Entity | null, visible: boolean): void {
   if (!entity) return
 
-  const gltf = GltfContainer.getMutableOrNull(entity)
+  const currentVisibility = VisibilityComponent.getOrNull(entity)?.visible
+  if (currentVisibility === visible) return
+  if (currentVisibility === undefined && visible) return
+
+  const gltf = GltfContainer.getOrNull(entity)
   if (gltf) {
     if (visible) {
       const cached = hiddenCollisionMasks.get(entity)
       if (cached) {
-        gltf.visibleMeshesCollisionMask = cached.visible
-        gltf.invisibleMeshesCollisionMask = cached.invisible
+        const mutable = GltfContainer.getMutableOrNull(entity)
+        if (mutable) {
+          mutable.visibleMeshesCollisionMask = cached.visible
+          mutable.invisibleMeshesCollisionMask = cached.invisible
+        }
+        hiddenCollisionMasks.delete(entity)
       }
-    } else {
+    } else if (!hiddenCollisionMasks.has(entity)) {
       hiddenCollisionMasks.set(entity, {
         visible: gltf.visibleMeshesCollisionMask ?? 0,
         invisible: gltf.invisibleMeshesCollisionMask ?? 0,
       })
-      gltf.visibleMeshesCollisionMask = 0
-      gltf.invisibleMeshesCollisionMask = 0
+
+      const mutable = GltfContainer.getMutableOrNull(entity)
+      if (mutable) {
+        mutable.visibleMeshesCollisionMask = 0
+        mutable.invisibleMeshesCollisionMask = 0
+      }
     }
   }
 
-  if (VisibilityComponent.has(entity)) {
+  if (currentVisibility !== undefined) {
     VisibilityComponent.getMutable(entity).visible = visible
-  } else {
-    VisibilityComponent.create(entity, { visible })
+  } else if (!visible) {
+    VisibilityComponent.create(entity, { visible: false })
   }
 }
 
