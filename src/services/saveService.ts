@@ -1,4 +1,5 @@
 import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
+import { onLeaveScene } from '@dcl/sdk/players'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -33,12 +34,17 @@ import { initBeautySpotSystem } from '../systems/beautySpotSystem'
 import { spawnDog } from '../systems/dogSystem'
 import { animalTutorialState } from '../game/animalTutorialState'
 import { progressionEventState } from '../game/progressionEventState'
+import { registerSaveHandlers } from './saveTriggers'
 
 // ---------------------------------------------------------------------------
-// Auto-save interval
+// Auto-save interval + debounced action save
 // ---------------------------------------------------------------------------
 const AUTO_SAVE_INTERVAL_MS = 60_000
-let autoSaveTimer: ReturnType<typeof setTimeout> | null = null
+const SAVE_DEBOUNCE_MS      = 1_000
+const FLUSH_MAX_RETRIES     = 10   // give up after 10s if server never reconnects
+
+let autoSaveTimer:   ReturnType<typeof setTimeout> | null = null
+let queuedSaveTimer: ReturnType<typeof setTimeout> | null = null
 let farmLoaded = false
 
 // ---------------------------------------------------------------------------
@@ -432,10 +438,54 @@ export function restorePlotStates(savedPlots: PlotSaveState[]): void {
 // ---------------------------------------------------------------------------
 // Send save to server
 // ---------------------------------------------------------------------------
-export function saveFarm(): void {
-  if (!farmLoaded) return    // don't save before the first load completes
+function canSaveNow(): boolean {
+  if (!farmLoaded) return false
+  if (playerState.viewingFarm !== null) return false
+  if (!playerState.serverConnected) return false
+  return true
+}
+
+function clearQueuedSaveTimer(): void {
+  if (queuedSaveTimer !== null) {
+    clearTimeout(queuedSaveTimer)
+    queuedSaveTimer = null
+  }
+}
+
+function sendCurrentSave(): boolean {
+  if (!canSaveNow()) return false
   const payload = buildSavePayload()
   void room.send('playerSaveFarm', payload)
+  return true
+}
+
+function flushQueuedSaveInternal(retries = 0): void {
+  clearQueuedSaveTimer()
+  if (sendCurrentSave()) return
+  if (!farmLoaded || playerState.viewingFarm !== null) return
+  if (retries >= FLUSH_MAX_RETRIES) return
+  queuedSaveTimer = setTimeout(() => flushQueuedSaveInternal(retries + 1), SAVE_DEBOUNCE_MS)
+}
+
+function queueSaveInternal(): void {
+  if (!farmLoaded || playerState.viewingFarm !== null) return
+  clearQueuedSaveTimer()
+  queuedSaveTimer = setTimeout(flushQueuedSaveInternal, SAVE_DEBOUNCE_MS)
+}
+
+/** Immediate save — backward-compat for explicit milestone saves. */
+export function saveFarm(): void {
+  sendCurrentSave()
+}
+
+/** Debounced save — use after player actions. Coalesces into one save after 1s of quiet. */
+export function queueSave(): void {
+  queueSaveInternal()
+}
+
+/** Flush queued save immediately — use before entering visit mode or on critical events. */
+export function flushQueuedSave(): void {
+  flushQueuedSaveInternal()
 }
 
 function applyWorkerServerState(data: {
@@ -500,11 +550,19 @@ export const leaderboardCallbacks = {
 // onLoaded is called after the first farm state is applied
 // ---------------------------------------------------------------------------
 export function initSaveService(onLoaded?: () => void): void {
+  registerSaveHandlers({ queue: queueSaveInternal, flush: flushQueuedSaveInternal })
+
   room.onReady((isReady) => {
     playerState.serverConnected = isReady
   })
 
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
+
+  onLeaveScene((userId) => {
+    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) return
+    if (playerState.viewingFarm !== null) return
+    flushQueuedSaveInternal()
+  })
 
   // Listen for server → client farm state
   room.onMessage('farmStateLoaded', (data) => {

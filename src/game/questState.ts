@@ -3,6 +3,7 @@ import { CropType } from '../data/cropData'
 import { playerState } from './gameState'
 import { addXp } from '../systems/levelingSystem'
 import { showBadge } from './badgeSystem'
+import { queueSave } from '../services/saveTriggers'
 
 export type QuestStatus = 'available' | 'active' | 'claimable' | 'completed'
 
@@ -70,6 +71,7 @@ export function acceptQuest(questId: string): void {
   const cb = onQuestAcceptedCb
   onQuestAcceptedCb = null
   cb?.()
+  queueSave()
   console.log(`CozyFarm Quest: Accepted "${questId}"`)
 }
 
@@ -86,6 +88,7 @@ export function claimQuestReward(questId: string): void {
   onQuestClaimedCb = null
   cb?.()
   questClaimedCallbacks.get(questId)?.()
+  queueSave()
 }
 
 // ---------------------------------------------------------------------------

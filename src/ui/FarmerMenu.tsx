@@ -7,7 +7,7 @@ import { updateFarmerInventoryDisplay } from '../systems/farmerSystem'
 import { triggerCardZoom, getZoomScale, isZooming } from './cardZoomSystem'
 import { playSound } from '../systems/sfxSystem'
 import { WORKER_DAILY_WAGE, WORKER_HIRE_COST, getWorkerDebtDays, getWorkerStatus } from '../shared/worker'
-import { saveFarm } from '../services/saveService'
+import { queueSave } from '../services/saveTriggers'
 import { trackEvent } from '../analytics/analytics'
 import { t } from '../i18n'
 import { SharedPaginationBar } from './SharedPaginationBar'
@@ -180,7 +180,7 @@ export const FarmerMenu = () => {
                 playerState.workerUnpaidDays = 0
                 playerState.workerLastWageProcessedAt = Date.now()
                 trackEvent('feature unlocked', { feature: 'farmer_hired' })
-                saveFarm()
+                queueSave()
               }, 290)
             }}
           />
