@@ -314,14 +314,14 @@ export function main() {
 }
 
 function configureMobileTouchControls(): void {
-  // Cozy Farm only uses pointer interactions in-scene. Keep movement/aiming visible,
-  // but remove the extra action buttons from the native touch HUD.
+  // Cozy Farm only uses pointer (tap) interactions and jumping in-scene. Keep
+  // movement/aiming/jump visible, but remove the unused E/F/number action buttons
+  // from the native touch HUD.
   TouchScreenControls.createOrReplace(engine.RootEntity, {
     hideJoystick: false,
     hideCrosshair: false,
     mainAction: InputAction.IA_POINTER,
     touchInputs: [
-      { inputAction: InputAction.IA_JUMP, hide: true },
       { inputAction: InputAction.IA_PRIMARY, hide: true },
       { inputAction: InputAction.IA_SECONDARY, hide: true },
       { inputAction: InputAction.IA_ACTION_3, hide: true },
