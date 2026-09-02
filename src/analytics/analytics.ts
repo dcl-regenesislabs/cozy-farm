@@ -4,6 +4,7 @@ const GAME_ID      = 'cozyfarm'
 const ENABLED      = true
 
 let _wallet = ''
+let _sessionStartedAt = 0
 
 /** Call once when the player's wallet is known (inside saveService onLoaded). */
 export function setAnalyticsWallet(wallet: string): void {
@@ -13,9 +14,11 @@ export function setAnalyticsWallet(wallet: string): void {
 /**
  * Single choke point — the only function that talks to PostHog.
  * Fire-and-forget: never blocks, never crashes gameplay.
+ * Auto-records session start time when event is 'session started'.
  */
 export function trackEvent(name: string, properties: Record<string, unknown> = {}): void {
   if (!ENABLED || !_wallet) return
+  if (name === 'session started') _sessionStartedAt = Date.now()
   const body = JSON.stringify({
     api_key:     POSTHOG_KEY,
     event:       name,
@@ -28,4 +31,16 @@ export function trackEvent(name: string, properties: Record<string, unknown> = {
     headers: { 'Content-Type': 'application/json' },
     body,
   }).catch(() => {})
+}
+
+/**
+ * Fire 'session ended' with duration in seconds.
+ * Best-effort: only fires on clean leave (teleport, normal close) via onLeaveScene.
+ * Durations from crashed sessions are not captured — average will skew slightly high.
+ */
+export function trackSessionEnd(): void {
+  if (_sessionStartedAt === 0) return
+  const durationSeconds = Math.round((Date.now() - _sessionStartedAt) / 1000)
+  trackEvent('session ended', { duration_seconds: durationSeconds })
+  _sessionStartedAt = 0
 }

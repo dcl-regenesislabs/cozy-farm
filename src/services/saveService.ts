@@ -1,4 +1,6 @@
 import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
+import { onLeaveScene } from '@dcl/sdk/players'
+import { trackSessionEnd } from '../analytics/analytics'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -551,6 +553,12 @@ export function initSaveService(onLoaded?: () => void): void {
   room.onMessage('workerWagePaymentResult', (data) => {
     if (data.requester !== playerState.wallet) return
     applyWorkerServerState(data)
+  })
+
+  onLeaveScene((userId) => {
+    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) return
+    trackSessionEnd()
+    if (farmLoaded) saveFarm()
   })
 
   void room.send('playerLoadFarm', { requestId: 'initial-load' })
