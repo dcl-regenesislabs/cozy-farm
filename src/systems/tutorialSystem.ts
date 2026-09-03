@@ -16,7 +16,7 @@ import { progressionEventState } from '../game/progressionEventState'
 import { animalTutorialState } from '../game/animalTutorialState'
 import { updateBuildingVisuals, despawnAllAnimals } from './animalSystem'
 import { getEntityWorldPosition } from './farmInstances'
-import { saveFarm } from '../services/saveService'
+import { flushSave, queueSave } from '../services/saveTriggers'
 import { trackEvent } from '../analytics/analytics'
 import { t, tList } from '../i18n'
 
@@ -405,6 +405,7 @@ export function skipTutorial() {
   playerState.harvested.set(CropType.Onion, 10)
 
   requestNpcDeparture()
+  queueSave()
   console.log('CozyFarm Tutorial: skipped via Axe (3 clicks) — level 8, 20k coins, all quests cleared')
 }
 
@@ -509,8 +510,8 @@ export function resetFarm() {
   resetQuestProgress()
   tutorialCallbacks.resetSoilPlots()
 
-  // Persist the empty state to the server
-  saveFarm()
+  // Persist the empty state to the server immediately (reset must not be deferred)
+  flushSave()
 
   // Respawn Mayor and restart tutorial via index.ts callback
   tutorialCallbacks.onResetComplete()
