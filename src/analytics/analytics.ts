@@ -3,6 +3,9 @@ const POSTHOG_HOST = 'eu.i.posthog.com'
 const GAME_ID      = 'cozyfarm'
 const ENABLED      = true
 
+// Cap implausibly long sessions (e.g. a stuck timer) at 4 hours
+const MAX_SESSION_SECONDS = 14_400
+
 let _wallet = ''
 let _sessionStartedAt = 0
 
@@ -11,14 +14,14 @@ export function setAnalyticsWallet(wallet: string): void {
   _wallet = wallet
 }
 
-/**
- * Single choke point — the only function that talks to PostHog.
- * Fire-and-forget: never blocks, never crashes gameplay.
- * Auto-records session start time when event is 'session started'.
- */
+/** Start (or restart) the session timer. Call on boot AND on every onEnterScene. */
+export function startSessionTimer(): void {
+  _sessionStartedAt = Date.now()
+}
+
+/** Single choke point — the only function that talks to PostHog. Fire-and-forget. */
 export function trackEvent(name: string, properties: Record<string, unknown> = {}): void {
   if (!ENABLED || !_wallet) return
-  if (name === 'session started') _sessionStartedAt = Date.now()
   const body = JSON.stringify({
     api_key:     POSTHOG_KEY,
     event:       name,
@@ -34,13 +37,13 @@ export function trackEvent(name: string, properties: Record<string, unknown> = {
 }
 
 /**
- * Fire 'session ended' with duration in seconds.
- * Best-effort: only fires on clean leave (teleport, normal close) via onLeaveScene.
- * Durations from crashed sessions are not captured — average will skew slightly high.
+ * Fire 'session ended' with duration in seconds, then disarm the timer.
+ * Called from onLeaveScene — fires on parcel-boundary exit and clean quit.
+ * Crashes are not captured; average will skew slightly high.
  */
 export function trackSessionEnd(): void {
   if (_sessionStartedAt === 0) return
-  const durationSeconds = Math.round((Date.now() - _sessionStartedAt) / 1000)
-  trackEvent('session ended', { duration_seconds: durationSeconds })
+  const raw = Math.round((Date.now() - _sessionStartedAt) / 1000)
+  trackEvent('session ended', { duration_seconds: Math.min(raw, MAX_SESSION_SECONDS) })
   _sessionStartedAt = 0
 }
