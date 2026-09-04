@@ -566,7 +566,11 @@ export function initSaveService(onLoaded?: () => void): void {
   })
 
   onLeaveScene((userId) => {
-    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) return
+    console.log(`[SaveService] onLeaveScene fired — userId: "${userId}", wallet: "${playerState.wallet}"`)
+    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) {
+      console.log('[SaveService] onLeaveScene: userId/wallet mismatch, skipping')
+      return
+    }
     trackSessionEnd()
     if (playerState.viewingFarm !== null) return
     flushQueuedSaveInternal()
