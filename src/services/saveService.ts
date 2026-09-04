@@ -1,6 +1,6 @@
 import { engine, Entity, executeTask, GltfContainer } from '@dcl/sdk/ecs'
-import { onEnterScene, onLeaveScene } from '@dcl/sdk/players'
-import { startSessionTimer, trackSessionEnd } from '../analytics/analytics'
+import { onLeaveScene } from '@dcl/sdk/players'
+import { trackSessionEnd } from '../analytics/analytics'
 import { PlotState } from '../components/farmComponents'
 import { CropType, CROP_DATA } from '../data/cropData'
 import { FertilizerType, randomFertilizer } from '../data/fertilizerData'
@@ -559,18 +559,8 @@ export function initSaveService(onLoaded?: () => void): void {
 
   const normalizeAddress = (value: string | null | undefined): string => (value ?? '').toLowerCase()
 
-  // Restart the session timer on every parcel entry (covers re-entries after walk-out).
-  onEnterScene((player) => {
-    if (normalizeAddress(player.userId) !== normalizeAddress(playerState.wallet)) return
-    startSessionTimer()
-  })
-
   onLeaveScene((userId) => {
-    console.log(`[SaveService] onLeaveScene fired — userId: "${userId}", wallet: "${playerState.wallet}"`)
-    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) {
-      console.log('[SaveService] onLeaveScene: userId/wallet mismatch, skipping')
-      return
-    }
+    if (normalizeAddress(userId) !== normalizeAddress(playerState.wallet)) return
     trackSessionEnd()
     if (playerState.viewingFarm !== null) return
     flushQueuedSaveInternal()

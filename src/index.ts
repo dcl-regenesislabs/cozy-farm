@@ -37,7 +37,7 @@ import { initCompostBinVfx } from './systems/compostBinVfx'
 import { onLevelUp } from './systems/levelingSystem'
 import { recomputeStartupBadges } from './game/badgeSystem'
 import { initTutorialArrow } from './systems/tutorialArrowSystem'
-import { setAnalyticsWallet, startSessionTimer, trackEvent } from './analytics/analytics'
+import { setAnalyticsWallet, trackEvent } from './analytics/analytics'
 import { t, refreshAllHoverTexts } from './i18n'
 import { updateBuildingVisuals } from './systems/animalSystem'
 import { applyBeautySlots, getBeautySlots } from './systems/beautySpotSystem'
@@ -153,7 +153,6 @@ export function main() {
       refreshAllPlotHoverTexts()
 
       setAnalyticsWallet(playerState.wallet)
-      startSessionTimer()
       trackEvent('session started', {
         is_new_user:       playerState.level === 1 && playerState.totalCropsHarvested === 0,
         level:             playerState.level,
