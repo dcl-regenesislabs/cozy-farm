@@ -4,6 +4,7 @@ import {
   createFarmProgressStore, emptyFarm, farmSaveToPayload,
   updatePlayerRegistry, loadPlayerRegistryPage, loadBeautyLeaderboard,
 } from './storage/playerFarm'
+import { trackServerEvent } from '../analytics/analytics'
 
 // ---------------------------------------------------------------------------
 // Auto-save interval (seconds) — same cadence as reference project
@@ -12,6 +13,7 @@ const AUTOSAVE_INTERVAL_SECONDS = 20
 
 const store = createFarmProgressStore()
 const loadedAddresses = new Set<string>()
+const sessionStartTimes = new Map<string, number>()
 let autosaveAccumulator = 0
 
 // ---------------------------------------------------------------------------
@@ -44,6 +46,7 @@ async function loadAndSend(address: string, requestId: string): Promise<void> {
   void room.send('farmStateLoaded', { requester: normalized, requestId, payload })
 
   loadedAddresses.add(normalized)
+  sessionStartTimes.set(normalized, Date.now())
   console.log(`[FarmServer] Loaded farm for ${getDisplayName(normalized)} (${normalized}) — coins: ${farm.coins}`)
 
   void updatePlayerRegistry(normalized, farm.level, getDisplayName(normalized))
@@ -63,6 +66,14 @@ function sendWorkerStatus(address: string): void {
   }, { to: [normalized] })
 }
 
+function trackSessionEnd(address: string): void {
+  const startedAt = sessionStartTimes.get(address)
+  if (!startedAt) return
+  sessionStartTimes.delete(address)
+  const durationSeconds = Math.min(Math.round((Date.now() - startedAt) / 1000), 14_400)
+  trackServerEvent(address, 'session ended', { duration_seconds: durationSeconds, source: 'server' })
+}
+
 async function cleanupDisconnectedPlayers(): Promise<void> {
   const connected = new Set<string>()
   for (const [_entity, identity] of engine.getEntitiesWith(PlayerIdentityData)) {
@@ -71,6 +82,7 @@ async function cleanupDisconnectedPlayers(): Promise<void> {
 
   for (const address of [...loadedAddresses]) {
     if (connected.has(address)) continue
+    trackSessionEnd(address)
     await store.saveAndEvict(address)
     loadedAddresses.delete(address)
     console.log(`[FarmServer] Evicted disconnected player ${address}`)
@@ -361,6 +373,7 @@ export function setupFarmServer(): void {
 export async function onPlayerDisconnect(address: string): Promise<void> {
   const normalized = address.toLowerCase()
   if (!loadedAddresses.has(normalized)) return
+  trackSessionEnd(normalized)
   await store.saveAndEvict(normalized)
   loadedAddresses.delete(normalized)
   console.log(`[FarmServer] Saved and evicted ${normalized} on disconnect`)
