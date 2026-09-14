@@ -112,6 +112,10 @@ const FARM_CARD_TITLE_SM = ss(27)
 const FARM_CARD_STATUS_FONT = ss(26)
 const FARM_CARD_META_FONT = ss(19)
 const FARM_CARD_NOTE_FONT = ss(17)
+const FARM_CARD_TITLE_BLOCK_H = ss(52)
+const FARM_CARD_META_BLOCK_H = ss(28)
+const FARM_CARD_STATUS_BLOCK_H = ss(38)
+const FARM_CARD_NOTE_BLOCK_H = ss(56)
 const FARM_PROGRESS_H = ss(14)
 const FARM_PROGRESS_RADIUS = ss(7)
 const FARM_ACTION_BUTTON_SCALE = 1.1
@@ -150,6 +154,21 @@ function scaleFarmCardContent(value: number): number {
   return isMobile() ? Math.round(value * FARM_CARD_CONTENT_SCALE_MOBILE) : value
 }
 
+function getFarmCardTextBlock(height: number, marginTop = 0) {
+  if (isMobile()) return { margin: { top: ss(marginTop) } }
+
+  return {
+    width: '100%' as const,
+    height: scaleFarmCardContent(height),
+    flexShrink: 0,
+    margin: { top: ss(marginTop) },
+  }
+}
+
+function getDesktopFarmCardTextWrap() {
+  return isMobile() ? {} : { textWrap: 'wrap' as const }
+}
+
 function getFarmCardTransform(scale: number, baseHeight = FARM_CARD_BASE_H) {
   const bgScale = getFarmCardBgScale()
   const width = Math.round(FARM_CARD_W * scale * bgScale)
@@ -165,6 +184,7 @@ function getFarmCardTransform(scale: number, baseHeight = FARM_CARD_BASE_H) {
     justifyContent: 'flex-start' as const,
     width,
     height: Math.max(artHeight, baseHeightScaled),
+    ...(isMobile() ? {} : { overflow: 'hidden' as const }),
     margin: { right: FARM_CARD_MARGIN, bottom: FARM_CARD_MARGIN },
     padding: {
       top: padTop,
@@ -202,6 +222,7 @@ function getFarmGridMetrics(itemCount: number, baseHeight = FARM_CARD_BASE_H) {
 }
 
 function getFarmCardTitleFont(title: string): number {
+  if (!isMobile() && title.length > 18) return ss(22)
   return title.length <= 12 ? scaleFarmCardContent(FARM_CARD_TITLE_LG) : scaleFarmCardContent(FARM_CARD_TITLE_SM)
 }
 
@@ -491,6 +512,8 @@ const PlotCard = ({
         fontSize={getFarmCardTitleFont(visual.title)}
         color={FARM_CARD_TEXT}
         textAlign="middle-center"
+        {...getDesktopFarmCardTextWrap()}
+        uiTransform={getFarmCardTextBlock(FARM_CARD_TITLE_BLOCK_H)}
       />
 
       {visual.meta && (
@@ -499,7 +522,8 @@ const PlotCard = ({
           fontSize={scaleFarmCardContent(FARM_CARD_META_FONT)}
           color={FARM_CARD_TEXT_MUTE}
           textAlign="middle-center"
-          uiTransform={{ margin: { top: ss(2) } }}
+          {...getDesktopFarmCardTextWrap()}
+          uiTransform={getFarmCardTextBlock(FARM_CARD_META_BLOCK_H, 2)}
         />
       )}
 
@@ -509,8 +533,8 @@ const PlotCard = ({
           fontSize={getFarmStatusFont(visual.status)}
           color={visual.statusColor}
           textAlign="middle-center"
-          textWrap="nowrap"
-          uiTransform={{ margin: { top: ss(8) } }}
+          {...(isMobile() ? { textWrap: 'nowrap' as const } : getDesktopFarmCardTextWrap())}
+          uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 8)}
         />
       )}
 
@@ -520,7 +544,8 @@ const PlotCard = ({
           fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)}
           color={FARM_CARD_TEXT_MUTE}
           textAlign="middle-center"
-          uiTransform={{ margin: { top: ss(6) } }}
+          {...getDesktopFarmCardTextWrap()}
+          uiTransform={getFarmCardTextBlock(FARM_CARD_NOTE_BLOCK_H, 6)}
         />
       )}
 
@@ -555,7 +580,8 @@ const PlotCard = ({
           fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)}
           color={FARM_STATUS_READY}
           textAlign="middle-center"
-          uiTransform={{ margin: { top: ss(4) } }}
+          {...getDesktopFarmCardTextWrap()}
+          uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 4)}
         />
       )}
 
@@ -610,10 +636,10 @@ const CompostStatusCard = () => {
           textureMode: 'stretch',
         }}
       />
-      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={t('farm.compostHandBin', { hand: playerState.organicWaste, bin: wasteInBin })} fontSize={scaleFarmCardContent(FARM_CARD_META_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(4) } }} />
-      <Label value={`<b>${status}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={statusColor} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
-      <Label value={note} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
+      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_TITLE_BLOCK_H)} />
+      <Label value={t('farm.compostHandBin', { hand: playerState.organicWaste, bin: wasteInBin })} fontSize={scaleFarmCardContent(FARM_CARD_META_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_META_BLOCK_H, 4)} />
+      <Label value={`<b>${status}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={statusColor} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 10)} />
+      <Label value={note} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_NOTE_BLOCK_H, 8)} />
     </FarmCardFrame>
   )
 }
@@ -662,9 +688,9 @@ const CompostActionCard = ({
           textureMode: 'stretch',
         }}
       />
-      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`<b>${status}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={statusColor} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
-      <Label value={note} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
+      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_TITLE_BLOCK_H)} />
+      <Label value={`<b>${status}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={statusColor} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 10)} />
+      <Label value={note} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_NOTE_BLOCK_H, 8)} />
       <UiEntity uiTransform={{ flex: 1 }} />
       <FarmActionButton label={buttonLabel} active={active} zoomKey={zoomKey} onPress={onAction} />
     </FarmCardFrame>
@@ -691,9 +717,9 @@ const FertilizerStockCard = ({ type }: { type: FertilizerType }) => {
           textureMode: 'stretch',
         }}
       />
-      <Label value={`<b>${name}</b>`} fontSize={getFarmCardTitleFont(name)} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`<b>${t('common.count', { count })}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={count > 0 ? FARM_COMPOST_SUCCESS : FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
-      <Label value={t(def.description)} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" uiTransform={{ margin: { top: ss(8) } }} />
+      <Label value={`<b>${name}</b>`} fontSize={getFarmCardTitleFont(name)} color={FARM_CARD_TEXT} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_TITLE_BLOCK_H)} />
+      <Label value={`<b>${t('common.count', { count })}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={count > 0 ? FARM_COMPOST_SUCCESS : FARM_CARD_TEXT_MUTE} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 10)} />
+      <Label value={t(def.description)} fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)} color={FARM_CARD_TEXT_MUTE} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_NOTE_BLOCK_H, 8)} />
     </FarmCardFrame>
   )
 }
@@ -715,14 +741,15 @@ const LockedCompostCard = () => {
           textureMode: 'stretch',
         }}
       />
-      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" />
-      <Label value={`<b>${t('common.locked')}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={FARM_STATUS_WARNING} textAlign="middle-center" uiTransform={{ margin: { top: ss(10) } }} />
+      <Label value={`<b>${title}</b>`} fontSize={getFarmCardTitleFont(title)} color={FARM_CARD_TEXT} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_TITLE_BLOCK_H)} />
+      <Label value={`<b>${t('common.locked')}</b>`} fontSize={scaleFarmCardContent(FARM_CARD_STATUS_FONT)} color={FARM_STATUS_WARNING} textAlign="middle-center" {...getDesktopFarmCardTextWrap()} uiTransform={getFarmCardTextBlock(FARM_CARD_STATUS_BLOCK_H, 10)} />
       <Label
         value={t('farm.compostLockedNote')}
         fontSize={scaleFarmCardContent(FARM_CARD_NOTE_FONT)}
         color={FARM_CARD_TEXT_MUTE}
         textAlign="middle-center"
-        uiTransform={{ margin: { top: ss(8) } }}
+        {...getDesktopFarmCardTextWrap()}
+        uiTransform={getFarmCardTextBlock(FARM_CARD_NOTE_BLOCK_H, 8)}
       />
     </FarmCardFrame>
   )
