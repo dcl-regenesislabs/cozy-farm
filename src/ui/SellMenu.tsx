@@ -14,6 +14,7 @@ import {
   REVAMP_CONTENT_H as CONTENT_H,
   REVAMP_CONTENT_W as CONTENT_W,
 } from './RevampPanel'
+import { SHARED_PAGINATION_HEIGHT_MOBILE, SharedPaginationBar } from './SharedPaginationBar'
 
 const SELL_DEBUG = false
 
@@ -60,7 +61,8 @@ const SELL_FLOAT_FONT_MOBILE = ss(32)
 const SELL_GRID_SLOT_TRIM = 10
 const SELL_GRID_COLUMNS_DESKTOP = 4
 const SELL_GRID_COLUMNS_MOBILE = 3
-const SELL_GRID_ROW_GAP = 0
+const SELL_ITEMS_PER_PAGE_MOBILE = 3
+const SELL_GRID_ROW_GAP = ss(10)
 const SELL_GRID_TOP_OFFSET = ss(8)
 const SELL_HEADER_ROW_H = ss(44)
 const SELL_SUBTITLE_H = ss(30)
@@ -90,6 +92,7 @@ type SellCardData = {
 
 let nextSellFloatId = 1
 const sellFloats: SellFloatEntry[] = []
+const sellPage = { value: 0 }
 
 function triggerSellFloat(key: string, text: string): void {
   sellFloats.push({
@@ -340,7 +343,7 @@ const SellCardGrid = ({ items, viewHeight }: { items: SellGridItem[]; viewHeight
       uiTransform={{
         width: CONTENT_W,
         height: viewHeight,
-        overflow: 'scroll',
+        overflow: isMobile() ? 'hidden' : 'scroll',
         flexShrink: 0,
         margin: { top: ss(6) },
       }}
@@ -357,7 +360,7 @@ const SellCardGrid = ({ items, viewHeight }: { items: SellGridItem[]; viewHeight
         <UiEntity
           uiTransform={{
             flexDirection: 'column',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             alignItems: 'center',
             width: gridWidth,
             margin: { top: SELL_GRID_TOP_OFFSET },
@@ -370,6 +373,7 @@ const SellCardGrid = ({ items, viewHeight }: { items: SellGridItem[]; viewHeight
                 flexDirection: 'row',
                 width: gridWidth,
                 height: slotHeight,
+                flexShrink: 0,
                 justifyContent: 'center',
                 margin: { bottom: rowIndex < rows.length - 1 ? SELL_GRID_ROW_GAP : 0 },
               }}
@@ -413,7 +417,6 @@ export const SellMenu = () => {
 
   const headerRowH = mobile ? ss(54) : SELL_HEADER_ROW_H
   const subtitleH = mobile ? ss(40) : SELL_SUBTITLE_H
-  const gridViewH = CONTENT_H - headerRowH - subtitleH - ss(18)
   const headerIconSize = mobile ? ss(40) : ss(32)
   const headerCoinsFont = mobile ? ss(34) : ss(28)
   const headerGainFont = mobile ? ss(34) : ss(28)
@@ -469,6 +472,18 @@ export const SellMenu = () => {
     }] : []),
   ]
 
+  const lastPage = mobile
+    ? Math.max(0, Math.ceil(items.length / SELL_ITEMS_PER_PAGE_MOBILE) - 1)
+    : 0
+  if (sellPage.value > lastPage) sellPage.value = lastPage
+  const page = mobile ? sellPage.value : 0
+  const pageItems = mobile
+    ? items.slice(page * SELL_ITEMS_PER_PAGE_MOBILE, (page + 1) * SELL_ITEMS_PER_PAGE_MOBILE)
+    : items
+  const paginationHeight = mobile && lastPage > 0 ? SHARED_PAGINATION_HEIGHT_MOBILE : 0
+  const gridLayoutGap = mobile ? ss(24) : ss(18)
+  const gridViewH = CONTENT_H - headerRowH - subtitleH - gridLayoutGap - paginationHeight
+
   return (
     <SellPanelFrame onClose={() => { playerState.activeMenu = 'none' }}>
       <UiEntity
@@ -519,7 +534,34 @@ export const SellMenu = () => {
       </UiEntity>
 
       {hasAnything ? (
-        <SellCardGrid items={items} viewHeight={gridViewH} />
+        <UiEntity
+          uiTransform={{
+            width: CONTENT_W,
+            flexDirection: 'column',
+            alignItems: 'center',
+            flexShrink: 0,
+          }}
+        >
+          <SellCardGrid items={pageItems} viewHeight={gridViewH} />
+          {mobile && lastPage > 0 && (
+            <UiEntity
+              uiTransform={{
+                width: CONTENT_W,
+                height: paginationHeight,
+                flexShrink: 0,
+              }}
+            >
+              <SharedPaginationBar
+                id="sell-crops"
+                page={page}
+                lastPage={lastPage}
+                onPrev={() => { sellPage.value-- }}
+                onNext={() => { sellPage.value++ }}
+                mode="mobile"
+              />
+            </UiEntity>
+          )}
+        </UiEntity>
       ) : (
         <UiEntity
           uiTransform={{
