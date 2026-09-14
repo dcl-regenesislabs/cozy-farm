@@ -136,13 +136,24 @@ function setVisible(entity: Entity | null, visible: boolean): void {
   }
 }
 
-function enablePointer(entity: Entity): void {
+function enablePointer(entity: Entity, includeInvisibleMeshes = true): void {
   const gltf = GltfContainer.getMutableOrNull(entity)
   if (!gltf) return
   gltf.visibleMeshesCollisionMask =
     (gltf.visibleMeshesCollisionMask ?? 0) | ColliderLayer.CL_POINTER
+  const invisibleMask = gltf.invisibleMeshesCollisionMask ?? 0
+  gltf.invisibleMeshesCollisionMask = includeInvisibleMeshes
+    ? invisibleMask | ColliderLayer.CL_POINTER
+    : invisibleMask & ~ColliderLayer.CL_POINTER
+}
+
+function disablePointer(entity: Entity): void {
+  const gltf = GltfContainer.getMutableOrNull(entity)
+  if (!gltf) return
+  gltf.visibleMeshesCollisionMask =
+    (gltf.visibleMeshesCollisionMask ?? 0) & ~ColliderLayer.CL_POINTER
   gltf.invisibleMeshesCollisionMask =
-    (gltf.invisibleMeshesCollisionMask ?? 0) | ColliderLayer.CL_POINTER
+    (gltf.invisibleMeshesCollisionMask ?? 0) & ~ColliderLayer.CL_POINTER
 }
 
 // ---------------------------------------------------------------------------
@@ -314,20 +325,16 @@ export function initAnimalBuildings(): void {
   console.log(`[AnimalSystem] Pig bounds: ${JSON.stringify(pigBounds)}`)
 
   // Area patches are always visible — just wire up their click/hover behavior.
-  if (coopArea) enablePointer(coopArea)
+  if (coopArea) enablePointer(coopArea, false)
   if (penArea)  enablePointer(penArea)
 
   // Register pointer events for both area patches with current level/ownership state.
   refreshAreaBuyPointers()
 
-  // Wire coop building click → open chicken coop panel
+  // The coop area opens this panel. Excluding the building's large collider
+  // keeps it from intercepting clicks intended for the feeder.
   if (coopBuilding) {
-    enablePointer(coopBuilding)
-    pointerEventsSystem.onPointerDown(
-      { entity: coopBuilding, opts: { button: InputAction.IA_POINTER, hoverText: t('animals.hover.openCoop'), maxDistance: 8 } },
-      () => { playerState.activeMenu = 'chickenCoop' },
-    )
-    registerHoverText(coopBuilding, 'animals.hover.openCoop')
+    disablePointer(coopBuilding)
   }
 
   // Wire pig pen building click → open pig pen panel
