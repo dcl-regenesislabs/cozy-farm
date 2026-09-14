@@ -34,7 +34,8 @@ export function getZoomScale(key: string): number {
 }
 
 export function isZooming(key: string): boolean {
-  return (cardZoom[key]?.startAt ?? 0) > 0
+  const startAt = cardZoom[key]?.startAt ?? 0
+  return startAt > 0 && Date.now() - startAt < DURATION
 }
 
 engine.addSystem(() => {

@@ -99,8 +99,8 @@ const FertCard = ({ fertType }: FertCardProps) => {
         flexDirection: 'column',
         alignItems: 'center',
         width: ss(275),
-        margin: { right: ss(16), bottom: ss(16) },
-        padding: { top: ss(12), bottom: ss(12), left: ss(10), right: ss(10) },
+        margin: { right: ss(16), bottom: ss(8) },
+        padding: { top: ss(8), bottom: ss(8), left: ss(10), right: ss(10) },
         borderWidth: 3,
         borderColor: CARD_BORDER,
         borderRadius: 12,
@@ -108,7 +108,7 @@ const FertCard = ({ fertType }: FertCardProps) => {
       uiBackground={mob ? { color: CARD_FILL } : undefined}
     >
       <UiEntity
-        uiTransform={{ width: ss(88), height: ss(88), margin: { bottom: ss(8) } }}
+        uiTransform={{ width: ss(80), height: ss(80), margin: { bottom: ss(8) } }}
         uiBackground={{ texture: { src: def.iconSrc, wrapMode: 'clamp' }, textureMode: 'stretch' }}
       />
       <Label value={t(def.name)} fontSize={ss(24)} color={C.textMain} textAlign="middle-center" />
@@ -206,7 +206,7 @@ export const CompostBinMenu = () => {
           <Label value={t('compost.yourFertilizers')} fontSize={ss(28)} color={C.header} uiTransform={{ margin: { right: ss(14) } }} />
           <SectionRule width={ss(160)} />
         </UiEntity>
-        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        <UiEntity uiTransform={{ flexDirection: 'row', flexWrap: 'wrap', width: '100%' }}>
           {ALL_FERTILIZER_TYPES.map((ft) => (
             <FertCard key={ft} fertType={ft} />
           ))}
