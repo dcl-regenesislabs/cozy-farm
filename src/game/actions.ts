@@ -522,6 +522,9 @@ export function buyCompostBin(): boolean {
   if (playerState.coins < COMPOST_BIN_PRICE) return false
   playerState.coins -= COMPOST_BIN_PRICE
   playerState.compostBinUnlocked = true
+  // Owning the compost bin is the progression gate for crop rot. The tutorial
+  // teaches the loop, but must not delay the underlying mechanic.
+  playerState.rotSystemUnlocked = true
   setCompostBinVisible(true)
   trackEvent('feature unlocked', { feature: 'compost_bin' })
   const cb = onBuyCompostBinCb

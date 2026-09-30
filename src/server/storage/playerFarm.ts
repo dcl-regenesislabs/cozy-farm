@@ -239,6 +239,10 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
   const safeStr    = (v: unknown, fallback = ''): string =>
     typeof v === 'string' ? v : fallback
   const safeArray  = <T>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
+  // The Compost Bin is the progression gate for crop rot. Deriving this here
+  // upgrades legacy saves as they are loaded without a manual Storage migration.
+  const compostBinUnlocked = safeBool((maybe as any).compostBinUnlocked, false)
+  const rotSystemUnlocked = compostBinUnlocked || safeBool((maybe as any).rotSystemUnlocked, false)
 
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -296,8 +300,8 @@ function normalizeFarm(raw: unknown, wallet: string): FarmSaveV1 {
     veggieScrapCount:    safeInt((maybe as any).veggieScrapCount, 0),
     eggsCount:           safeInt((maybe as any).eggsCount, 0),
     pigMeatCount:        safeInt((maybe as any).pigMeatCount, 0),
-    compostBinUnlocked:  safeBool((maybe as any).compostBinUnlocked, false),
-    rotSystemUnlocked:       safeBool((maybe as any).rotSystemUnlocked, false),
+    compostBinUnlocked,
+    rotSystemUnlocked,
     progressionEventStep:    safeStr((maybe as any).progressionEventStep, ''),
     chickenTutorialStep:     safeStr((maybe as any).chickenTutorialStep, ''),
     pigTutorialStep:         safeStr((maybe as any).pigTutorialStep, ''),
@@ -803,6 +807,10 @@ export class FarmProgressStore {
     const workerLastSimulatedAt = farmerHired ? Date.now() : 0
     const workerOutstandingWages = hiredNow ? 0 : existing.workerOutstandingWages
     const workerUnpaidDays = hiredNow ? 0 : existing.workerUnpaidDays
+    const compostBinUnlocked = payload.compostBinUnlocked ?? existing.compostBinUnlocked
+    // Keep the persisted state aligned with the progression rule even if a
+    // client payload was produced before crop rot activated at bin purchase.
+    const rotSystemUnlocked = compostBinUnlocked || (payload.rotSystemUnlocked ?? existing.rotSystemUnlocked)
 
     const updated: FarmSaveV1 = {
       schemaVersion:       SCHEMA_VERSION,
@@ -860,8 +868,8 @@ export class FarmProgressStore {
       veggieScrapCount:    payload.veggieScrapCount ?? 0,
       eggsCount:           payload.eggsCount ?? 0,
       pigMeatCount:        payload.pigMeatCount ?? 0,
-      compostBinUnlocked:      payload.compostBinUnlocked ?? existing.compostBinUnlocked,
-      rotSystemUnlocked:       payload.rotSystemUnlocked ?? existing.rotSystemUnlocked,
+      compostBinUnlocked,
+      rotSystemUnlocked,
       progressionEventStep:    payload.progressionEventStep ?? '',
       chickenTutorialStep:     payload.chickenTutorialStep ?? '',
       pigTutorialStep:         payload.pigTutorialStep ?? '',
